@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, History, Banknote, Smartphone,
   Trash2, Plus, Minus, X, TrendingUp, TrendingDown,
@@ -290,12 +290,20 @@ export default function SalesPage() {
   const isValidPhone = /^\+254[17]\d{8}$/.test(customerPhone);
 
   // Queries
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const {
+    data: productsPages,
+    isLoading: productsLoading,
+    fetchNextPage: fetchNextProducts,
+    hasNextPage: hasNextProducts,
+    isFetchingNextPage: isFetchingNextProducts,
+  } = useInfiniteQuery({
     queryKey: ['products-sale', search],
-    queryFn: async () => {
-      const res = await api.get('/products', { params: { search: search || undefined, limit: 40 } });
-      return (res.data.data ?? []) as Product[];
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/products', { params: { search: search || undefined, limit: 30, page: pageParam } });
+      return res.data as { data: Product[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
   });
 
   const { data: statsData } = useQuery({
@@ -307,18 +315,26 @@ export default function SalesPage() {
   });
 
   const salesParams = useMemo(() => ({
-    limit: 50,
     paymentMethod: payFilter !== 'all' ? payFilter : undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
   }), [payFilter, startDate, endDate]);
 
-  const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useQuery({
+  const {
+    data: salesPages,
+    isLoading: salesLoading,
+    refetch: refetchSales,
+    fetchNextPage: fetchNextSales,
+    hasNextPage: hasNextSales,
+    isFetchingNextPage: isFetchingNextSales,
+  } = useInfiniteQuery({
     queryKey: ['sales-history', salesParams],
-    queryFn: async () => {
-      const res = await api.get('/sales', { params: salesParams });
-      return res.data.data as Sale[];
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/sales', { params: { ...salesParams, page: pageParam, limit: 20 } });
+      return res.data as { data: Sale[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
     enabled: tab === 'history',
   });
 
@@ -393,12 +409,14 @@ export default function SalesPage() {
     createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: transactionId });
   };
 
+  const productsData = useMemo(() => productsPages?.pages.flatMap((p) => p.data) ?? [], [productsPages]);
+  const salesData = useMemo(() => salesPages?.pages.flatMap((p) => p.data) ?? [], [salesPages]);
+
   // History filtering
   const filteredSales = useMemo(() => {
-    const all = salesData ?? [];
-    if (!historySearch) return all;
+    if (!historySearch) return salesData;
     const q = historySearch.toLowerCase();
-    return all.filter((s) => s.invoiceNumber.toLowerCase().includes(q) || s.staff?.name?.toLowerCase().includes(q));
+    return salesData.filter((s) => s.invoiceNumber.toLowerCase().includes(q) || s.staff?.name?.toLowerCase().includes(q));
   }, [salesData, historySearch]);
 
   const stats = statsData;
@@ -482,27 +500,37 @@ export default function SalesPage() {
                 <p className="text-sm mt-1">Try a different search term</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {productsData?.map((p) => {
-                  const outOfStock = p.trackInventory && p.productType !== 'bundle' && p.quantity <= 0;
-                  const lowStock = p.trackInventory && !outOfStock && p.quantity <= p.lowStockAlert;
-                  return (
-                    <button key={p._id} onClick={() => !outOfStock && addToCart(p)} disabled={outOfStock}
-                      className={`bg-white rounded-xl border text-left p-4 transition-all ${outOfStock ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
-                        <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
-                      </div>
-                      <p className="text-sm font-semibold leading-tight mb-1 line-clamp-2" style={{ color: '#0F172A' }}>{p.name}</p>
-                      <p className="text-base font-bold" style={{ color: '#0F766E' }}>{fmt(p.sellingPrice)}</p>
-                      {p.trackInventory && p.productType !== 'bundle' && (
-                        <p className={`text-xs mt-1 font-medium ${outOfStock ? 'text-red-500' : lowStock ? 'text-amber-500' : 'text-gray-400'}`}>
-                          {outOfStock ? 'Out of stock' : `${p.quantity} ${p.unitOfMeasure} left${lowStock ? ' ⚠' : ''}`}
-                        </p>
-                      )}
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {productsData?.map((p) => {
+                    const outOfStock = p.trackInventory && p.productType !== 'bundle' && p.quantity <= 0;
+                    const lowStock = p.trackInventory && !outOfStock && p.quantity <= p.lowStockAlert;
+                    return (
+                      <button key={p._id} onClick={() => !outOfStock && addToCart(p)} disabled={outOfStock}
+                        className={`bg-white rounded-xl border text-left p-4 transition-all ${outOfStock ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
+                          <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
+                        </div>
+                        <p className="text-sm font-semibold leading-tight mb-1 line-clamp-2" style={{ color: '#0F172A' }}>{p.name}</p>
+                        <p className="text-base font-bold" style={{ color: '#0F766E' }}>{fmt(p.sellingPrice)}</p>
+                        {p.trackInventory && p.productType !== 'bundle' && (
+                          <p className={`text-xs mt-1 font-medium ${outOfStock ? 'text-red-500' : lowStock ? 'text-amber-500' : 'text-gray-400'}`}>
+                            {outOfStock ? 'Out of stock' : `${p.quantity} ${p.unitOfMeasure} left${lowStock ? ' ⚠' : ''}`}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {hasNextProducts && (
+                  <div className="flex justify-center pt-3">
+                    <button onClick={() => fetchNextProducts()} disabled={isFetchingNextProducts}
+                      className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+                      {isFetchingNextProducts ? 'Loading…' : 'Load more products'}
                     </button>
-                  );
-                })}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -731,6 +759,14 @@ export default function SalesPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {hasNextSales && (
+              <div className="flex justify-center py-4 border-t border-gray-50">
+                <button onClick={() => fetchNextSales()} disabled={isFetchingNextSales}
+                  className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+                  {isFetchingNextSales ? 'Loading…' : 'Load more sales'}
+                </button>
               </div>
             )}
           </div>

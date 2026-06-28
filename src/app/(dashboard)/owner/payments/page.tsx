@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Search, Smartphone, X, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { Search, Smartphone, X, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
@@ -125,25 +125,35 @@ export default function PaymentsPage() {
   const [selectedTx, setSelectedTx] = useState<MpesaTransaction | null>(null);
 
   const queryParams = useMemo(() => ({
-    limit: 100,
+    limit: 20,
     ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
     ...(search ? { search } : {}),
   }), [statusFilter, search]);
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const {
+    data,
+    isLoading,
+    refetch,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['mpesa-transactions', queryParams],
-    queryFn: async () => {
-      const res = await api.get('/mpesa/transactions', { params: queryParams });
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/mpesa/transactions', { params: { ...queryParams, page: pageParam } });
       return res.data as {
         data: MpesaTransaction[];
         stats: Stats;
         pagination: { page: number; limit: number; total: number; pages: number };
       };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
   });
 
-  const transactions = data?.data ?? [];
-  const stats = data?.stats;
+  const transactions = data?.pages.flatMap((p) => p.data) ?? [];
+  const stats = data?.pages[0]?.stats;
 
   return (
     <div className="space-y-5">
@@ -273,6 +283,16 @@ export default function PaymentsPage() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Load more */}
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}
+            className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+            {isFetchingNextPage ? 'Loading…' : 'Load more transactions'}
+          </button>
         </div>
       )}
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Users, Mail, Phone } from 'lucide-react';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Trash2, Users, Mail, Phone, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,13 +39,25 @@ export default function StaffPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [serverError, setServerError] = useState('');
 
-  const { data: staff, isLoading } = useQuery<StaffMember[]>({
-    queryKey: ['staff'],
-    queryFn: async () => {
-      const res = await api.get('/staff');
-      return res.data.data || [];
+  const [search, setSearch] = useState('');
+
+  const {
+    data: staffPages,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['staff', search],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/staff', { params: { page: pageParam, limit: 20, search: search || undefined } });
+      return res.data as { data: StaffMember[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
   });
+
+  const staff = staffPages?.pages.flatMap((p) => p.data) ?? [];
 
   const addMutation = useMutation({
     mutationFn: (data: FormData) => api.post('/staff', data),
@@ -87,6 +99,13 @@ export default function StaffPage() {
           <span className="hidden sm:inline">Add Staff</span>
           <span className="sm:hidden">Add</span>
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email…"
+          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all" />
       </div>
 
       {isLoading ? (
@@ -135,6 +154,16 @@ export default function StaffPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Load more */}
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}
+            className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+            {isFetchingNextPage ? 'Loading…' : 'Load more staff'}
+          </button>
         </div>
       )}
 

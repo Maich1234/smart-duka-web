@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus, X,
   Package, CheckCircle, ArrowRight, Receipt, ExternalLink,
@@ -217,20 +217,35 @@ export default function StaffSalesPage() {
   };
   const isValidPhone = /^\+254[17]\d{8}$/.test(customerPhone);
 
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const {
+    data: productsPages,
+    isLoading: productsLoading,
+    fetchNextPage: fetchNextProducts,
+    hasNextPage: hasNextProducts,
+    isFetchingNextPage: isFetchingNextProducts,
+  } = useInfiniteQuery({
     queryKey: ['products-sale', search],
-    queryFn: async () => {
-      const res = await api.get('/products', { params: { search: search || undefined, limit: 40 } });
-      return (res.data.data ?? []) as Product[];
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/products', { params: { search: search || undefined, limit: 30, page: pageParam } });
+      return res.data as { data: Product[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
   });
 
-  const { data: mySalesData } = useQuery({
+  const {
+    data: mySalesPages,
+    fetchNextPage: fetchNextMySales,
+    hasNextPage: hasNextMySales,
+    isFetchingNextPage: isFetchingNextMySales,
+  } = useInfiniteQuery({
     queryKey: ['my-sales'],
-    queryFn: async () => {
-      const res = await api.get('/sales/me', { params: { limit: 30 } });
-      return (res.data.data ?? []) as Sale[];
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/sales/me', { params: { page: pageParam, limit: 20 } });
+      return res.data as { data: Sale[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
   });
 
   const { data: paymentStatus } = useQuery({
@@ -266,6 +281,9 @@ export default function StaffSalesPage() {
   const totalAmount = cart.reduce((s, e) => s + e.unitPrice * e.qty, 0);
   const buildItems = () => cart.map((e) => ({ productId: e.product._id, quantity: e.qty, ...(e.variantId ? { variantId: e.variantId } : {}), ...(e.unitPrice !== e.product.sellingPrice ? { unitPrice: e.unitPrice } : {}) }));
 
+  const productsData = productsPages?.pages.flatMap((p) => p.data) ?? [];
+  const mySalesData = mySalesPages?.pages.flatMap((p) => p.data) ?? [];
+
   const handleCheckout = () => {
     if (cart.length === 0) return;
     if (paymentMethod === 'mpesa') {
@@ -294,27 +312,37 @@ export default function StaffSalesPage() {
           {productsLoading ? (
             <div className="flex justify-center py-16"><Spinner size="lg" /></div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {productsData?.map((p) => {
-                const out = p.trackInventory && p.productType !== 'bundle' && p.quantity <= 0;
-                const low = p.trackInventory && !out && p.quantity <= p.lowStockAlert;
-                return (
-                  <button key={p._id} onClick={() => !out && addToCart(p)} disabled={out}
-                    className={`bg-white rounded-xl border text-left p-4 transition-all ${out ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
-                      <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
-                    </div>
-                    <p className="text-sm font-semibold leading-tight mb-1 line-clamp-2" style={{ color: '#0F172A' }}>{p.name}</p>
-                    <p className="text-base font-bold" style={{ color: '#0F766E' }}>{fmt(p.sellingPrice)}</p>
-                    {p.trackInventory && p.productType !== 'bundle' && (
-                      <p className={`text-xs mt-1 font-medium ${out ? 'text-red-500' : low ? 'text-amber-500' : 'text-gray-400'}`}>
-                        {out ? 'Out of stock' : `${p.quantity} ${p.unitOfMeasure} left${low ? ' ⚠' : ''}`}
-                      </p>
-                    )}
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {productsData?.map((p) => {
+                  const out = p.trackInventory && p.productType !== 'bundle' && p.quantity <= 0;
+                  const low = p.trackInventory && !out && p.quantity <= p.lowStockAlert;
+                  return (
+                    <button key={p._id} onClick={() => !out && addToCart(p)} disabled={out}
+                      className={`bg-white rounded-xl border text-left p-4 transition-all ${out ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
+                        <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
+                      </div>
+                      <p className="text-sm font-semibold leading-tight mb-1 line-clamp-2" style={{ color: '#0F172A' }}>{p.name}</p>
+                      <p className="text-base font-bold" style={{ color: '#0F766E' }}>{fmt(p.sellingPrice)}</p>
+                      {p.trackInventory && p.productType !== 'bundle' && (
+                        <p className={`text-xs mt-1 font-medium ${out ? 'text-red-500' : low ? 'text-amber-500' : 'text-gray-400'}`}>
+                          {out ? 'Out of stock' : `${p.quantity} ${p.unitOfMeasure} left${low ? ' ⚠' : ''}`}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {hasNextProducts && (
+                <div className="flex justify-center pt-3">
+                  <button onClick={() => fetchNextProducts()} disabled={isFetchingNextProducts}
+                    className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+                    {isFetchingNextProducts ? 'Loading…' : 'Load more products'}
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -408,11 +436,11 @@ export default function StaffSalesPage() {
       </div>
 
       {/* My Sales History */}
-      {(mySalesData?.length ?? 0) > 0 && (
+      {mySalesData.length > 0 && (
         <div>
           <h2 className="text-base font-bold mb-3" style={{ color: '#0F172A' }}>My Sales History</h2>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-            {mySalesData?.map((sale) => (
+            {mySalesData.map((sale) => (
               <button key={sale._id} onClick={() => setSelectedSale(sale)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left">
                 <div>
                   <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>#{sale.invoiceNumber}</p>
@@ -427,6 +455,14 @@ export default function StaffSalesPage() {
               </button>
             ))}
           </div>
+          {hasNextMySales && (
+            <div className="flex justify-center mt-3">
+              <button onClick={() => fetchNextMySales()} disabled={isFetchingNextMySales}
+                className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+                {isFetchingNextMySales ? 'Loading…' : 'Load more sales'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Receipt, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,13 +43,23 @@ export default function ExpensesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  const { data: expenses, isLoading } = useQuery<Expense[]>({
+  const {
+    data: expensesPages,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['expenses'],
-    queryFn: async () => {
-      const res = await api.get('/expenses');
-      return res.data.data || [];
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get('/expenses', { params: { page: pageParam, limit: 20 } });
+      return res.data as { data: Expense[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
+    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
+    initialPageParam: 1,
   });
+
+  const expenses = expensesPages?.pages.flatMap((p) => p.data) ?? [];
 
   const addMutation = useMutation({
     mutationFn: (data: FormData) =>
@@ -144,6 +154,14 @@ export default function ExpensesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {hasNextPage && (
+          <div className="flex justify-center py-4 border-t border-gray-50">
+            <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}
+              className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+              {isFetchingNextPage ? 'Loading…' : 'Load more expenses'}
+            </button>
           </div>
         )}
       </div>
