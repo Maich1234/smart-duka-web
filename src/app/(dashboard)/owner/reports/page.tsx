@@ -16,7 +16,7 @@ import Spinner from '@/components/ui/Spinner';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Period = 'daily' | 'weekly' | 'monthly';
+type Period = 'today' | 'daily' | 'weekly' | 'monthly';
 type Tab = 'overview' | 'revenue' | 'products' | 'staff';
 
 interface SeriesPoint {
@@ -68,6 +68,7 @@ const CORAL = '#F43F5E';
 const BLUE = '#3B82F6';
 
 const PERIOD_LABELS: Record<Period, string> = {
+  today: 'Today',
   daily: 'Last 7 days',
   weekly: 'Last 4 weeks',
   monthly: 'Last 6 months',
@@ -428,7 +429,7 @@ function StaffTab({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<Period>('weekly');
+  const [period, setPeriod] = useState<Period>('today');
   const [tab, setTab] = useState<Tab>('overview');
 
   const { data: reportData, isLoading: reportLoading } = useQuery<ReportData>({
@@ -461,7 +462,7 @@ export default function ReportsPage() {
         </div>
         {showPeriod && (
           <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-            {(['daily', 'weekly', 'monthly'] as Period[]).map((p) => (
+            {(['today', 'daily', 'weekly', 'monthly'] as Period[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
