@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Receipt, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,23 +43,18 @@ export default function ExpensesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  const {
-    data: expensesPages,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['expenses'],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await api.get('/expenses', { params: { page: pageParam, limit: 20 } });
+  const [page, setPage] = useState(1);
+
+  const { data: expensesRaw, isLoading } = useQuery({
+    queryKey: ['expenses', page],
+    queryFn: async () => {
+      const res = await api.get('/expenses', { params: { page, limit: 10 } });
       return res.data as { data: Expense[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
-    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
-    initialPageParam: 1,
   });
 
-  const expenses = expensesPages?.pages.flatMap((p) => p.data) ?? [];
+  const expenses = expensesRaw?.data ?? [];
+  const totalPages = expensesRaw?.pagination?.pages ?? 1;
 
   const addMutation = useMutation({
     mutationFn: (data: FormData) =>
@@ -104,7 +99,7 @@ export default function ExpensesPage() {
             <Receipt className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Expenses</p>
+            <p className="text-sm text-gray-500">Page {page} Subtotal</p>
             <p className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>KES {totalExpenses.toLocaleString()}</p>
           </div>
         </div>
@@ -156,12 +151,11 @@ export default function ExpensesPage() {
             </table>
           </div>
         )}
-        {hasNextPage && (
-          <div className="flex justify-center py-4 border-t border-gray-50">
-            <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}
-              className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
-              {isFetchingNextPage ? 'Loading…' : 'Load more expenses'}
-            </button>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+            <span className="text-xs font-semibold text-gray-500">Page {page} of {totalPages}</span>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
           </div>
         )}
       </div>

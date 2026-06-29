@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Search, Smartphone, X, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
@@ -124,36 +124,32 @@ export default function PaymentsPage() {
   const [search, setSearch] = useState('');
   const [selectedTx, setSelectedTx] = useState<MpesaTransaction | null>(null);
 
-  const queryParams = useMemo(() => ({
-    limit: 20,
-    ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
-    ...(search ? { search } : {}),
-  }), [statusFilter, search]);
+  const [page, setPage] = useState(1);
 
-  const {
-    data,
-    isLoading,
-    refetch,
-    isFetching,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['mpesa-transactions', queryParams],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await api.get('/mpesa/transactions', { params: { ...queryParams, page: pageParam } });
+  const queryParams = useMemo(() => {
+    setPage(1);
+    return {
+      limit: 10,
+      ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+      ...(search ? { search } : {}),
+    };
+  }, [statusFilter, search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['mpesa-transactions', queryParams, page],
+    queryFn: async () => {
+      const res = await api.get('/mpesa/transactions', { params: { ...queryParams, page } });
       return res.data as {
         data: MpesaTransaction[];
         stats: Stats;
         pagination: { page: number; limit: number; total: number; pages: number };
       };
     },
-    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
-    initialPageParam: 1,
   });
 
-  const transactions = data?.pages.flatMap((p) => p.data) ?? [];
-  const stats = data?.pages[0]?.stats;
+  const transactions = data?.data ?? [];
+  const stats = data?.stats;
+  const totalPages = data?.pagination?.pages ?? 1;
 
   return (
     <div className="space-y-5">
@@ -286,13 +282,12 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Load more */}
-      {hasNextPage && (
-        <div className="flex justify-center">
-          <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}
-            className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
-            {isFetchingNextPage ? 'Loading…' : 'Load more transactions'}
-          </button>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+          <span className="text-xs font-semibold text-gray-500">Page {page} of {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
         </div>
       )}
 

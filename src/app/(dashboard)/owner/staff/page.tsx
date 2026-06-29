@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Users, Mail, Phone, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,24 +40,26 @@ export default function StaffPage() {
   const [serverError, setServerError] = useState('');
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [showAll, setShowAll] = useState(false);
 
-  const {
-    data: staffPages,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['staff', search],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await api.get('/staff', { params: { page: pageParam, limit: 20, search: search || undefined } });
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: staffRaw, isLoading } = useQuery({
+    queryKey: ['staff', search, page, showAll],
+    queryFn: async () => {
+      const res = await api.get('/staff', { params: {
+        page,
+        limit: 10,
+        search: search || undefined,
+        ...(!showAll ? { startDate: twoDaysAgo } : {}),
+      }});
       return res.data as { data: StaffMember[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
-    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
-    initialPageParam: 1,
   });
 
-  const staff = staffPages?.pages.flatMap((p) => p.data) ?? [];
+  const staff = staffRaw?.data ?? [];
+  const totalPages = staffRaw?.pagination?.pages ?? 1;
 
   const addMutation = useMutation({
     mutationFn: (data: FormData) => api.post('/staff', data),
@@ -101,11 +103,17 @@ export default function StaffPage() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email…"
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all" />
+      {/* Search + date filter */}
+      <div className="flex gap-3 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by name or email…"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all" />
+        </div>
+        <button onClick={() => { setShowAll((v) => !v); setPage(1); }}
+          className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${showAll ? 'border-gray-200 bg-white text-gray-600' : 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]'}`}>
+          <span>{showAll ? 'All time' : '⏱ Past 2 days'}</span>
+        </button>
       </div>
 
       {isLoading ? (
@@ -157,13 +165,12 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* Load more */}
-      {hasNextPage && (
-        <div className="flex justify-center">
-          <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}
-            className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
-            {isFetchingNextPage ? 'Loading…' : 'Load more staff'}
-          </button>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+          <span className="text-xs font-semibold text-gray-500">Page {page} of {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
         </div>
       )}
 

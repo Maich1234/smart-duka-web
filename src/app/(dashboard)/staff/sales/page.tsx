@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus, X,
   Package, CheckCircle, ArrowRight, Receipt, ExternalLink,
@@ -217,35 +217,23 @@ export default function StaffSalesPage() {
   };
   const isValidPhone = /^\+254[17]\d{8}$/.test(customerPhone);
 
-  const {
-    data: productsPages,
-    isLoading: productsLoading,
-    fetchNextPage: fetchNextProducts,
-    hasNextPage: hasNextProducts,
-    isFetchingNextPage: isFetchingNextProducts,
-  } = useInfiniteQuery({
-    queryKey: ['products-sale', search],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await api.get('/products', { params: { search: search || undefined, limit: 30, page: pageParam } });
+  const [productsPage, setProductsPage] = useState(1);
+  const [salesPage, setSalesPage] = useState(1);
+
+  const { data: productsRaw, isLoading: productsLoading } = useQuery({
+    queryKey: ['products-sale', search, productsPage],
+    queryFn: async () => {
+      const res = await api.get('/products', { params: { search: search || undefined, limit: 10, page: productsPage } });
       return res.data as { data: Product[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
-    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
-    initialPageParam: 1,
   });
 
-  const {
-    data: mySalesPages,
-    fetchNextPage: fetchNextMySales,
-    hasNextPage: hasNextMySales,
-    isFetchingNextPage: isFetchingNextMySales,
-  } = useInfiniteQuery({
-    queryKey: ['my-sales'],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await api.get('/sales/me', { params: { page: pageParam, limit: 20 } });
+  const { data: mySalesRaw } = useQuery({
+    queryKey: ['my-sales', salesPage],
+    queryFn: async () => {
+      const res = await api.get('/sales/me', { params: { page: salesPage, limit: 10 } });
       return res.data as { data: Sale[]; pagination: { page: number; limit: number; total: number; pages: number } };
     },
-    getNextPageParam: (last) => last.pagination.page < last.pagination.pages ? last.pagination.page + 1 : undefined,
-    initialPageParam: 1,
   });
 
   const { data: paymentStatus } = useQuery({
@@ -281,8 +269,10 @@ export default function StaffSalesPage() {
   const totalAmount = cart.reduce((s, e) => s + e.unitPrice * e.qty, 0);
   const buildItems = () => cart.map((e) => ({ productId: e.product._id, quantity: e.qty, ...(e.variantId ? { variantId: e.variantId } : {}), ...(e.unitPrice !== e.product.sellingPrice ? { unitPrice: e.unitPrice } : {}) }));
 
-  const productsData = productsPages?.pages.flatMap((p) => p.data) ?? [];
-  const mySalesData = mySalesPages?.pages.flatMap((p) => p.data) ?? [];
+  const productsData = productsRaw?.data ?? [];
+  const productsTotalPages = productsRaw?.pagination?.pages ?? 1;
+  const mySalesData = mySalesRaw?.data ?? [];
+  const salesTotalPages = mySalesRaw?.pagination?.pages ?? 1;
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
@@ -334,12 +324,11 @@ export default function StaffSalesPage() {
                   );
                 })}
               </div>
-              {hasNextProducts && (
-                <div className="flex justify-center pt-3">
-                  <button onClick={() => fetchNextProducts()} disabled={isFetchingNextProducts}
-                    className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
-                    {isFetchingNextProducts ? 'Loading…' : 'Load more products'}
-                  </button>
+              {productsTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 pt-3">
+                  <button onClick={() => setProductsPage((p) => Math.max(1, p - 1))} disabled={productsPage <= 1} className="w-8 h-8 rounded-full border border-[#0F766E] flex items-center justify-center text-[#0F766E] hover:bg-[#F0FDFA] disabled:opacity-30 disabled:border-gray-200 disabled:text-gray-300 transition-all">‹</button>
+                  <span className="text-xs font-semibold text-gray-500">Page {productsPage} of {productsTotalPages}</span>
+                  <button onClick={() => setProductsPage((p) => Math.min(productsTotalPages, p + 1))} disabled={productsPage >= productsTotalPages} className="w-8 h-8 rounded-full border border-[#0F766E] flex items-center justify-center text-[#0F766E] hover:bg-[#F0FDFA] disabled:opacity-30 disabled:border-gray-200 disabled:text-gray-300 transition-all">›</button>
                 </div>
               )}
             </>
@@ -455,12 +444,11 @@ export default function StaffSalesPage() {
               </button>
             ))}
           </div>
-          {hasNextMySales && (
-            <div className="flex justify-center mt-3">
-              <button onClick={() => fetchNextMySales()} disabled={isFetchingNextMySales}
-                className="text-sm font-semibold px-5 py-2 rounded-full border border-[#0F766E] text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
-                {isFetchingNextMySales ? 'Loading…' : 'Load more sales'}
-              </button>
+          {salesTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-3">
+              <button onClick={() => setSalesPage((p) => Math.max(1, p - 1))} disabled={salesPage <= 1} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+              <span className="text-xs font-semibold text-gray-500">Page {salesPage} of {salesTotalPages}</span>
+              <button onClick={() => setSalesPage((p) => Math.min(salesTotalPages, p + 1))} disabled={salesPage >= salesTotalPages} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
             </div>
           )}
         </div>
