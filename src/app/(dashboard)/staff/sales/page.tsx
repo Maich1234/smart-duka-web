@@ -4,13 +4,14 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus, X,
-  Package, CheckCircle, ArrowRight, Receipt, ExternalLink,
+  Package, CheckCircle, ArrowRight, Receipt, ExternalLink, Printer,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import Spinner from '@/components/ui/Spinner';
+import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
 interface Product {
@@ -96,8 +97,24 @@ function QuantityModal({ product, onConfirm, onClose }: {
 }
 
 // ─── Receipt Success Modal ──────────────────────────────────────────────────
-function ReceiptSuccessModal({ sale, onClose, onNewSale }: { sale: Sale; onClose: () => void; onNewSale: () => void; }) {
+function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }: {
+  sale: Sale; shopName: string;
+  shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
+  onClose: () => void; onNewSale: () => void;
+}) {
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
+  const [printing, setPrinting] = useState(false);
+
+  const handlePrint = () => {
+    setPrinting(true);
+    try {
+      const html = buildReceiptHtml(sale, shopName, shopConfig.phone, shopConfig.currency, undefined, shopConfig.thankYouNote, shopConfig.logoUrl, shopConfig.motto);
+      printReceiptHtml(html);
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/50" />
@@ -116,10 +133,15 @@ function ReceiptSuccessModal({ sale, onClose, onNewSale }: { sale: Sale; onClose
           </div>
         )}
         <div className="space-y-3">
+          <button onClick={handlePrint} disabled={printing}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 disabled:opacity-60 transition-all"
+            style={{ color: '#0F766E', borderColor: '#0F766E' }}>
+            <Printer className="w-4 h-4" /> {printing ? 'Opening…' : 'Print Receipt'}
+          </button>
           {receiptUrl && (
             <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm border-2" style={{ color: '#0F766E', borderColor: '#0F766E' }}>
-              <Receipt className="w-4 h-4" /> View Receipt <ExternalLink className="w-3 h-3" />
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+              <Receipt className="w-4 h-4" /> View Digital Receipt <ExternalLink className="w-3 h-3" />
             </a>
           )}
           <button onClick={onNewSale} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
@@ -133,8 +155,24 @@ function ReceiptSuccessModal({ sale, onClose, onNewSale }: { sale: Sale; onClose
 }
 
 // ─── Sale Detail Modal ──────────────────────────────────────────────────────
-function SaleDetailModal({ sale, onClose }: { sale: Sale; onClose: () => void; }) {
+function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
+  sale: Sale; shopName: string;
+  shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
+  onClose: () => void;
+}) {
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
+  const [printing, setPrinting] = useState(false);
+
+  const handlePrint = () => {
+    setPrinting(true);
+    try {
+      const html = buildReceiptHtml(sale, shopName, shopConfig.phone, shopConfig.currency, undefined, shopConfig.thankYouNote, shopConfig.logoUrl, shopConfig.motto);
+      printReceiptHtml(html);
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -183,12 +221,20 @@ function SaleDetailModal({ sale, onClose }: { sale: Sale; onClose: () => void; }
                 : <><Banknote className="w-4 h-4 text-gray-500" /><span className="text-sm font-medium text-gray-600">Cash</span></>}
             </div>
           </div>
-          {receiptUrl && (
-            <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm border-2" style={{ color: '#0F766E', borderColor: '#0F766E' }}>
-              <Receipt className="w-4 h-4" /> View Customer Receipt <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
+          <div className="flex gap-2">
+            <button onClick={handlePrint} disabled={printing}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 disabled:opacity-60 transition-all"
+              style={{ color: '#0F766E', borderColor: '#0F766E' }}>
+              <Printer className="w-4 h-4" /> {printing ? 'Opening…' : 'Print Receipt'}
+            </button>
+            {receiptUrl && (
+              <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm border-2 transition-all"
+                style={{ color: '#64748B', borderColor: '#E2E8F0' }}>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -199,6 +245,19 @@ function SaleDetailModal({ sale, onClose }: { sale: Sale; onClose: () => void; }
 export default function StaffSalesPage() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const shopName = user?.shop?.name ?? 'Smart Duka';
+
+  const { data: shopData } = useQuery({
+    queryKey: ['shop-config'],
+    queryFn: async () => { const res = await api.get('/shop'); return res.data.data; },
+  });
+  const shopConfig = {
+    phone: shopData?.phone,
+    currency: shopData?.currency,
+    thankYouNote: shopData?.receiptThankYouNote,
+    logoUrl: shopData?.logoUrl,
+    motto: shopData?.motto,
+  };
 
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartEntry[]>([]);
@@ -457,8 +516,8 @@ export default function StaffSalesPage() {
       {/* Modals */}
       {quantityModalProduct && <QuantityModal product={quantityModalProduct} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
       <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
-      {completedSale && <ReceiptSuccessModal sale={completedSale} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
-      {selectedSale && <SaleDetailModal sale={selectedSale} onClose={() => setSelectedSale(null)} />}
+      {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
+      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setSelectedSale(null)} />}
     </div>
   );
 }
