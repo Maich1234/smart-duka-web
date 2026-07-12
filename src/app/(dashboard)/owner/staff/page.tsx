@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Users, Mail, Phone, Search } from 'lucide-react';
+import { Plus, Trash2, Users, Mail, Phone, Search, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -126,40 +127,45 @@ export default function StaffPage() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {(staff || []).map((s) => (
-            <div key={s._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div key={s._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 group">
               <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold" style={{ backgroundColor: '#0F766E' }}>
+                <Link href={`/owner/staff/${s._id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: '#0F766E' }}>
                     {s.name.charAt(0)}
                   </div>
-                  <div>
-                    <p className="font-semibold" style={{ color: '#0F172A' }}>{s.name}</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate group-hover:text-[#0F766E] transition-colors" style={{ color: '#0F172A' }}>{s.name}</p>
                     <Badge color={s.isActive ? 'green' : 'gray'}>{s.isActive ? 'Active' : 'Inactive'}</Badge>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={() => setDeleteId(s._id)}
-                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 ml-2"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail className="w-3.5 h-3.5 text-gray-400" />
-                  {s.email}
-                </div>
-                {s.phone && (
+              <Link href={`/owner/staff/${s._id}`} className="block">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
-                    {s.phone}
+                    <Mail className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="truncate">{s.email}</span>
                   </div>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                <span>Joined {format(new Date(s.createdAt), 'MMM yyyy')}</span>
-                {s.salesCount !== undefined && <span>{s.salesCount} sales</span>}
-              </div>
+                  {s.phone && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      {s.phone}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+                  <span>Joined {format(new Date(s.createdAt), 'MMM yyyy')}</span>
+                  <div className="flex items-center gap-1">
+                    {s.salesCount !== undefined && <span>{s.salesCount} sales</span>}
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#0F766E] transition-colors" />
+                  </div>
+                </div>
+              </Link>
             </div>
           ))}
         </div>

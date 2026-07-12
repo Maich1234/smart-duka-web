@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
+import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 
@@ -37,6 +38,8 @@ interface Sale {
   paymentMethod: 'cash' | 'mpesa' | 'card'; createdAt: string;
   items: SaleItem[]; staff?: { _id: string; name: string };
   receiptToken?: string; mpesaReceiptNumber?: string;
+  status?: 'completed' | 'voided' | 'refund_pending' | 'refunded';
+  refund?: RefundInfo;
 }
 interface SalesStats {
   totalSales: number; cashTotal: number; mpesaTotal: number;
@@ -234,6 +237,9 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
               </a>
             )}
           </div>
+
+          {/* Owners can always refund */}
+          <RefundSaleSection sale={sale} canRefund />
         </div>
       </div>
     </div>
@@ -783,7 +789,12 @@ export default function SalesPage() {
                   <tbody className="divide-y divide-gray-50">
                     {filteredSales.map((sale) => (
                       <tr key={sale._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedSale(sale)}>
-                        <td className="px-4 py-3.5 font-mono text-xs text-gray-500">#{sale.invoiceNumber}</td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-gray-500">#{sale.invoiceNumber}</span>
+                            <SaleStatusBadge status={sale.status} />
+                          </div>
+                        </td>
                         <td className="px-4 py-3.5">
                           <p className="text-gray-700">{format(new Date(sale.createdAt), 'dd MMM yyyy')}</p>
                           <p className="text-xs text-gray-400">{format(new Date(sale.createdAt), 'HH:mm')}</p>

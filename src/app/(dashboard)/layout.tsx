@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useSubscription } from '@/hooks/useSubscription';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import Spinner from '@/components/ui/Spinner';
@@ -12,6 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuthStore();
+  const { access } = useSubscription();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -33,10 +35,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     if (user?.role === 'staff' && pathname.startsWith('/owner')) {
       router.push('/staff/dashboard');
+      return;
     } else if (user?.role === 'owner' && pathname.startsWith('/staff')) {
       router.push('/owner/dashboard');
+      return;
     }
-  }, [mounted, isAuthenticated, user, pathname, router]);
+
+    // Subscription + grace period exhausted → every owner route funnels to
+    // the paywall until an M-PESA payment lands, same as the mobile app's
+    // owner layout. Staff aren't paywalled either, matching mobile.
+    if (user?.role === 'owner' && access?.state === 'locked' && !pathname.startsWith('/owner/subscription')) {
+      router.push('/owner/subscription');
+    }
+  }, [mounted, isAuthenticated, user, access, pathname, router]);
 
   if (!mounted || !isAuthenticated) {
     return (

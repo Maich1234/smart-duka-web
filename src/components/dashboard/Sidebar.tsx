@@ -10,6 +10,7 @@ import {
   BarChart3,
   CreditCard,
   Receipt,
+  Wallet,
   User,
   ShoppingBag,
   LogOut,
@@ -35,6 +36,7 @@ const ownerLinks = [
   { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
+  { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
   { href: '/owner/profile', icon: User, label: 'Profile' },
 ];
 

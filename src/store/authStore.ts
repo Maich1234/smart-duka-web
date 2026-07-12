@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export interface Shop {
   _id: string;
   name: string;
+  phone?: string;
 }
 
 export interface User {
@@ -11,6 +12,8 @@ export interface User {
   email: string;
   role: 'owner' | 'staff';
   shop: Shop;
+  /** Staff-only granular permissions; owners implicitly hold all of them */
+  permissions?: string[];
 }
 
 interface AuthState {

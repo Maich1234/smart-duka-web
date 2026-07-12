@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
+import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 
@@ -22,7 +23,11 @@ interface Product {
 }
 interface CartEntry { product: Product; qty: number; unitPrice: number; variantId?: string; variantName?: string; }
 interface SaleItem { name?: string; productName?: string; quantity: number; unitPrice: number; subtotal: number; variantName?: string; }
-interface Sale { _id: string; invoiceNumber: string; totalAmount: number; paymentMethod: 'cash' | 'mpesa'; createdAt: string; items: SaleItem[]; receiptToken?: string; mpesaReceiptNumber?: string; }
+interface Sale {
+  _id: string; invoiceNumber: string; totalAmount: number; paymentMethod: 'cash' | 'mpesa'; createdAt: string;
+  items: SaleItem[]; receiptToken?: string; mpesaReceiptNumber?: string;
+  status?: 'completed' | 'voided' | 'refund_pending' | 'refunded'; refund?: RefundInfo;
+}
 
 const fmt = (n: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
 const cartKey = (e: CartEntry) => `${e.product._id}:${e.variantId ?? ''}`;
@@ -155,9 +160,10 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
 }
 
 // ─── Sale Detail Modal ──────────────────────────────────────────────────────
-function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
+function SaleDetailModal({ sale, shopName, shopConfig, canRefund, onClose }: {
   sale: Sale; shopName: string;
   shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
+  canRefund: boolean;
   onClose: () => void;
 }) {
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
@@ -235,6 +241,8 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
               </a>
             )}
           </div>
+
+          <RefundSaleSection sale={sale} canRefund={canRefund} />
         </div>
       </div>
     </div>
@@ -246,6 +254,11 @@ export default function StaffSalesPage() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const shopName = user?.shop?.name ?? 'Smart Duka';
+  // Owner-granted refund permissions ('refund_all_sales' covers own sales too;
+  // this page only ever lists the viewer's own sales)
+  const canRefund = !!user && (user.role === 'owner'
+    || !!user.permissions?.includes('refund_own_sales')
+    || !!user.permissions?.includes('refund_all_sales'));
 
   const { data: shopData } = useQuery({
     queryKey: ['shop-config'],
@@ -496,9 +509,12 @@ export default function StaffSalesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</p>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-500'}`}>
-                    {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
-                  </span>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <SaleStatusBadge status={sale.status} />
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-500'}`}>
+                      {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+                    </span>
+                  </div>
                 </div>
               </button>
             ))}
@@ -517,7 +533,7 @@ export default function StaffSalesPage() {
       {quantityModalProduct && <QuantityModal product={quantityModalProduct} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
       <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
       {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
-      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setSelectedSale(null)} />}
+      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} onClose={() => setSelectedSale(null)} />}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import StatsCard from '@/components/dashboard/StatsCard';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
+import TrialBanner from '@/components/subscription/TrialBanner';
 import api from '@/lib/api';
 
 interface Transaction {
@@ -55,6 +56,8 @@ export default function OwnerDashboardPage() {
         <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">{format(new Date(), 'EEEE, d MMMM yyyy')}</p>
       </div>
+
+      <TrialBanner />
 
       {/* Stats */}
       {isLoading ? (
