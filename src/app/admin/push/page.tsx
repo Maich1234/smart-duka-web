@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 
-type SegmentType = 'all' | 'state' | 'plan';
+type SegmentType = 'all' | 'state' | 'plan' | 'location';
 type AccessState = 'none' | 'trialing' | 'active' | 'grace' | 'locked';
 type CampaignStatus = 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled';
 type Role = 'owner' | 'staff';
@@ -23,8 +23,34 @@ interface Segment {
   type: SegmentType;
   states: AccessState[];
   planSlugs: string[];
+  country: string | null;
+  counties: string[];
   roles: Role[];
 }
+
+// Small, stable list — mirrors constants/presets.js's COUNTRIES on the backend.
+// Not fetched: cross-origin from adminApi's /admin base would need a second
+// axios instance for a list this short and this rarely-changing.
+const COUNTRIES = [
+  { code: 'KE', name: 'Kenya' },
+  { code: 'UG', name: 'Uganda' },
+  { code: 'TZ', name: 'Tanzania' },
+  { code: 'RW', name: 'Rwanda' },
+  { code: 'BI', name: 'Burundi' },
+  { code: 'SS', name: 'South Sudan' },
+];
+
+interface County {
+  _id: string;
+  name: string;
+}
+
+type FocusedField = 'title' | 'body';
+const PLACEHOLDER_TAGS: { tag: string; label: string }[] = [
+  { tag: '{{name}}', label: 'Name' },
+  { tag: '{{shopName}}', label: 'Shop name' },
+  { tag: '{{location}}', label: 'Location' },
+];
 
 interface PushCampaign {
   _id: string;
@@ -61,6 +87,7 @@ const segmentLabel = (segment: Segment) => {
   const roles = roleLabel(segment.roles?.length ? segment.roles : ['owner']);
   if (segment.type === 'all') return `All (${roles})`;
   if (segment.type === 'state') return `State: ${segment.states.join(', ') || '—'} (${roles})`;
+  if (segment.type === 'location') return `Location: ${segment.counties.join(', ') || '—'} (${roles})`;
   return `Plan: ${segment.planSlugs.join(', ') || '—'} (${roles})`;
 };
 
@@ -77,9 +104,15 @@ export default function PushCampaignsPage() {
   const [selectedStates, setSelectedStates] = useState<AccessState[]>([]);
   const [selectedPlanSlugs, setSelectedPlanSlugs] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Role[]>(['owner']);
+  const [selectedCountry, setSelectedCountry] = useState('KE');
+  const [selectedCounties, setSelectedCounties] = useState<string[]>([]);
   const [sendMode, setSendMode] = useState<'now' | 'schedule'>('now');
   const [scheduledAt, setScheduledAt] = useState('');
   const [serverError, setServerError] = useState('');
+  const [focusedField, setFocusedField] = useState<FocusedField>('title');
+
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'pushCampaigns'],
@@ -94,7 +127,14 @@ export default function PushCampaignsPage() {
   });
   const plans = plansData?.data ?? [];
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { data: countiesData } = useQuery({
+    queryKey: ['admin', 'counties', selectedCountry],
+    queryFn: async () => (await adminApi.get('/locations/counties', { params: { country: selectedCountry } })).data as { data: County[] },
+    enabled: modalOpen && segmentType === 'location',
+  });
+  const counties = countiesData?.data ?? [];
+
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -104,9 +144,12 @@ export default function PushCampaignsPage() {
     setSelectedStates([]);
     setSelectedPlanSlugs([]);
     setSelectedRoles(['owner']);
+    setSelectedCountry('KE');
+    setSelectedCounties([]);
     setSendMode('now');
     setScheduledAt('');
     setServerError('');
+    setFocusedField('title');
   };
 
   useEffect(() => {
@@ -120,6 +163,8 @@ export default function PushCampaignsPage() {
         type: segmentType,
         states: segmentType === 'state' ? selectedStates : [],
         planSlugs: segmentType === 'plan' ? selectedPlanSlugs : [],
+        country: segmentType === 'location' ? selectedCountry : null,
+        counties: segmentType === 'location' ? selectedCounties : [],
         roles: selectedRoles,
       };
       const created = (await adminApi.post('/push-campaigns', {
@@ -157,6 +202,7 @@ export default function PushCampaignsPage() {
   const submitDisabled =
     (segmentType === 'state' && selectedStates.length === 0) ||
     (segmentType === 'plan' && selectedPlanSlugs.length === 0) ||
+    (segmentType === 'location' && selectedCounties.length === 0) ||
     selectedRoles.length === 0 ||
     (sendMode === 'schedule' && !scheduledAt);
 
@@ -168,6 +214,25 @@ export default function PushCampaignsPage() {
   };
   const toggleRole = (role: Role) => {
     setSelectedRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
+  };
+  const toggleCounty = (name: string) => {
+    setSelectedCounties((prev) => (prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]));
+  };
+
+  /** Splices a {{tag}} into whichever of title/body was last focused, at the cursor. */
+  const insertPlaceholder = (tag: string) => {
+    const el = focusedField === 'body' ? bodyRef.current : titleRef.current;
+    const fieldName = focusedField;
+    if (!el) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const nextValue = el.value.slice(0, start) + tag + el.value.slice(end);
+    setValue(fieldName, nextValue, { shouldValidate: true, shouldDirty: true });
+    requestAnimationFrame(() => {
+      el.focus();
+      const cursor = start + tag.length;
+      el.setSelectionRange(cursor, cursor);
+    });
   };
 
   return (
@@ -228,18 +293,49 @@ export default function PushCampaignsPage() {
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{serverError}</div>
         )}
         <form onSubmit={handleSubmit((v) => createMutation.mutate(v))} className="space-y-4">
-          <Input label="Title *" placeholder="20% off this week only" error={errors.title?.message} {...register('title')} />
+          {(() => {
+            const titleReg = register('title');
+            return (
+              <Input
+                label="Title *"
+                placeholder="20% off this week only"
+                error={errors.title?.message}
+                {...titleReg}
+                ref={(el) => { titleReg.ref(el); titleRef.current = el; }}
+                onFocus={() => setFocusedField('title')}
+              />
+            );
+          })()}
           <div className="space-y-1.5">
             <label className="block text-sm font-medium" style={{ color: '#0F172A' }}>Body *</label>
-            <textarea
-              rows={3}
-              placeholder="Use code SAVE20 before Friday to save on your renewal."
-              className="w-full py-2.5 px-4 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-              style={{ color: '#0F172A' }}
-              {...register('body')}
-            />
+            {(() => {
+              const bodyReg = register('body');
+              return (
+                <textarea
+                  rows={3}
+                  placeholder="Use code SAVE20 before Friday to save on your renewal."
+                  className="w-full py-2.5 px-4 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                  style={{ color: '#0F172A' }}
+                  {...bodyReg}
+                  ref={(el) => { bodyReg.ref(el); bodyRef.current = el; }}
+                  onFocus={() => setFocusedField('body')}
+                />
+              );
+            })()}
             {errors.body?.message && <p className="text-xs text-red-500">{errors.body.message}</p>}
-            <p className="text-xs text-gray-400">Personalize with {'{{name}}'} and {'{{shopName}}'} — filled in per recipient.</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-400">Insert:</span>
+              {PLACEHOLDER_TAGS.map(({ tag, label }) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => insertPlaceholder(tag)}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#CCFBF1] text-[#0F766E] hover:bg-[#99F6E4] transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -256,11 +352,11 @@ export default function PushCampaignsPage() {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium" style={{ color: '#0F172A' }}>Audience</label>
-            <div className="flex gap-4 text-sm" style={{ color: '#0F172A' }}>
-              {(['all', 'state', 'plan'] as SegmentType[]).map((type) => (
+            <div className="flex gap-4 text-sm flex-wrap" style={{ color: '#0F172A' }}>
+              {(['all', 'state', 'plan', 'location'] as SegmentType[]).map((type) => (
                 <label key={type} className="flex items-center gap-1.5">
                   <input type="radio" checked={segmentType === type} onChange={() => setSegmentType(type)} />
-                  {type === 'all' ? 'Everyone matching recipients' : type === 'state' ? 'By subscription state' : 'By plan'}
+                  {type === 'all' ? 'Everyone matching recipients' : type === 'state' ? 'By subscription state' : type === 'plan' ? 'By plan' : 'By location'}
                 </label>
               ))}
             </div>
@@ -282,6 +378,31 @@ export default function PushCampaignsPage() {
                     {plan.name}
                   </label>
                 ))}
+              </div>
+            )}
+            {segmentType === 'location' && (
+              <div className="pt-1 space-y-2">
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => { setSelectedCountry(e.target.value); setSelectedCounties([]); }}
+                  className="w-full py-2.5 px-4 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                  style={{ color: '#0F172A' }}
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+                <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto">
+                  {counties.length === 0 && (
+                    <p className="text-xs text-gray-400">No counties seeded for this country yet.</p>
+                  )}
+                  {counties.map((county) => (
+                    <label key={county._id} className="flex items-center gap-1.5 text-sm text-gray-600">
+                      <input type="checkbox" checked={selectedCounties.includes(county.name)} onChange={() => toggleCounty(county.name)} />
+                      {county.name}
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
           </div>
