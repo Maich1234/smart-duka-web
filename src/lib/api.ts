@@ -6,7 +6,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
