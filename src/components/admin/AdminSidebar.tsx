@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Tag, Settings, Store, ScrollText, LogOut, ShieldCheck, X } from 'lucide-react';
+import { LayoutGrid, Tag, Settings, Store, ScrollText, LogOut, ShieldCheck, X, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 
 const links = [
   { href: '/admin/plans', icon: LayoutGrid, label: 'Plans' },
   { href: '/admin/promotions', icon: Tag, label: 'Promotions' },
+  { href: '/admin/push', icon: Bell, label: 'Push Notifications' },
   { href: '/admin/platform-config', icon: Settings, label: 'Platform Config' },
   { href: '/admin/shops', icon: Store, label: 'Shops' },
   { href: '/admin/audit', icon: ScrollText, label: 'Audit Log' },
