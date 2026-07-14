@@ -34,11 +34,22 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+interface SeatPriceImpact {
+  currentAmount: number;
+  projectedAmount: number;
+  currency: string;
+  billingCycle: 'monthly' | 'yearly';
+}
+
+const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocaleString()}`;
+
 export default function StaffPage() {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [serverError, setServerError] = useState('');
+  const [seatImpact, setSeatImpact] = useState<SeatPriceImpact | null>(null);
+  const [pendingData, setPendingData] = useState<FormData | null>(null);
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -63,14 +74,26 @@ export default function StaffPage() {
   const totalPages = staffRaw?.pagination?.pages ?? 1;
 
   const addMutation = useMutation({
-    mutationFn: (data: FormData) => api.post('/staff', data),
+    mutationFn: ({ data, priceConfirmed }: { data: FormData; priceConfirmed?: boolean }) =>
+      api.post('/staff', { ...data, priceConfirmed }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
       setAddOpen(false);
+      setSeatImpact(null);
+      setPendingData(null);
       reset();
     },
-    onError: (err: unknown) => {
-      const e = err as { response?: { data?: { message?: string } } };
+    onError: (err: unknown, variables) => {
+      const e = err as { response?: { status?: number; data?: { message?: string; code?: string; data?: SeatPriceImpact } } };
+      // Adding this seat raises the bill — block until the owner confirms
+      // the new price, instead of silently changing what they're charged.
+      if (e.response?.status === 409 && e.response.data?.code === 'SEAT_PRICE_CONFIRMATION_REQUIRED' && e.response.data.data) {
+        setAddOpen(false);
+        setPendingData(variables.data);
+        setSeatImpact(e.response.data.data);
+        return;
+      }
       setServerError(e.response?.data?.message || 'Failed to add staff');
     },
   });
@@ -87,7 +110,7 @@ export default function StaffPage() {
 
   const onSubmit = (data: FormData) => {
     setServerError('');
-    addMutation.mutate(data);
+    addMutation.mutate({ data });
   };
 
   return (
@@ -198,6 +221,28 @@ export default function StaffPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Seat price increase confirmation */}
+      <Modal isOpen={!!seatImpact} onClose={() => { setSeatImpact(null); setPendingData(null); }} title="This raises your bill">
+        {seatImpact && (
+          <>
+            <p className="text-gray-600 mb-6">
+              Adding {pendingData?.name || 'this team member'} increases your {seatImpact.billingCycle} subscription from{' '}
+              <span className="font-semibold" style={{ color: '#0F172A' }}>{fmt(seatImpact.currentAmount, seatImpact.currency)}</span> to{' '}
+              <span className="font-semibold" style={{ color: '#0F172A' }}>{fmt(seatImpact.projectedAmount, seatImpact.currency)}</span>. Continue?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => { setSeatImpact(null); setPendingData(null); }}>Cancel</Button>
+              <Button
+                loading={addMutation.isPending}
+                onClick={() => pendingData && addMutation.mutate({ data: pendingData, priceConfirmed: true })}
+              >
+                Confirm & add
+              </Button>
+            </div>
+          </>
+        )}
       </Modal>
 
       {/* Delete Confirm */}

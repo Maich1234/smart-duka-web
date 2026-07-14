@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import adminApi from '@/lib/adminApi';
 import Table from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
+import ShopSubscriptionModal from '@/components/admin/ShopSubscriptionModal';
 
 interface ShopRow {
   _id: string;
@@ -29,6 +30,7 @@ const ACCESS_COLOR: Record<ShopRow['access']['state'], 'gray' | 'blue' | 'green'
 
 export default function ShopsPage() {
   const [page, setPage] = useState(1);
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'shops', page],
@@ -45,7 +47,7 @@ export default function ShopsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Shops</h1>
-        <p className="text-gray-500 text-sm mt-1">Every tenant on the platform and their subscription status — read only</p>
+        <p className="text-gray-500 text-sm mt-1">Every tenant on the platform and their subscription status</p>
       </div>
 
       <Table<ShopRow>
@@ -66,12 +68,22 @@ export default function ShopsPage() {
           { key: 'staffCount', header: 'Staff' },
           { key: 'isActive', header: 'Shop Status', render: (s) => <Badge color={s.isActive ? 'green' : 'gray'}>{s.isActive ? 'Active' : 'Deactivated'}</Badge> },
           { key: 'createdAt', header: 'Joined', render: (s) => format(new Date(s.createdAt), 'MMM d, yyyy') },
+          { key: 'actions', header: '', render: (s) => (
+            <button
+              onClick={() => setSelectedShopId(s._id)}
+              className="text-xs font-semibold text-[#0F766E] hover:underline"
+            >
+              View subscription
+            </button>
+          ) },
         ]}
         data={shops}
         keyExtractor={(s) => s._id}
         loading={isLoading}
         emptyMessage="No shops yet"
       />
+
+      <ShopSubscriptionModal shopId={selectedShopId} onClose={() => setSelectedShopId(null)} />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
