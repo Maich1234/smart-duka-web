@@ -55,10 +55,11 @@ export default function ShopSubscriptionModal({ shopId, onClose }: { shopId: str
   const queryClient = useQueryClient();
   const [reconcileError, setReconcileError] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'shopSubscription', shopId],
     queryFn: async () => (await adminApi.get(`/shops/${shopId}/subscription`)).data.data as SubscriptionDetail,
     enabled: Boolean(shopId),
+    retry: false,
   });
 
   const reconcileMutation = useMutation({
@@ -74,9 +75,19 @@ export default function ShopSubscriptionModal({ shopId, onClose }: { shopId: str
     },
   });
 
+  const loadError = error as { response?: { data?: { message?: string }; status?: number } } | null;
+
   return (
     <Modal isOpen={Boolean(shopId)} onClose={onClose} title={data?.shop.name ?? 'Shop subscription'} size="lg">
-      {isLoading || !data ? (
+      {isError ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <p className="text-sm text-red-600">
+            {loadError?.response?.data?.message
+              || (loadError?.response?.status === 404 ? 'Shop not found.' : 'Failed to load subscription details.')}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>
+        </div>
+      ) : isLoading || !data ? (
         <div className="flex justify-center py-12">
           <div className="w-6 h-6 border-2 border-gray-200 border-t-[#0F766E] rounded-full animate-spin" />
         </div>
