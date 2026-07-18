@@ -323,6 +323,10 @@ export default function SalesPage() {
     logoUrl: shopData?.logoUrl,
     motto: shopData?.motto,
   };
+  // Bounds for the sales date-range filter — sales can't predate the shop
+  // or land in the future.
+  const shopCreatedDate = shopData?.createdAt ? String(shopData.createdAt).slice(0, 10) : undefined;
+  const todayDate = new Date().toISOString().slice(0, 10);
 
   const [tab, setTab] = useState<Tab>('new');
   const [search, setSearch] = useState('');
@@ -739,11 +743,13 @@ export default function SalesPage() {
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block uppercase tracking-wide">From Date</label>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                  min={shopCreatedDate} max={todayDate}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block uppercase tracking-wide">To Date</label>
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                  min={shopCreatedDate} max={todayDate}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
               {(startDate || endDate) && (

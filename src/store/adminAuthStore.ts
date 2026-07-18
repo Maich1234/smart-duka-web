@@ -11,7 +11,19 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
+  role: 'super_admin' | 'admin';
+  permissions: string[];
 }
+
+// super_admin implicitly has access to everything; `permissions` only
+// matters for role === 'admin'. Centralized here (rather than inline at
+// each call site) so that bypass isn't duplicated across the sidebar,
+// layout guard, and every admin page.
+export const hasAdminPermission = (user: AdminUser | null, key: string): boolean => {
+  if (!user) return false;
+  if (user.role === 'super_admin') return true;
+  return user.permissions?.includes(key) ?? false;
+};
 
 interface AdminAuthState {
   adminUser: AdminUser | null;

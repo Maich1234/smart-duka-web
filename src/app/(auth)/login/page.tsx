@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { getDeviceInfo } from '@/utils/deviceId';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -17,11 +18,14 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const UNVERIFIED_MESSAGE = 'Please verify your email before logging in.';
+
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
   const {
     register,
@@ -31,8 +35,9 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setServerError('');
+    setUnverifiedEmail('');
     try {
-      const res = await api.post('/auth/login', data);
+      const res = await api.post('/auth/login', { ...data, device: getDeviceInfo() });
       const userData = res.data.data;
       login(userData, userData.token);
       if (userData.role === 'owner') {
@@ -42,7 +47,9 @@ export default function LoginPage() {
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setServerError(error.response?.data?.message || 'Login failed. Please try again.');
+      const message = error.response?.data?.message || 'Login failed. Please try again.';
+      setServerError(message);
+      if (message === UNVERIFIED_MESSAGE) setUnverifiedEmail(data.email);
     }
   };
 
@@ -54,6 +61,14 @@ export default function LoginPage() {
       {serverError && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
           {serverError}
+          {unverifiedEmail && (
+            <>
+              {' '}
+              <Link href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`} className="font-semibold underline">
+                Verify email
+              </Link>
+            </>
+          )}
         </div>
       )}
 

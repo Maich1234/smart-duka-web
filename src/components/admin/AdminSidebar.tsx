@@ -2,22 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Tag, Settings, Store, ScrollText, LogOut, ShieldCheck, X, Bell } from 'lucide-react';
+import { LayoutGrid, Tag, Settings, Store, ScrollText, LogOut, ShieldCheck, X, Bell, Users } from 'lucide-react';
 import clsx from 'clsx';
-import { useAdminAuthStore } from '@/store/adminAuthStore';
+import { useAdminAuthStore, hasAdminPermission } from '@/store/adminAuthStore';
 
 const links = [
-  { href: '/admin/plans', icon: LayoutGrid, label: 'Plans' },
-  { href: '/admin/promotions', icon: Tag, label: 'Promotions' },
-  { href: '/admin/push', icon: Bell, label: 'Push Notifications' },
-  { href: '/admin/platform-config', icon: Settings, label: 'Platform Config' },
-  { href: '/admin/shops', icon: Store, label: 'Shops' },
-  { href: '/admin/audit', icon: ScrollText, label: 'Audit Log' },
+  { href: '/admin/plans', icon: LayoutGrid, label: 'Plans', permission: 'plans' },
+  { href: '/admin/promotions', icon: Tag, label: 'Promotions', permission: 'promotions' },
+  { href: '/admin/push', icon: Bell, label: 'Push Notifications', permission: 'push_campaigns' },
+  { href: '/admin/platform-config', icon: Settings, label: 'Platform Config', permission: 'platform_config' },
+  { href: '/admin/shops', icon: Store, label: 'Shops', permission: 'shops' },
+  { href: '/admin/audit', icon: ScrollText, label: 'Audit Log', permission: 'audit' },
 ];
 
 function SidebarContent({ onLinkClick, onClose }: { onLinkClick?: () => void; onClose?: () => void }) {
   const pathname = usePathname();
   const { adminUser, logout } = useAdminAuthStore();
+  const visibleLinks = links.filter((l) => hasAdminPermission(adminUser, l.permission));
 
   return (
     <>
@@ -34,7 +35,7 @@ function SidebarContent({ onLinkClick, onClose }: { onLinkClick?: () => void; on
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {links.map(({ href, icon: Icon, label }) => {
+        {visibleLinks.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
@@ -52,6 +53,22 @@ function SidebarContent({ onLinkClick, onClose }: { onLinkClick?: () => void; on
             </Link>
           );
         })}
+        {adminUser?.role === 'super_admin' && (
+          <Link
+            href="/admin/admins"
+            onClick={onLinkClick}
+            className={clsx(
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150',
+              pathname === '/admin/admins' || pathname.startsWith('/admin/admins/')
+                ? 'text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            )}
+            style={pathname === '/admin/admins' || pathname.startsWith('/admin/admins/') ? { backgroundColor: '#0F172A' } : {}}
+          >
+            <Users className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm font-medium">Admins</span>
+          </Link>
+        )}
       </nav>
 
       <div className="p-3 border-t border-gray-100 space-y-1">

@@ -30,8 +30,8 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const res = await adminApi.post('/auth/login', data);
-      const { id, name, email, token } = res.data.data;
-      login({ id, name, email }, token);
+      const { id, name, email, role, permissions, token } = res.data.data;
+      login({ id, name, email, role, permissions }, token);
       router.push('/admin/plans');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };

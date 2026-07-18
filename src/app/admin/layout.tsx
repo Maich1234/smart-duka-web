@@ -10,7 +10,7 @@ import { Menu } from 'lucide-react';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, hydrate } = useAdminAuthStore();
+  const { isAuthenticated, hydrate, adminUser } = useAdminAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -28,8 +28,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!mounted) return;
     if (!isAuthenticated && pathname !== '/admin/login') {
       router.push('/admin/login');
+      return;
     }
-  }, [mounted, isAuthenticated, pathname, router]);
+    if (isAuthenticated && pathname.startsWith('/admin/admins') && adminUser?.role !== 'super_admin') {
+      router.push('/admin/plans');
+    }
+  }, [mounted, isAuthenticated, pathname, adminUser, router]);
 
   if (pathname === '/admin/login') {
     return <>{children}</>;

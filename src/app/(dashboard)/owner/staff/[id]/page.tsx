@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Lock, Trash2, CheckCircle, XCircle, Mail, Phone, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Pencil, Lock, Trash2, CheckCircle, XCircle, Mail, Phone, Calendar, Clock, Smartphone, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import api from '@/lib/api';
@@ -12,6 +12,7 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import { forceLogoutStaff, type StaffActiveSession } from '@/services/staff';
 
 interface Permission {
   value: string;
@@ -29,6 +30,7 @@ interface StaffDetail {
   createdAt: string;
   updatedAt: string;
   salesCount?: number;
+  activeSession: StaffActiveSession | null;
 }
 
 const AVATAR_COLORS = [
@@ -65,6 +67,7 @@ export default function StaffDetailPage() {
   const queryClient = useQueryClient();
   const [resetOpen, setResetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [forceLogoutOpen, setForceLogoutOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetError, setResetError] = useState('');
@@ -91,6 +94,14 @@ export default function StaffDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       router.push('/owner/staff');
+    },
+  });
+
+  const forceLogoutMutation = useMutation({
+    mutationFn: () => forceLogoutStaff(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff', id] });
+      setForceLogoutOpen(false);
     },
   });
 
@@ -200,6 +211,35 @@ export default function StaffDetailPage() {
         </Button>
       </div>
 
+      {/* Current Device */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Current Device</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Staff accounts can only be signed in on one device at a time.
+        </p>
+        {staff.activeSession ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-[#F0FDFA] flex items-center justify-center shrink-0">
+                <Smartphone className="w-4 h-4" style={{ color: '#0F766E' }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: '#0F172A' }}>
+                  {staff.activeSession.deviceName ?? 'Unknown device'}
+                </p>
+                <p className="text-xs text-gray-400">Last active {timeAgo(staff.activeSession.lastActiveAt)}</p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={() => setForceLogoutOpen(true)}>
+              <LogOut className="w-4 h-4" />
+              Force Logout
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">Not currently signed in on any device.</p>
+        )}
+      </div>
+
       {/* Permissions */}
       {allPermissions.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -263,6 +303,19 @@ export default function StaffDetailPage() {
           <Button onClick={handleResetSubmit} loading={resetPasswordMutation.isPending}>
             <Lock className="w-4 h-4" />
             Reset Password
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Force Logout Confirm Modal */}
+      <Modal isOpen={forceLogoutOpen} onClose={() => setForceLogoutOpen(false)} title="Force Logout">
+        <p className="text-gray-600 mb-6">
+          Sign out <strong>{staff.name}</strong> from {staff.activeSession?.deviceName ?? 'their device'}? They&apos;ll need to sign in again to keep working.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <Button variant="outline" onClick={() => setForceLogoutOpen(false)}>Cancel</Button>
+          <Button variant="danger" loading={forceLogoutMutation.isPending} onClick={() => forceLogoutMutation.mutate()}>
+            Force Logout
           </Button>
         </div>
       </Modal>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, CheckCircle2, AlertCircle, AlertTriangle, Info, ArrowRight, Activity, Bell, TrendingUp } from 'lucide-react';
+import { Sparkles, CheckCircle2, Circle, AlertCircle, AlertTriangle, Info, ArrowRight, Activity, Bell, TrendingUp } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import type { BusinessSnapshot, AiInsight } from '@/services/aiInsight';
 
@@ -60,29 +60,66 @@ function ScoreRing({ score, color }: { score: number; color: string }) {
   );
 }
 
+function InsufficientHealthCard({ health }: { health: BusinessSnapshot['health'] }) {
+  return (
+    <Card className="space-y-4">
+      <div>
+        <p className="text-sm font-bold" style={{ color: '#0F172A' }}>Not enough data yet</p>
+        <p className="text-xs text-gray-500 mt-0.5">We&apos;ll calculate your Business Health once we&apos;ve seen:</p>
+      </div>
+      <div className="space-y-2.5">
+        {health.requirements.map((req) => {
+          const Icon = req.met ? CheckCircle2 : Circle;
+          return (
+            <div key={req.key} className="flex items-center gap-2.5">
+              <Icon className="w-4 h-4 shrink-0" style={{ color: req.met ? '#16A34A' : '#CBD5E1' }} />
+              <span className="text-sm" style={{ color: req.met ? '#0F172A' : '#64748B' }}>
+                {req.label}
+                {req.target != null ? ` (${Math.min(req.current ?? 0, req.target)}/${req.target})` : ''}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <span className="text-[11px] font-semibold text-gray-400">Current confidence</span>
+        <span className="text-sm font-bold" style={{ color: '#D97706' }}>{health.confidence}%</span>
+      </div>
+    </Card>
+  );
+}
+
 export function HealthScoreCard({ health }: { health: BusinessSnapshot['health'] }) {
   const color = scoreColor(health.score);
   return (
     <div>
       <SectionHeader icon={Activity} title="Business Health" />
-      <Card>
-        <div className="flex items-center gap-6">
-          <ScoreRing score={health.score} color={color} />
-          <div className="flex-1 space-y-2.5">
-            {(Object.keys(COMPONENT_LABELS) as (keyof typeof COMPONENT_LABELS)[]).map((key) => (
-              <div key={key}>
-                <p className="text-[11px] font-semibold text-gray-400 mb-1">{COMPONENT_LABELS[key]}</p>
-                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${Math.max(0, Math.min(100, health.components[key]))}%`, backgroundColor: scoreColor(health.components[key]) }}
-                  />
+      {health.sufficient ? (
+        <Card className="space-y-3">
+          <div className="flex items-center gap-6">
+            <ScoreRing score={health.score} color={color} />
+            <div className="flex-1 space-y-2.5">
+              {(Object.keys(COMPONENT_LABELS) as (keyof typeof COMPONENT_LABELS)[]).map((key) => (
+                <div key={key}>
+                  <p className="text-[11px] font-semibold text-gray-400 mb-1">{COMPONENT_LABELS[key]}</p>
+                  <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${Math.max(0, Math.min(100, health.components[key]))}%`, backgroundColor: scoreColor(health.components[key]) }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </Card>
+          <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-100">
+            <span className="text-[11px] font-semibold text-gray-400">Confidence</span>
+            <span className="text-xs font-bold" style={{ color: '#16A34A' }}>{health.confidence}%</span>
+          </div>
+        </Card>
+      ) : (
+        <InsufficientHealthCard health={health} />
+      )}
     </div>
   );
 }

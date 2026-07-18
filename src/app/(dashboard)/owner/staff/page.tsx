@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Users, Mail, Phone, Search, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Users, Mail, Phone, Search, ChevronRight, LogOut, Circle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import Link from 'next/link';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
@@ -14,6 +14,10 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import SeatPayModal from '@/components/staff/SeatPayModal';
+import { forceLogoutStaff, checkStaffEmailAvailability, type Staff, type StaffActiveSession } from '@/services/staff';
+import { useAuthStore } from '@/store/authStore';
+import { buildSystemEmailDomain, slugifyLocalPart } from '@/utils/staffEmailSlug';
 
 interface StaffMember {
   _id: string;
@@ -24,6 +28,7 @@ interface StaffMember {
   isActive: boolean;
   createdAt: string;
   salesCount?: number;
+  activeSession: StaffActiveSession | null;
 }
 
 const schema = z.object({
@@ -34,6 +39,9 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+type EmailMode = 'real' | 'system';
+type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'error';
+
 interface SeatPriceImpact {
   currentAmount: number;
   projectedAmount: number;
@@ -41,15 +49,21 @@ interface SeatPriceImpact {
   billingCycle: 'monthly' | 'yearly';
 }
 
-const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocaleString()}`;
-
 export default function StaffPage() {
   const queryClient = useQueryClient();
+  const shopName = useAuthStore((s) => s.user?.shop?.name) ?? '';
+  const domain = useMemo(() => buildSystemEmailDomain(shopName), [shopName]);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [forceLogoutTarget, setForceLogoutTarget] = useState<StaffMember | null>(null);
   const [serverError, setServerError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [seatImpact, setSeatImpact] = useState<SeatPriceImpact | null>(null);
   const [pendingData, setPendingData] = useState<FormData | null>(null);
+  const [emailMode, setEmailMode] = useState<EmailMode>('real');
+  const [localPart, setLocalPart] = useState('');
+  const [localPartTouched, setLocalPartTouched] = useState(false);
+  const [availability, setAvailability] = useState<Availability>('idle');
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -73,30 +87,54 @@ export default function StaffPage() {
   const staff = staffRaw?.data ?? [];
   const totalPages = staffRaw?.pagination?.pages ?? 1;
 
+  const resetEmailFields = () => {
+    setEmailMode('real');
+    setLocalPart('');
+    setLocalPartTouched(false);
+    setAvailability('idle');
+  };
+
+  const finishAndClose = () => {
+    queryClient.invalidateQueries({ queryKey: ['staff'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription'] });
+    setAddOpen(false);
+    setSeatImpact(null);
+    setPendingData(null);
+    setSuccessMessage('');
+    reset();
+    resetEmailFields();
+  };
+
   const addMutation = useMutation({
-    mutationFn: ({ data, priceConfirmed }: { data: FormData; priceConfirmed?: boolean }) =>
-      api.post('/staff', { ...data, priceConfirmed }),
+    mutationFn: (data: FormData) => api.post('/staff', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       queryClient.invalidateQueries({ queryKey: ['subscription'] });
-      setAddOpen(false);
-      setSeatImpact(null);
-      setPendingData(null);
-      reset();
+      setSuccessMessage(
+        emailMode === 'system'
+          ? 'Staff added — they can sign in right away.'
+          : 'Staff added — ask them to check their email to verify before signing in.'
+      );
+      setTimeout(finishAndClose, 2500);
     },
     onError: (err: unknown, variables) => {
       const e = err as { response?: { status?: number; data?: { message?: string; code?: string; data?: SeatPriceImpact } } };
-      // Adding this seat raises the bill — block until the owner confirms
-      // the new price, instead of silently changing what they're charged.
-      if (e.response?.status === 409 && e.response.data?.code === 'SEAT_PRICE_CONFIRMATION_REQUIRED' && e.response.data.data) {
+      // Adding this seat raises the bill — payment is required before the
+      // staff member can go active. Collect it via SeatPayModal instead of
+      // just showing a confirm dialog (that used to be the billing bypass).
+      if (e.response?.status === 409 && e.response.data?.code === 'SEAT_PAYMENT_REQUIRED' && e.response.data.data) {
         setAddOpen(false);
-        setPendingData(variables.data);
+        setPendingData(variables);
         setSeatImpact(e.response.data.data);
         return;
       }
       setServerError(e.response?.data?.message || 'Failed to add staff');
     },
   });
+
+  const handleSeatPaymentSuccess = (_staff: Staff) => {
+    finishAndClose();
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/staff/${id}`),
@@ -106,11 +144,51 @@ export default function StaffPage() {
     },
   });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const forceLogoutMutation = useMutation({
+    mutationFn: (id: string) => forceLogoutStaff(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      setForceLogoutTarget(null);
+    },
+  });
+
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const watchedName = watch('name');
+  const systemEmail = `${localPart}@${domain}`;
+
+  // Suggest a local part from the name until the owner edits it directly.
+  useEffect(() => {
+    if (emailMode === 'system' && !localPartTouched) {
+      setLocalPart(slugifyLocalPart(watchedName || ''));
+    }
+  }, [watchedName, emailMode, localPartTouched]);
+
+  // Keep the underlying (validated) email field in sync with the composed system email.
+  useEffect(() => {
+    if (emailMode === 'system') {
+      setValue('email', systemEmail, { shouldValidate: false });
+    }
+  }, [emailMode, systemEmail, setValue]);
+
+  const checkAvailability = async () => {
+    if (!localPart) return;
+    setAvailability('checking');
+    try {
+      const { available } = await checkStaffEmailAvailability(systemEmail);
+      setAvailability(available ? 'available' : 'taken');
+    } catch {
+      setAvailability('error');
+    }
+  };
 
   const onSubmit = (data: FormData) => {
     setServerError('');
-    addMutation.mutate({ data });
+    if (emailMode === 'system' && availability === 'taken') {
+      setServerError('That email is already taken — try another');
+      return;
+    }
+    addMutation.mutate(data);
   };
 
   return (
@@ -161,12 +239,23 @@ export default function StaffPage() {
                     <Badge color={s.isActive ? 'green' : 'gray'}>{s.isActive ? 'Active' : 'Inactive'}</Badge>
                   </div>
                 </Link>
-                <button
-                  onClick={() => setDeleteId(s._id)}
-                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 ml-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-0.5 shrink-0 ml-2">
+                  {s.activeSession && (
+                    <button
+                      onClick={() => setForceLogoutTarget(s)}
+                      title="Force logout"
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDeleteId(s._id)}
+                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               <Link href={`/owner/staff/${s._id}`} className="block">
                 <div className="space-y-2">
@@ -178,6 +267,14 @@ export default function StaffPage() {
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="w-3.5 h-3.5 text-gray-400" />
                       {s.phone}
+                    </div>
+                  )}
+                  {s.activeSession && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Circle className="w-2 h-2 text-green-500 fill-green-500" />
+                      <span className="truncate">
+                        {s.activeSession.deviceName ?? 'Unknown device'} · active {formatDistanceToNowStrict(new Date(s.activeSession.lastActiveAt), { addSuffix: true })}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -204,13 +301,75 @@ export default function StaffPage() {
       )}
 
       {/* Add Staff Modal */}
-      <Modal isOpen={addOpen} onClose={() => { setAddOpen(false); reset(); setServerError(''); }} title="Add Staff Member">
+      <Modal isOpen={addOpen} onClose={() => { setAddOpen(false); reset(); setServerError(''); setSuccessMessage(''); resetEmailFields(); }} title="Add Staff Member">
         {serverError && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{serverError}</div>
         )}
+        {successMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">{successMessage}</div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Full Name *" placeholder="Jane Wanjiku" error={errors.name?.message} {...register('name')} />
-          <Input label="Email *" type="email" placeholder="jane@example.com" error={errors.email?.message} {...register('email')} />
+
+          <div>
+            <div className="flex rounded-xl border border-gray-200 p-1 gap-1 mb-2">
+              <button
+                type="button"
+                onClick={() => { if (emailMode === 'system') setValue('email', ''); setEmailMode('real'); }}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${emailMode === 'real' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'text-gray-500'}`}
+              >
+                Real email
+              </button>
+              <button
+                type="button"
+                onClick={() => setEmailMode('system')}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${emailMode === 'system' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'text-gray-500'}`}
+              >
+                System-generated
+              </button>
+            </div>
+
+            {emailMode === 'real' ? (
+              <>
+                <Input label="Email *" type="email" placeholder="jane@example.com" error={errors.email?.message} {...register('email')} />
+                <p className="text-xs text-gray-400 mt-1">We&apos;ll email a verification code to this address before they can sign in.</p>
+              </>
+            ) : (
+              <>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Email *</label>
+                <div className="flex gap-2">
+                  <input
+                    value={localPart}
+                    onChange={(e) => {
+                      setLocalPartTouched(true);
+                      setLocalPart(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ''));
+                      setAvailability('idle');
+                    }}
+                    onBlur={checkAvailability}
+                    placeholder="jane.otieno"
+                    className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 transition-all"
+                  />
+                  <div className="flex items-center px-3 rounded-xl border border-gray-200 bg-gray-50 shrink-0 max-w-[45%]">
+                    <span className="text-sm text-gray-600 truncate">@{domain}</span>
+                  </div>
+                </div>
+                {availability === 'checking' && (
+                  <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking availability…</p>
+                )}
+                {availability === 'available' && (
+                  <p className="flex items-center gap-1.5 text-xs text-green-600 mt-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Available</p>
+                )}
+                {availability === 'taken' && (
+                  <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5"><XCircle className="w-3.5 h-3.5" /> This email is taken — try another</p>
+                )}
+                {availability === 'idle' && (
+                  <p className="text-xs text-gray-400 mt-1.5">Auto-verified — ready to use immediately, no email needed.</p>
+                )}
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+              </>
+            )}
+          </div>
+
           <Input label="Phone Number" placeholder="07XXXXXXXX" error={errors.phone?.message} {...register('phone')} />
           <Input label="Temporary Password *" type="password" placeholder="Min. 6 characters" error={errors.password?.message} {...register('password')} />
           <div className="flex gap-3 justify-end pt-2">
@@ -223,26 +382,27 @@ export default function StaffPage() {
         </form>
       </Modal>
 
-      {/* Seat price increase confirmation */}
-      <Modal isOpen={!!seatImpact} onClose={() => { setSeatImpact(null); setPendingData(null); }} title="This raises your bill">
-        {seatImpact && (
-          <>
-            <p className="text-gray-600 mb-6">
-              Adding {pendingData?.name || 'this team member'} increases your {seatImpact.billingCycle} subscription from{' '}
-              <span className="font-semibold" style={{ color: '#0F172A' }}>{fmt(seatImpact.currentAmount, seatImpact.currency)}</span> to{' '}
-              <span className="font-semibold" style={{ color: '#0F172A' }}>{fmt(seatImpact.projectedAmount, seatImpact.currency)}</span>. Continue?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => { setSeatImpact(null); setPendingData(null); }}>Cancel</Button>
-              <Button
-                loading={addMutation.isPending}
-                onClick={() => pendingData && addMutation.mutate({ data: pendingData, priceConfirmed: true })}
-              >
-                Confirm & add
-              </Button>
-            </div>
-          </>
-        )}
+      {/* Seat payment — adding this staff member raises the bill */}
+      <SeatPayModal
+        isOpen={!!seatImpact}
+        amount={seatImpact ? seatImpact.projectedAmount - seatImpact.currentAmount : 0}
+        currency={seatImpact?.currency ?? 'KES'}
+        staffDraft={pendingData ?? { name: '', email: '', password: '' }}
+        onClose={() => { setSeatImpact(null); setPendingData(null); }}
+        onSuccess={handleSeatPaymentSuccess}
+      />
+
+      {/* Force Logout Confirm */}
+      <Modal isOpen={!!forceLogoutTarget} onClose={() => setForceLogoutTarget(null)} title="Force Logout">
+        <p className="text-gray-600 mb-6">
+          Sign out <strong>{forceLogoutTarget?.name}</strong> from {forceLogoutTarget?.activeSession?.deviceName ?? 'their device'}? They&apos;ll need to sign in again to keep working.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <Button variant="outline" onClick={() => setForceLogoutTarget(null)}>Cancel</Button>
+          <Button variant="danger" loading={forceLogoutMutation.isPending} onClick={() => forceLogoutTarget && forceLogoutMutation.mutate(forceLogoutTarget._id)}>
+            Force Logout
+          </Button>
+        </div>
       </Modal>
 
       {/* Delete Confirm */}
