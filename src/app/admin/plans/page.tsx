@@ -33,6 +33,11 @@ interface Plan {
   priceComparison: string;
   active: boolean;
   displayOrder: number;
+  chatLimits?: {
+    maxConversations: number | null;
+    maxNewConversationsPerDay: number | null;
+    maxMessagesPerDay: number | null;
+  };
 }
 
 const schema = z.object({
@@ -53,13 +58,40 @@ const schema = z.object({
   priceComparison: z.string().optional(),
   displayOrder: z.coerce.number().optional(),
   active: z.boolean().optional(),
+  // Kept as raw strings (not z.coerce.number()) because an empty string must
+  // mean "unlimited" (null), and Number('') is 0, not null. The string↔number
+  // conversion happens in toFormValues / saveMutation's mutationFn instead.
+  chatLimits: z.object({
+    maxConversations: z.string().optional(),
+    maxNewConversationsPerDay: z.string().optional(),
+    maxMessagesPerDay: z.string().optional(),
+  }).optional(),
 });
 type FormData = z.infer<typeof schema>;
 
+const limitToString = (n: number | null | undefined): string => (n == null ? '' : String(n));
+const stringToLimit = (s: string | undefined): number | null => (s == null || s.trim() === '' ? null : Number(s));
+
 const toFormValues = (plan?: Plan): Partial<FormData> =>
   plan
-    ? { ...plan, highlights: plan.highlights.join(', '), features: plan.features.join(', ') }
-    : { billingType: 'flat', currency: 'KES', active: true, trialDays: 30, yearlyDiscountPercent: 20 };
+    ? {
+        ...plan,
+        highlights: plan.highlights.join(', '),
+        features: plan.features.join(', '),
+        chatLimits: {
+          maxConversations: limitToString(plan.chatLimits?.maxConversations),
+          maxNewConversationsPerDay: limitToString(plan.chatLimits?.maxNewConversationsPerDay),
+          maxMessagesPerDay: limitToString(plan.chatLimits?.maxMessagesPerDay),
+        },
+      }
+    : {
+        billingType: 'flat',
+        currency: 'KES',
+        active: true,
+        trialDays: 30,
+        yearlyDiscountPercent: 20,
+        chatLimits: { maxConversations: '', maxNewConversationsPerDay: '', maxMessagesPerDay: '' },
+      };
 
 export default function PlansPage() {
   const queryClient = useQueryClient();
@@ -88,6 +120,11 @@ export default function PlansPage() {
         ...values,
         highlights: values.highlights ? values.highlights.split(',').map((h) => h.trim()).filter(Boolean) : [],
         features: values.features ? values.features.split(',').map((f) => f.trim()).filter(Boolean) : [],
+        chatLimits: {
+          maxConversations: stringToLimit(values.chatLimits?.maxConversations),
+          maxNewConversationsPerDay: stringToLimit(values.chatLimits?.maxNewConversationsPerDay),
+          maxMessagesPerDay: stringToLimit(values.chatLimits?.maxMessagesPerDay),
+        },
       };
       return editingPlan ? adminApi.patch(`/plans/${editingPlan._id}`, body) : adminApi.post('/plans', body);
     },
@@ -179,6 +216,14 @@ export default function PlansPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Badge" placeholder="Recommended" {...register('badge')} />
             <Input label="Price Comparison" placeholder="About the cost of..." {...register('priceComparison')} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium" style={{ color: '#0F172A' }}>AI Chat Limits (blank = unlimited)</label>
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Max Conversations" type="number" placeholder="Unlimited" {...register('chatLimits.maxConversations')} />
+              <Input label="New Conversations / Day" type="number" placeholder="Unlimited" {...register('chatLimits.maxNewConversationsPerDay')} />
+              <Input label="Messages / Day" type="number" placeholder="Unlimited" {...register('chatLimits.maxMessagesPerDay')} />
+            </div>
           </div>
           <label className="flex items-center gap-2 text-sm" style={{ color: '#0F172A' }}>
             <input type="checkbox" {...register('active')} className="rounded border-gray-300" />

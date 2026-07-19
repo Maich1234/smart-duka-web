@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getAiInsight } from '@/services/aiInsight';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useAiAccess } from '@/hooks/useAiAccess';
 import Spinner from '@/components/ui/Spinner';
 import {
   HealthScoreCard,
@@ -11,13 +11,14 @@ import {
   TrendSummary,
   ReportsShortcut,
   UpsellCard,
+  AiDisabledCard,
 } from '@/components/insights/InsightSections';
 
 export default function InsightsPage() {
-  const { access, isLoading: isSubscriptionLoading } = useSubscription();
-  // AI insights are available to any active subscription (trial, paid, or
-  // grace) — no plan-tier gate. Matches the backend's requireActiveSubscription.
-  const hasAiInsights = access?.state === 'trialing' || access?.state === 'active' || access?.state === 'grace';
+  // Subscription state, plan feature, and the shop's own Smart Duka AI
+  // toggle. Matches the backend's requireActiveSubscription + requireFeature
+  // + requireAiEnabled on GET /ai/insight.
+  const { hasAiAccess: hasAiInsights, state: aiAccessState, isLoading: isSubscriptionLoading } = useAiAccess();
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['aiInsight'],
@@ -39,7 +40,7 @@ export default function InsightsPage() {
       {isSubscriptionLoading || (hasAiInsights && isLoading) ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : !hasAiInsights ? (
-        <UpsellCard />
+        aiAccessState === 'disabled' ? <AiDisabledCard /> : <UpsellCard />
       ) : insight && snapshot ? (
         <div className="space-y-5">
           <HealthScoreCard health={snapshot.health} />

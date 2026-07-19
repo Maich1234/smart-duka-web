@@ -249,3 +249,25 @@ export function UpsellCard() {
     </Link>
   );
 }
+
+// ─── AiDisabledCard ─────────────────────────────────────────────────────────
+
+/** Shown when the shop is subscribed but has switched Smart Duka AI off in Profile — distinct from UpsellCard, which is for shops that aren't subscribed at all. */
+export function AiDisabledCard() {
+  return (
+    <Link href="/owner/profile" className="block">
+      <Card className="flex flex-col items-center text-center py-10">
+        <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: '#FEF3C7' }}>
+          <Sparkles className="w-6 h-6" style={{ color: '#B45309' }} />
+        </div>
+        <h2 className="text-lg font-bold mb-1.5" style={{ color: '#0F172A' }}>Smart Duka AI is off</h2>
+        <p className="text-sm text-gray-500 max-w-sm mb-4">
+          You&apos;ve turned this off for your shop. Turn it back on from Profile → Smart Duka AI to use it again.
+        </p>
+        <span className="inline-flex px-4 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
+          Go to Profile
+        </span>
+      </Card>
+    </Link>
+  );
+}
