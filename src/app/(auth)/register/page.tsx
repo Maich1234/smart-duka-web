@@ -15,6 +15,9 @@ const schema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   shopName: z.string().min(2, 'Shop name must be at least 2 characters'),
+  acceptedTerms: z.literal(true, {
+    errorMap: () => ({ message: 'Please accept the Terms and Privacy Policy to continue' }),
+  }),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -41,6 +44,9 @@ export default function RegisterPage() {
         email: data.email,
         password: data.password,
         shopName: data.shopName,
+        // The server re-checks this and refuses to create an account without
+        // it, then records the version accepted against the user.
+        acceptedTerms: data.acceptedTerms,
       });
       router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (err: unknown) {
@@ -126,6 +132,35 @@ export default function RegisterPage() {
           {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword.message}</p>}
         </div>
 
+        {/* Explicit consent, immediately above the action it consents to.
+            Required by the schema and re-checked server-side, so an account
+            cannot be created without it. */}
+        <label className="flex items-start gap-3 mb-5 cursor-pointer">
+          <input
+            type="checkbox"
+            {...register('acceptedTerms')}
+            className="mt-0.5 w-4 h-4 shrink-0 rounded border-gray-300 cursor-pointer"
+            style={{ accentColor: '#0F766E' }}
+            aria-describedby={errors.acceptedTerms ? 'terms-error' : undefined}
+          />
+          <span className="text-sm leading-relaxed text-gray-600">
+            I agree to the{' '}
+            <Link href="/terms" target="_blank" className="underline font-medium" style={{ color: '#0F766E' }}>
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" target="_blank" className="underline font-medium" style={{ color: '#0F766E' }}>
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+        {errors.acceptedTerms && (
+          <p id="terms-error" className="-mt-3 mb-4 text-xs text-red-600">
+            {errors.acceptedTerms.message}
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={isSubmitting}
@@ -146,10 +181,6 @@ export default function RegisterPage() {
       <p className="mt-6 text-center text-sm text-gray-500">
         Already have an account?{' '}
         <Link href="/login" className="font-semibold" style={{ color: '#0F766E' }}>Sign in</Link>
-      </p>
-      <p className="mt-3 text-center text-xs text-gray-400">
-        By creating an account you agree to our{' '}
-        <a href="#" className="underline">Terms</a> and <a href="#" className="underline">Privacy Policy</a>.
       </p>
     </div>
   );

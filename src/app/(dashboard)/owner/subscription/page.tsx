@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Gift, Sparkles, ShieldCheck, AlertCircle, Lock, Clock, Users, CreditCard, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSubscription, useInvalidateSubscription } from '@/hooks/useSubscription';
-import { activateTrial, cancelSubscription, type AccessState, type SubscriptionPlan } from '@/services/subscription';
+import {
+  activateTrial,
+  cancelSubscription,
+  getPlans,
+  previewPricing,
+  type AccessState,
+  type BillingCycle,
+  type SubscriptionPlan,
+} from '@/services/subscription';
 import { useAuthStore } from '@/store/authStore';
 import SubscriptionPayModal from '@/components/subscription/SubscriptionPayModal';
+import PlanCards from '@/components/subscription/PlanCards';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
@@ -36,12 +46,49 @@ export default function SubscriptionPage() {
   const { subscription, access, renewal, isLoading, refetch } = useSubscription();
   const invalidate = useInvalidateSubscription();
   const [payOpen, setPayOpen] = useState(false);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [selectedCycle, setSelectedCycle] = useState<BillingCycle | null>(null);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const plan = (subscription?.plan ?? null) as SubscriptionPlan | null;
   const state = access?.state ?? 'none';
+
+  // Default the picker to whatever the shop is on today, then let the owner
+  // change it. The web app is the only place a plan can be switched at all now
+  // that the mobile app carries no purchase surface.
+  useEffect(() => {
+    if (renewal && selectedSlug === null) setSelectedSlug(renewal.planSlug);
+    if (renewal && selectedCycle === null) setSelectedCycle(renewal.billingCycle);
+  }, [renewal, selectedSlug, selectedCycle]);
+
+  const { data: plansData } = useQuery({
+    queryKey: ['subscriptionPlans'],
+    queryFn: getPlans,
+    enabled: showPlanPicker,
+    staleTime: 60_000,
+  });
+
+  const effectiveSlug = selectedSlug ?? renewal?.planSlug ?? null;
+  const effectiveCycle = selectedCycle ?? renewal?.billingCycle ?? 'monthly';
+  // True once the owner has actually chosen something different from their
+  // current arrangement — the amount then has to be re-priced server-side.
+  const isSwitching =
+    !!renewal && (effectiveSlug !== renewal.planSlug || effectiveCycle !== renewal.billingCycle);
+
+  const { data: switchPreview } = useQuery({
+    queryKey: ['pricingPreview', effectiveSlug, effectiveCycle],
+    queryFn: () => previewPricing({ planSlug: effectiveSlug ?? undefined, billingCycle: effectiveCycle }),
+    enabled: isSwitching && !!effectiveSlug,
+    staleTime: 30_000,
+  });
+
+  // Never trust a client-side total: the amount charged is always the
+  // server's, whether that's the standing renewal or a fresh preview.
+  const payAmount = isSwitching ? switchPreview?.data.amountDue ?? 0 : renewal?.amountDue ?? 0;
+  const payCurrency = (isSwitching ? switchPreview?.data.currency : renewal?.currency) ?? 'KES';
   const meta = STATE_META[state];
   const StateIcon = meta.icon;
 
@@ -137,7 +184,41 @@ export default function SubscriptionPage() {
           <InfoRow icon={Users} label="Team size" value={`${renewal.staffCount} ${renewal.staffCount === 1 ? 'person' : 'people'}`} />
         )}
         {renewal && (
-          <InfoRow icon={CreditCard} label={renewal.billingCycle === 'yearly' ? 'Yearly price' : 'Monthly price'} value={fmt(renewal.amountDue, renewal.currency)} />
+          <InfoRow
+            icon={CreditCard}
+            label={renewal.billingCycle === 'yearly' ? 'Yearly price' : 'Monthly price'}
+            value={fmt(renewal.basePrice ?? renewal.amountDue, renewal.currency)}
+          />
+        )}
+
+        {/* Mid-period team changes are postpaid and prorated, so an invoice
+            can differ from the plan price. Itemise it rather than letting the
+            owner wonder where an unexplained amount came from. */}
+        {!!renewal?.seatCharges && (
+          <>
+            <InfoRow
+              icon={Users}
+              label="Team changes this period"
+              value={`+${fmt(renewal.seatCharges, renewal.currency)}`}
+            />
+            {renewal.seatAdjustments?.length > 0 && (
+              <ul className="mb-2.5 ml-6 space-y-1">
+                {renewal.seatAdjustments.map((adjustment, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs text-gray-400">
+                    <span className="flex-1">
+                      {adjustment.label} · {adjustment.daysBilled} day{adjustment.daysBilled === 1 ? '' : 's'}
+                    </span>
+                    <span className="font-semibold">
+                      {adjustment.amount < 0 ? '−' : '+'}
+                      {fmt(Math.abs(adjustment.amount), renewal.currency)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="h-px bg-gray-100 my-2" />
+            <InfoRow icon={CreditCard} label="Total due" value={fmt(renewal.amountDue, renewal.currency)} />
+          </>
         )}
 
         {state === 'none' && (
@@ -148,11 +229,51 @@ export default function SubscriptionPage() {
         )}
 
         {canPay && (
-          <Button onClick={() => setPayOpen(true)} className="w-full">
-            {state === 'active' ? `Extend now · ${fmt(renewal!.amountDue, renewal!.currency)}` : `Pay with M-Pesa · ${fmt(renewal!.amountDue, renewal!.currency)}`}
-          </Button>
+          <>
+            <Button onClick={() => setPayOpen(true)} className="w-full">
+              {state === 'active'
+                ? `Extend now · ${fmt(payAmount, payCurrency)}`
+                : `Pay with M-Pesa · ${fmt(payAmount, payCurrency)}`}
+            </Button>
+            <button
+              onClick={() => setShowPlanPicker((v) => !v)}
+              className="w-full mt-3 text-sm font-semibold hover:underline"
+              style={{ color: '#0F766E' }}
+            >
+              {showPlanPicker ? 'Hide plans' : 'Change plan or billing cycle'}
+            </button>
+          </>
         )}
       </div>
+
+      {showPlanPicker && plansData && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <PlanCards
+            plans={plansData.data.plans}
+            staffCount={plansData.data.staffCount}
+            currency={plansData.data.currency}
+            billingCycle={effectiveCycle}
+            onBillingCycleChange={setSelectedCycle}
+            selectedSlug={effectiveSlug}
+            onSelect={setSelectedSlug}
+          />
+          {isSwitching && (
+            <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
+              <p className="flex-1 text-sm text-gray-500">
+                Switching to <strong style={{ color: '#0F172A' }}>{effectiveSlug}</strong> ({effectiveCycle}) —{' '}
+                {switchPreview ? fmt(payAmount, payCurrency) : 'pricing…'}
+              </p>
+              <Button
+                onClick={() => setPayOpen(true)}
+                disabled={!switchPreview}
+                className="w-full sm:w-auto"
+              >
+                Pay &amp; switch
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {subscription && subscription.status !== 'cancelled' && state !== 'locked' && (
         <button onClick={() => setConfirmCancelOpen(true)} className="w-full text-center py-3 text-sm font-semibold text-red-500 hover:text-red-600">
@@ -162,10 +283,10 @@ export default function SubscriptionPage() {
 
       <SubscriptionPayModal
         isOpen={payOpen}
-        amount={renewal?.amountDue ?? 0}
-        currency={renewal?.currency ?? 'KES'}
-        billingCycle={renewal?.billingCycle ?? 'monthly'}
-        planSlug={renewal?.planSlug}
+        amount={payAmount}
+        currency={payCurrency}
+        billingCycle={effectiveCycle}
+        planSlug={effectiveSlug ?? undefined}
         defaultPhone={user?.shop?.phone}
         onClose={() => setPayOpen(false)}
         onSuccess={() => {

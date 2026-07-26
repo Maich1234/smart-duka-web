@@ -14,7 +14,6 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
-import SeatPayModal from '@/components/staff/SeatPayModal';
 import { forceLogoutStaff, checkStaffEmailAvailability, type Staff, type StaffActiveSession } from '@/services/staff';
 import { useAuthStore } from '@/store/authStore';
 import { buildSystemEmailDomain, slugifyLocalPart } from '@/utils/staffEmailSlug';
@@ -42,12 +41,7 @@ type FormData = z.infer<typeof schema>;
 type EmailMode = 'real' | 'system';
 type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 
-interface SeatPriceImpact {
-  currentAmount: number;
-  projectedAmount: number;
-  currency: string;
-  billingCycle: 'monthly' | 'yearly';
-}
+const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocaleString()}`;
 
 export default function StaffPage() {
   const queryClient = useQueryClient();
@@ -58,8 +52,6 @@ export default function StaffPage() {
   const [forceLogoutTarget, setForceLogoutTarget] = useState<StaffMember | null>(null);
   const [serverError, setServerError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [seatImpact, setSeatImpact] = useState<SeatPriceImpact | null>(null);
-  const [pendingData, setPendingData] = useState<FormData | null>(null);
   const [emailMode, setEmailMode] = useState<EmailMode>('real');
   const [localPart, setLocalPart] = useState('');
   const [localPartTouched, setLocalPartTouched] = useState(false);
@@ -98,8 +90,6 @@ export default function StaffPage() {
     queryClient.invalidateQueries({ queryKey: ['staff'] });
     queryClient.invalidateQueries({ queryKey: ['subscription'] });
     setAddOpen(false);
-    setSeatImpact(null);
-    setPendingData(null);
     setSuccessMessage('');
     reset();
     resetEmailFields();
@@ -107,34 +97,26 @@ export default function StaffPage() {
 
   const addMutation = useMutation({
     mutationFn: (data: FormData) => api.post('/staff', data),
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       queryClient.invalidateQueries({ queryKey: ['subscription'] });
-      setSuccessMessage(
+      const base =
         emailMode === 'system'
           ? 'Staff added — they can sign in right away.'
-          : 'Staff added — ask them to check their email to verify before signing in.'
-      );
+          : 'Staff added — ask them to check their email to verify before signing in.';
+      // Seats are postpaid and prorated now: the account is active
+      // immediately and the server reports what it added to the next invoice.
+      // There is no payment step here any more.
+      const billed = (created as { billing?: { addedToNextInvoice?: number } } | undefined)?.billing
+        ?.addedToNextInvoice;
+      setSuccessMessage(billed ? `${base} ${fmt(billed, 'KES')} will be added to your next bill.` : base);
       setTimeout(finishAndClose, 2500);
     },
-    onError: (err: unknown, variables) => {
-      const e = err as { response?: { status?: number; data?: { message?: string; code?: string; data?: SeatPriceImpact } } };
-      // Adding this seat raises the bill — payment is required before the
-      // staff member can go active. Collect it via SeatPayModal instead of
-      // just showing a confirm dialog (that used to be the billing bypass).
-      if (e.response?.status === 409 && e.response.data?.code === 'SEAT_PAYMENT_REQUIRED' && e.response.data.data) {
-        setAddOpen(false);
-        setPendingData(variables);
-        setSeatImpact(e.response.data.data);
-        return;
-      }
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
       setServerError(e.response?.data?.message || 'Failed to add staff');
     },
   });
-
-  const handleSeatPaymentSuccess = (_staff: Staff) => {
-    finishAndClose();
-  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/staff/${id}`),
@@ -381,16 +363,6 @@ export default function StaffPage() {
           </div>
         </form>
       </Modal>
-
-      {/* Seat payment — adding this staff member raises the bill */}
-      <SeatPayModal
-        isOpen={!!seatImpact}
-        amount={seatImpact ? seatImpact.projectedAmount - seatImpact.currentAmount : 0}
-        currency={seatImpact?.currency ?? 'KES'}
-        staffDraft={pendingData ?? { name: '', email: '', password: '' }}
-        onClose={() => { setSeatImpact(null); setPendingData(null); }}
-        onSuccess={handleSeatPaymentSuccess}
-      />
 
       {/* Force Logout Confirm */}
       <Modal isOpen={!!forceLogoutTarget} onClose={() => setForceLogoutTarget(null)} title="Force Logout">

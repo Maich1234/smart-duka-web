@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import LegalLinks from '@/components/profile/LegalLinks';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -132,6 +133,8 @@ export default function StaffProfilePage() {
           </div>
         </form>
       </Card>
+
+      <LegalLinks />
     </div>
   );
 }

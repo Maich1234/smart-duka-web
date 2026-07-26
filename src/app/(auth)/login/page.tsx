@@ -140,6 +140,15 @@ export default function LoginPage() {
           Create one free
         </Link>
       </p>
+
+      {/* Reachable, not a gate. Consent is captured once at registration; a
+          checkbox here would block returning users without collecting any
+          consent they hadn't already given. */}
+      <p className="mt-4 text-center text-xs text-gray-400">
+        <Link href="/terms" className="underline hover:text-gray-600">Terms</Link>
+        {' · '}
+        <Link href="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>
+      </p>
     </div>
   );
 }

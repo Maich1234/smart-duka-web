@@ -81,6 +81,22 @@ export interface MySubscriptionResponse {
     renewal: {
       planSlug: string;
       billingCycle: BillingCycle;
+      /** Plan price alone, before accrued seat changes. */
+      basePrice: number;
+      /**
+       * Net prorated cost of mid-period team changes, settling on this
+       * invoice. Seats are postpaid — adding someone mid-cycle no longer
+       * demands a full period up front — so the invoice needs to explain
+       * where the difference came from.
+       */
+      seatCharges: number;
+      seatAdjustments: {
+        label: string;
+        amount: number;
+        daysBilled: number;
+        at: string;
+      }[];
+      /** basePrice + seatCharges — what will actually be charged. */
       amountDue: number;
       staffCount: number;
       currency: string;
@@ -168,5 +184,32 @@ export async function getSubscriptionPaymentStatus(
 
 export async function cancelSubscription(): Promise<{ success: boolean; data: { subscription: Subscription }; message: string }> {
   const res = await api.post('/subscriptions/cancel');
+  return res.data;
+}
+
+/**
+ * Re-verifies a specific payment directly against M-PESA — "I definitely
+ * paid, check again."
+ */
+export async function recheckSubscriptionPayment(
+  paymentId: string
+): Promise<{ success: boolean; data: SubscriptionPaymentState }> {
+  const res = await api.post(`/subscriptions/pay/${paymentId}/recheck`);
+  return res.data;
+}
+
+/**
+ * Recovery path for "I paid but I'm still locked out": the owner pastes their
+ * M-PESA confirmation SMS. The message is only ever used to pick the right
+ * pending payment and supply its receipt — the server always re-verifies
+ * against M-PESA itself, so a forged SMS proves nothing.
+ *
+ * This is the last line of defence when a Safaricom callback never arrives,
+ * and now that the mobile app has no purchase surface it exists only here.
+ */
+export async function reconcileSubscriptionByMessage(
+  message: string
+): Promise<{ success: boolean; data: SubscriptionPaymentState; message: string }> {
+  const res = await api.post('/subscriptions/reconcile', { message });
   return res.data;
 }

@@ -7,10 +7,19 @@ import Button from '@/components/ui/Button';
 import {
   initiateSubscriptionPayment,
   getSubscriptionPaymentStatus,
+  reconcileSubscriptionByMessage,
+  validatePromo,
   type BillingCycle,
 } from '@/services/subscription';
 
-type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'recover';
+
+interface Promo {
+  code: string;
+  title: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+}
 
 interface SubscriptionPayModalProps {
   isOpen: boolean;
@@ -50,6 +59,13 @@ export default function SubscriptionPayModal({
   const [digits, setDigits] = useState(() => (defaultPhone ?? '').replace(/^\+?254/, '').replace(/\D/g, '').slice(0, 9));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [promo, setPromo] = useState<Promo | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
+  // Kept so the recovery path can tell the owner which attempt it is chasing.
+  const [smsText, setSmsText] = useState('');
+  const [recovering, setRecovering] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef(0);
 
@@ -67,6 +83,7 @@ export default function SubscriptionPayModal({
     setStage('input');
     setErrorMessage(null);
     setReceipt(null);
+    setSmsText('');
   };
   const handleClose = () => {
     reset();
@@ -108,7 +125,7 @@ export default function SubscriptionPayModal({
     setErrorMessage(null);
     try {
       const res = await initiateSubscriptionPayment(
-        { phoneNumber: `+254${digits}`, billingCycle, planSlug },
+        { phoneNumber: `+254${digits}`, billingCycle, planSlug, promoCode: promo?.code },
         crypto.randomUUID()
       );
       if (res.data.status === 'pending') {
@@ -121,6 +138,57 @@ export default function SubscriptionPayModal({
       const e = err as { response?: { data?: { message?: string } } };
       setStage('failed');
       setErrorMessage(e.response?.data?.message ?? 'Could not start the payment. Check your connection and try again.');
+    }
+  };
+
+  const applyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code || promoChecking) return;
+    setPromoChecking(true);
+    setPromoError(null);
+    try {
+      const res = await validatePromo(code);
+      setPromo(res.data);
+      setPromoInput('');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setPromoError(e.response?.data?.message ?? 'That promo code is invalid or has expired.');
+    } finally {
+      setPromoChecking(false);
+    }
+  };
+
+  // Display-only. The server recomputes the real amount from the code itself,
+  // so a tampered discount here changes nothing that gets charged.
+  const discount = promo
+    ? promo.discountType === 'percentage'
+      ? Math.round(amount * (promo.discountValue / 100))
+      : Math.min(Math.round(promo.discountValue), amount)
+    : 0;
+  const payable = Math.max(0, amount - discount);
+
+  /**
+   * Last-resort recovery: the owner pastes their M-Pesa confirmation SMS.
+   * The text only helps the server find the right pending payment — it always
+   * re-verifies with Safaricom directly, so a forged message proves nothing.
+   */
+  const recoverFromSms = async () => {
+    if (!smsText.trim() || recovering) return;
+    setRecovering(true);
+    setErrorMessage(null);
+    try {
+      const res = await reconcileSubscriptionByMessage(smsText);
+      if (res.data.status === 'success') {
+        setReceipt(res.data.receipt);
+        setStage('success');
+      } else {
+        setErrorMessage(res.message);
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setErrorMessage(e.response?.data?.message ?? 'We could not verify that payment. Please contact support.');
+    } finally {
+      setRecovering(false);
     }
   };
 
@@ -152,7 +220,45 @@ export default function SubscriptionPayModal({
               style={{ color: '#0F172A' }}
             />
           </div>
-          <Button onClick={pay} disabled={!phoneValid} className="w-full">{`Pay ${fmt(amount, currency)}`}</Button>
+          {/* Promo code. Only the code travels to the server; the discount
+              shown here is presentational. */}
+          {promo ? (
+            <div className="w-full flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ backgroundColor: '#E6F4EA' }}>
+              <Check className="w-4 h-4 shrink-0" style={{ color: '#15803D' }} />
+              <span className="flex-1 text-left text-sm font-semibold" style={{ color: '#15803D' }}>
+                {promo.code} · −{fmt(discount, currency)}
+              </span>
+              <button
+                onClick={() => { setPromo(null); setPromoError(null); }}
+                className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="w-full mb-4">
+              <div className="flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null); }}
+                  placeholder="Promo code (optional)"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold tracking-wide uppercase focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                  style={{ color: '#0F172A' }}
+                />
+                <button
+                  onClick={applyPromo}
+                  disabled={!promoInput.trim() || promoChecking}
+                  className="px-4 rounded-xl border text-sm font-semibold disabled:opacity-40"
+                  style={{ color: '#0F766E', borderColor: '#0F766E' }}
+                >
+                  {promoChecking ? '…' : 'Apply'}
+                </button>
+              </div>
+              {promoError && <p className="mt-2 text-left text-xs text-red-600">{promoError}</p>}
+            </div>
+          )}
+
+          <Button onClick={pay} disabled={!phoneValid} className="w-full">{`Pay ${fmt(payable, currency)}`}</Button>
           <button onClick={handleClose} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Not now</button>
         </div>
       )}
@@ -196,7 +302,38 @@ export default function SubscriptionPayModal({
             {errorMessage ?? (stage === 'cancelled' ? 'The M-Pesa prompt was dismissed.' : 'The payment did not go through. No money was taken.')}
           </p>
           <Button onClick={() => setStage('input')} className="w-full">Try again</Button>
-          <button onClick={handleClose} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Close</button>
+          {/* The failure that actually strands people is a Safaricom callback
+              that never arrives: money left the till but the subscription
+              stayed locked. This is the way out. */}
+          <button
+            onClick={() => { setErrorMessage(null); setStage('recover'); }}
+            className="mt-3 text-sm font-semibold hover:underline"
+            style={{ color: '#0F766E' }}
+          >
+            I already paid — verify my payment
+          </button>
+          <button onClick={handleClose} className="mt-2 text-sm text-gray-500 hover:text-gray-700">Close</button>
+        </div>
+      )}
+
+      {stage === 'recover' && (
+        <div className="flex flex-col">
+          <p className="text-sm text-gray-500 mb-3">
+            Paste the confirmation SMS Safaricom sent you. We&apos;ll check the payment directly with M-Pesa.
+          </p>
+          <textarea
+            value={smsText}
+            onChange={(e) => setSmsText(e.target.value)}
+            rows={4}
+            placeholder="QWE1RT2Y3U Confirmed. Ksh1,000.00 sent to…"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+            style={{ color: '#0F172A' }}
+          />
+          {errorMessage && <p className="mt-2 text-xs text-red-600">{errorMessage}</p>}
+          <Button onClick={recoverFromSms} disabled={!smsText.trim() || recovering} className="w-full mt-4">
+            {recovering ? 'Checking with M-Pesa…' : 'Verify payment'}
+          </Button>
+          <button onClick={() => setStage('input')} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Back</button>
         </div>
       )}
     </Modal>
