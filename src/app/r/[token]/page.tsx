@@ -3,29 +3,29 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ShoppingCart, CheckCircle, XCircle, Star, Send, Package, Clock, CreditCard } from 'lucide-react';
+import { ShoppingCart, CheckCircle, XCircle, Star, Send, Package, Clock, Hash } from 'lucide-react';
 import axios from 'axios';
 
 const API_BASE_URL = 'https://smart-duka-backend-iota.vercel.app/api/v1';
 
-interface SaleItem {
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
-
+/**
+ * Mirrors the payload of GET /public/receipt/:token exactly.
+ *
+ * That endpoint deliberately returns a summary — item count, not the line
+ * items — because the URL is unauthenticated: anyone holding the token sees
+ * everything here. Do not render fields the endpoint does not send; an earlier
+ * version of this page assumed line items, payment method and staff name, and
+ * threw on `items.map` for every scan.
+ */
 interface ReceiptData {
   invoiceNumber: string;
   shopName: string;
-  shopAddress?: string;
-  shopPhone?: string;
-  items: SaleItem[];
+  currency?: string;
   totalAmount: number;
-  paymentMethod: string;
-  staffName: string;
+  itemCount: number;
   createdAt: string;
-  ratingSummary?: { avgStars: number; totalRatings: number };
+  alreadyRated: boolean;
+  rating: { stars: number; comment?: string } | null;
 }
 
 export default function ReceiptPage() {
@@ -37,15 +37,20 @@ export default function ReceiptPage() {
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingError, setRatingError] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
 
   useEffect(() => {
     const fetchReceipt = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/sales/verify/${token}`);
+        const res = await axios.get(`${API_BASE_URL}/public/receipt/${token}`);
         setReceipt(res.data.data);
-      } catch {
-        setError('Receipt not found or the link has expired.');
+      } catch (err) {
+        // The server distinguishes a malformed token from a sale that no
+        // longer exists — a customer holding a genuine printed receipt should
+        // not be told their code is invalid.
+        const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+        setError(message || 'Receipt not found or the link has expired.');
       } finally {
         setLoading(false);
       }
@@ -56,18 +61,27 @@ export default function ReceiptPage() {
   const submitRating = async () => {
     if (!stars) return;
     setRatingLoading(true);
+    setRatingError('');
     try {
-      await axios.post(`${API_BASE_URL}/ratings`, { token, stars, comment });
+      await axios.post(`${API_BASE_URL}/public/receipt/${token}/rating`, {
+        stars,
+        comment: comment.trim() || undefined,
+      });
       setRatingSubmitted(true);
-    } catch {
-      setRatingSubmitted(true);
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      setRatingError(message || 'Could not send your rating. Please try again.');
     } finally {
       setRatingLoading(false);
     }
   };
 
   const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+    new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: receipt?.currency || 'KES',
+      minimumFractionDigits: 0,
+    }).format(n);
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' });
@@ -103,6 +117,10 @@ export default function ReceiptPage() {
     );
   }
 
+  // A rating already on file counts as submitted — the customer scanned twice.
+  const hasRated = receipt.alreadyRated || ratingSubmitted;
+  const finalStars = receipt.rating?.stars ?? stars;
+
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: '#F8FAFC' }}>
       <div className="max-w-md mx-auto">
@@ -126,61 +144,35 @@ export default function ReceiptPage() {
           {/* Shop header */}
           <div className="p-6 border-b border-gray-100 text-center" style={{ background: 'linear-gradient(135deg, #0F766E, #115E59)' }}>
             <h2 className="text-xl font-bold text-white mb-1">{receipt.shopName}</h2>
-            {receipt.shopAddress && <p className="text-white/70 text-sm">{receipt.shopAddress}</p>}
-            {receipt.shopPhone && <p className="text-white/70 text-sm">{receipt.shopPhone}</p>}
           </div>
 
           {/* Meta */}
           <div className="px-6 py-4 border-b border-gray-100 grid grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="text-xs text-gray-400 mb-0.5">Invoice</p>
-              <p className="text-xs font-bold" style={{ color: '#0F172A' }}>#{receipt.invoiceNumber}</p>
+              <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><Hash className="w-3 h-3" />Invoice</p>
+              <p className="text-xs font-bold" style={{ color: '#0F172A' }}>{receipt.invoiceNumber}</p>
             </div>
             <div className="text-center border-x border-gray-100">
               <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><Clock className="w-3 h-3" />Date</p>
               <p className="text-xs font-medium" style={{ color: '#0F172A' }}>{formatDate(receipt.createdAt)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><CreditCard className="w-3 h-3" />Payment</p>
-              <p className="text-xs font-bold capitalize" style={{ color: receipt.paymentMethod === 'mpesa' ? '#0F766E' : '#0F172A' }}>
-                {receipt.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
-              </p>
-            </div>
-          </div>
-
-          {/* Items */}
-          <div className="px-6 py-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
-              <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>Items Purchased</p>
-            </div>
-            <div className="space-y-2">
-              {receipt.items.map((item, i) => (
-                <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: '#0F172A' }}>{item.name}</p>
-                    <p className="text-xs text-gray-400">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
-                  </div>
-                  <p className="text-sm font-bold" style={{ color: '#0F172A' }}>{formatCurrency(item.total)}</p>
-                </div>
-              ))}
+              <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><Package className="w-3 h-3" />Items</p>
+              <p className="text-xs font-bold" style={{ color: '#0F172A' }}>{receipt.itemCount}</p>
             </div>
           </div>
 
           {/* Total */}
-          <div className="px-6 py-4 border-t border-gray-200" style={{ backgroundColor: '#F0FDFA' }}>
+          <div className="px-6 py-4" style={{ backgroundColor: '#F0FDFA' }}>
             <div className="flex justify-between items-center">
               <p className="font-bold" style={{ color: '#0F172A' }}>Total Amount</p>
               <p className="text-2xl font-extrabold" style={{ color: '#0F766E' }}>{formatCurrency(receipt.totalAmount)}</p>
             </div>
-            {receipt.staffName && (
-              <p className="text-xs text-gray-500 mt-1">Served by: <span className="font-medium">{receipt.staffName}</span></p>
-            )}
           </div>
         </div>
 
         {/* Rating section */}
-        {!ratingSubmitted ? (
+        {!hasRated ? (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
             <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Rate Your Experience</h3>
             <p className="text-sm text-gray-500 mb-5">How was your visit to {receipt.shopName}?</p>
@@ -192,6 +184,7 @@ export default function ReceiptPage() {
                   onClick={() => setStars(n)}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
+                  aria-label={`${n} star${n > 1 ? 's' : ''}`}
                   className="transition-transform hover:scale-110 active:scale-95"
                 >
                   <Star
@@ -210,8 +203,12 @@ export default function ReceiptPage() {
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Optional: Tell them what you liked or how they can improve..."
                   rows={3}
+                  maxLength={500}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 resize-none mb-4"
                 />
+                {ratingError && (
+                  <p className="text-sm text-red-600 mb-3 text-center">{ratingError}</p>
+                )}
                 <button
                   onClick={submitRating}
                   disabled={ratingLoading}
@@ -236,6 +233,18 @@ export default function ReceiptPage() {
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Thanks for the feedback!</h3>
+            {finalStars > 0 && (
+              <div className="flex justify-center gap-1 my-3">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className="w-6 h-6"
+                    fill={n <= finalStars ? '#C8932A' : 'none'}
+                    style={{ color: n <= finalStars ? '#C8932A' : '#D1D5DB' }}
+                  />
+                ))}
+              </div>
+            )}
             <p className="text-sm text-gray-500">Your rating helps {receipt.shopName} improve their service.</p>
           </div>
         )}

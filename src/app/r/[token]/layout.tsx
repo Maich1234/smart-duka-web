@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
  * Public receipt pages must never be indexed.
  *
  * Each URL is a per-sale token meant for the one customer who scanned that
- * printed receipt. The page shows shop name, line items, and amounts, so an
+ * printed receipt. The page shows shop name, invoice number and amount, so an
  * indexed receipt publishes a shop's takings one transaction at a time.
  * robots.txt already disallows /r/ — this is the per-page instruction that
  * also covers a crawler arriving from a shared link rather than the root.
