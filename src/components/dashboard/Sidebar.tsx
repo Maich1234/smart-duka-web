@@ -18,6 +18,7 @@ import {
   ChevronRight,
   X,
   Sparkles,
+  Bell,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
@@ -39,6 +40,7 @@ const ownerLinks = [
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
   { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
+  { href: '/owner/notifications', icon: Bell, label: 'Notifications' },
   { href: '/owner/profile', icon: User, label: 'Profile' },
 ];
 
@@ -47,6 +49,7 @@ const staffLinks = [
   { href: '/staff/inventory', icon: Package, label: 'Products' },
   { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale' },
   { href: '/staff/expenses', icon: Receipt, label: 'Expenses' },
+  { href: '/staff/notifications', icon: Bell, label: 'Notifications' },
   { href: '/staff/profile', icon: User, label: 'Profile' },
 ];
 
