@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, History, Banknote, Smartphone,
@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
+import {
+  CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
+} from '@/lib/paymentMethods';
 import { useAuthStore } from '@/store/authStore';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
@@ -35,7 +38,7 @@ interface SaleItem {
 }
 interface Sale {
   _id: string; invoiceNumber: string; totalAmount: number;
-  paymentMethod: 'cash' | 'mpesa' | 'card'; createdAt: string;
+  paymentMethod: string; paymentMethodLabel?: string; createdAt: string;
   items: SaleItem[]; staff?: { _id: string; name: string };
   receiptToken?: string; mpesaReceiptNumber?: string;
   status?: 'completed' | 'voided' | 'refund_pending' | 'refunded';
@@ -46,7 +49,7 @@ interface SalesStats {
   transactionCount: number; avgSale: number; percentageChange: number;
   cashCount: number; mpesaCount: number;
 }
-type PayFilter = 'all' | 'cash' | 'mpesa';
+type PayFilter = string;
 type Tab = 'new' | 'history';
 
 const fmt = (n: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
@@ -274,7 +277,7 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
         </div>
         <h3 className="text-xl font-bold mb-1" style={{ color: '#0F172A' }}>Sale Complete!</h3>
         <p className="text-gray-500 text-sm mb-5">
-          #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+          #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {saleMethodLabel(sale)}
         </p>
         {sale.mpesaReceiptNumber && (
           <div className="mb-5 px-5 py-3 rounded-xl border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
@@ -331,7 +334,7 @@ export default function SalesPage() {
   const [tab, setTab] = useState<Tab>('new');
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartEntry[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>(CASH_METHOD_KEY);
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneDigits, setPhoneDigits] = useState('');
   const [quantityModalProduct, setQuantityModalProduct] = useState<Product | null>(null);
@@ -404,6 +407,17 @@ export default function SalesPage() {
   });
   const mpesaEnabled = paymentStatus?.isConfigured ?? false;
 
+  // The shop's own till buttons; falls back to Cash + M-PESA for shops that
+  // never opened the setting, so nobody is left without a way to sell.
+  const saleMethods = useMemo(() => resolveSaleMethods(shopData?.paymentMethods), [shopData]);
+
+  // If the selected button is removed or switched off, fall back to the first.
+  useEffect(() => {
+    if (saleMethods.length > 0 && !saleMethods.some((m) => m.key === paymentMethod)) {
+      setPaymentMethod(saleMethods[0].key);
+    }
+  }, [saleMethods, paymentMethod]);
+
   // Sale mutation
   const createSaleMutation = useMutation({
     mutationFn: async (data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string }) => {
@@ -452,13 +466,14 @@ export default function SalesPage() {
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
-    if (paymentMethod === 'mpesa') {
-      if (!mpesaEnabled) return alert('M-Pesa is not configured for this shop.');
+    // STK Push is the only flow with a precondition, and only where the shop
+    // has connected M-Pesa Business. Everything else records and prints.
+    if (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled) {
       if (!isValidPhone) return alert('Enter a valid Kenyan phone number (e.g. 0712345678)');
       setMpesaModalOpen(true);
       return;
     }
-    createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'cash' });
+    createSaleMutation.mutate({ items: buildItems(), paymentMethod });
   };
 
   const handleMpesaSuccess = (transactionId: string) => {
@@ -655,19 +670,20 @@ export default function SalesPage() {
 
                   {/* Payment method */}
                   <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { v: 'cash' as const, label: 'Cash', Icon: Banknote },
-                      { v: 'mpesa' as const, label: 'M-Pesa', Icon: Smartphone },
-                    ].map(({ v, label, Icon }) => (
-                      <button key={v} onClick={() => setPaymentMethod(v)}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === v ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                        <Icon className="w-4 h-4" /> {label}
-                      </button>
-                    ))}
+                    {saleMethods.map((method) => {
+                      const Icon = methodIcon(method);
+                      return (
+                        <button key={method.key} onClick={() => setPaymentMethod(method.key)}
+                          className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                          <Icon className="w-4 h-4" /> {method.label}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  {/* Phone number for M-Pesa */}
-                  {paymentMethod === 'mpesa' && (
+                  {/* Phone number for STK Push, which needs credentials.
+                      Unconfigured M-Pesa is just another button. */}
+                  {paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Customer Phone Number</label>
                       <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
@@ -681,11 +697,6 @@ export default function SalesPage() {
                       {phoneDigits && !isValidPhone && (
                         <p className="text-xs text-red-500 mt-1">Enter a valid number starting with 7 or 1 (9 digits)</p>
                       )}
-                      {!mpesaEnabled && (
-                        <div className="mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                          <p className="text-xs text-amber-700">M-Pesa is not configured for this shop. Set it up in Settings → Payments.</p>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -696,12 +707,12 @@ export default function SalesPage() {
                   )}
 
                   <button onClick={handleCheckout}
-                    disabled={createSaleMutation.isPending || (paymentMethod === 'mpesa' && (!isValidPhone || !mpesaEnabled))}
+                    disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white transition-all disabled:opacity-60"
                     style={{ backgroundColor: '#0F766E' }}>
                     {createSaleMutation.isPending
                       ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
-                      : paymentMethod === 'mpesa'
+                      : paymentMethod === MPESA_METHOD_KEY && mpesaEnabled
                       ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request — {fmt(totalAmount)}</>
                       : <><CheckCircle className="w-4 h-4" /> Complete Sale — {fmt(totalAmount)}</>}
                   </button>
@@ -760,11 +771,11 @@ export default function SalesPage() {
 
           {/* Payment filter pills */}
           <div className="flex gap-2 flex-wrap">
-            {([
-              ['all', 'All Sales'],
-              ['mpesa', 'M-Pesa'],
-              ['cash', 'Cash'],
-            ] as [PayFilter, string][]).map(([f, label]) => (
+            {/* Filters follow the shop's own buttons, so an Airtel or bank
+                sale is actually findable in history. */}
+            {([['all', 'All Sales'] as [string, string]]
+              .concat(saleMethods.map((m) => [m.key, m.label] as [string, string]))
+            ).map(([f, label]) => (
               <button key={f} onClick={() => setPayFilter(f)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${payFilter === f ? 'border-[#0F766E] bg-[#0F766E] text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-[#0F766E]'}`}>
                 {label}
@@ -813,7 +824,7 @@ export default function SalesPage() {
                         <td className="px-4 py-3.5">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-600'}`}>
                             {sale.paymentMethod === 'mpesa' ? <Smartphone className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
-                            {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+                            {saleMethodLabel(sale)}
                           </span>
                         </td>
                         <td className="px-4 py-3.5 text-gray-600">{sale.staff?.name ?? '—'}</td>

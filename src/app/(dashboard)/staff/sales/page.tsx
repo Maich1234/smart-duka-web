@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus, X,
@@ -10,6 +10,9 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
+import {
+  CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
+} from '@/lib/paymentMethods';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
@@ -24,7 +27,7 @@ interface Product {
 interface CartEntry { product: Product; qty: number; unitPrice: number; variantId?: string; variantName?: string; }
 interface SaleItem { name?: string; productName?: string; quantity: number; unitPrice: number; subtotal: number; variantName?: string; }
 interface Sale {
-  _id: string; invoiceNumber: string; totalAmount: number; paymentMethod: 'cash' | 'mpesa'; createdAt: string;
+  _id: string; invoiceNumber: string; totalAmount: number; paymentMethod: string; paymentMethodLabel?: string; createdAt: string;
   items: SaleItem[]; receiptToken?: string; mpesaReceiptNumber?: string;
   status?: 'completed' | 'voided' | 'refund_pending' | 'refunded'; refund?: RefundInfo;
 }
@@ -129,7 +132,7 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
         </div>
         <h3 className="text-xl font-bold mb-1" style={{ color: '#0F172A' }}>Sale Complete!</h3>
         <p className="text-gray-500 text-sm mb-5">
-          #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+          #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {saleMethodLabel(sale)}
         </p>
         {sale.mpesaReceiptNumber && (
           <div className="mb-5 px-5 py-3 rounded-xl border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
@@ -274,7 +277,7 @@ export default function StaffSalesPage() {
 
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartEntry[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>(CASH_METHOD_KEY);
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneDigits, setPhoneDigits] = useState('');
   const [quantityModalProduct, setQuantityModalProduct] = useState<Product | null>(null);
@@ -314,6 +317,17 @@ export default function StaffSalesPage() {
   });
   const mpesaEnabled = paymentStatus?.isConfigured ?? false;
 
+  // The shop's own till buttons; falls back to Cash + M-PESA for shops that
+  // never opened the setting, so nobody is left without a way to sell.
+  const saleMethods = useMemo(() => resolveSaleMethods(shopData?.paymentMethods), [shopData]);
+
+  // If the selected button is removed or switched off, fall back to the first.
+  useEffect(() => {
+    if (saleMethods.length > 0 && !saleMethods.some((m) => m.key === paymentMethod)) {
+      setPaymentMethod(saleMethods[0].key);
+    }
+  }, [saleMethods, paymentMethod]);
+
   const createSaleMutation = useMutation({
     mutationFn: async (data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string }) => {
       const res = await api.post('/sales', data);
@@ -348,12 +362,13 @@ export default function StaffSalesPage() {
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
-    if (paymentMethod === 'mpesa') {
-      if (!mpesaEnabled) return alert('M-Pesa is not configured for this shop. Contact the owner.');
+    // STK Push is the only flow with a precondition, and only where the shop
+    // has connected M-Pesa Business. Everything else records and prints.
+    if (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled) {
       if (!isValidPhone) return alert('Enter a valid Kenyan phone number.');
       setMpesaModalOpen(true); return;
     }
-    createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'cash' });
+    createSaleMutation.mutate({ items: buildItems(), paymentMethod });
   };
 
   return (
@@ -457,14 +472,19 @@ export default function StaffSalesPage() {
                   <span className="text-2xl font-extrabold" style={{ color: '#0F766E' }}>{fmt(totalAmount)}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {([['cash', 'Cash', Banknote], ['mpesa', 'M-Pesa', Smartphone]] as const).map(([v, label, Icon]) => (
-                    <button key={v} onClick={() => setPaymentMethod(v as 'cash' | 'mpesa')}
-                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === v ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500'}`}>
-                      <Icon className="w-4 h-4" /> {label}
-                    </button>
-                  ))}
+                  {saleMethods.map((method) => {
+                    const Icon = methodIcon(method);
+                    return (
+                      <button key={method.key} onClick={() => setPaymentMethod(method.key)}
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500'}`}>
+                        <Icon className="w-4 h-4" /> {method.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {paymentMethod === 'mpesa' && (
+                {/* Phone entry belongs to STK Push, which needs credentials.
+                    Unconfigured M-Pesa is just another button. */}
+                {paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && (
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Customer Phone</label>
                     <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
@@ -473,7 +493,6 @@ export default function StaffSalesPage() {
                         className="flex-1 px-3 py-2.5 text-sm bg-white outline-none tracking-widest" />
                     </div>
                     {phoneDigits && !isValidPhone && <p className="text-xs text-red-500 mt-1">Enter a valid number starting with 7 or 1</p>}
-                    {!mpesaEnabled && <div className="mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200"><p className="text-xs text-amber-700">M-Pesa not configured. Contact the shop owner.</p></div>}
                   </div>
                 )}
                 {createSaleMutation.error && (
@@ -481,11 +500,11 @@ export default function StaffSalesPage() {
                     {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
                   </div>
                 )}
-                <button onClick={handleCheckout} disabled={createSaleMutation.isPending || (paymentMethod === 'mpesa' && (!isValidPhone || !mpesaEnabled))}
+                <button onClick={handleCheckout} disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white disabled:opacity-60" style={{ backgroundColor: '#0F766E' }}>
                   {createSaleMutation.isPending
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
-                    : paymentMethod === 'mpesa'
+                    : paymentMethod === MPESA_METHOD_KEY && mpesaEnabled
                     ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request — {fmt(totalAmount)}</>
                     : <><CheckCircle className="w-4 h-4" /> Complete Sale — {fmt(totalAmount)}</>}
                 </button>
@@ -512,7 +531,7 @@ export default function StaffSalesPage() {
                   <div className="flex items-center justify-end gap-1.5">
                     <SaleStatusBadge status={sale.status} />
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-500'}`}>
-                      {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+                      {saleMethodLabel(sale)}
                     </span>
                   </div>
                 </div>

@@ -18,7 +18,8 @@ export interface RefundableSale {
   _id: string;
   invoiceNumber: string;
   totalAmount: number;
-  paymentMethod: 'cash' | 'mpesa' | 'card';
+  paymentMethod: string;
+  paymentMethodLabel?: string;
   status?: 'completed' | 'voided' | 'refund_pending' | 'refunded';
   refund?: RefundInfo;
 }
@@ -53,6 +54,10 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
     enabled: canRefund && sale.paymentMethod === 'mpesa' && status === 'completed',
   });
   const mpesaRefundsReady = paymentStatus?.refundsConfigured ?? false;
+  // A shop taking M-Pesa on a Pochi or an unconnected till has no reversal API
+  // at all, so offering "Send back via M-Pesa" there is a dead end — those
+  // refunds are handed back over the counter like any other.
+  const canReverseViaMpesa = sale.paymentMethod === 'mpesa' && (paymentStatus?.isConfigured ?? false);
 
   const refundMutation = useMutation({
     mutationFn: async (method?: 'cash') => {
@@ -141,7 +146,7 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
             <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">{error}</div>
           )}
 
-          {sale.paymentMethod === 'mpesa' ? (
+          {canReverseViaMpesa ? (
             <div className="space-y-2">
               <button onClick={() => { setError(''); refundMutation.mutate(undefined); }}
                 disabled={refundMutation.isPending || !mpesaRefundsReady}
