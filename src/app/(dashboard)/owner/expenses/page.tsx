@@ -13,12 +13,19 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import {
+  MONEY_OUT_METHODS,
+  MONEY_OUT_METHOD_LABELS,
+  type MoneyOutMethod,
+} from '@/constants/paymentMethods';
 
 interface Expense {
   _id: string;
   category: string;
   amount: number;
   description?: string;
+  /** Absent on expenses recorded before the field existed — treat as 'cash'. */
+  paymentMethod?: MoneyOutMethod;
   date?: string;
   createdAt: string;
 }
@@ -29,6 +36,10 @@ const schema = z.object({
   category: z.string().min(1, 'Category is required'),
   amount: z.string().refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter a valid amount'),
   description: z.string().optional(),
+  // Which pot the money came from — without it a Cashbook can't tell till cash
+  // from M-Pesa. Defaulted rather than required so the form still submits if
+  // the field is never touched.
+  paymentMethod: z.enum(['cash', 'mpesa', 'bank', 'credit']).default('cash'),
   date: z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
@@ -75,7 +86,11 @@ export default function ExpensesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
   });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { paymentMethod: 'cash' },
+  });
+  const paymentMethod = watch('paymentMethod');
 
   const totalExpenses = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
@@ -131,6 +146,11 @@ export default function ExpensesPage() {
                   <tr key={e._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>
+                      {e.paymentMethod && e.paymentMethod !== 'cash' && (
+                        <p className={`text-xs mt-0.5 ${e.paymentMethod === 'credit' ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                          {e.paymentMethod === 'credit' ? 'On credit — not paid yet' : MONEY_OUT_METHOD_LABELS[e.paymentMethod]}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <Badge color={categoryColors[e.category] || 'gray'}>{e.category}</Badge>
@@ -178,6 +198,36 @@ export default function ExpensesPage() {
             {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>}
           </div>
           <Input label="Amount (KES) *" type="number" step="0.01" placeholder="0.00" error={errors.amount?.message} {...register('amount')} />
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Paid with</label>
+            <div className="flex flex-wrap gap-2">
+              {MONEY_OUT_METHODS.map((method) => {
+                const active = paymentMethod === method;
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setValue('paymentMethod', method, { shouldDirty: true })}
+                    className={`px-3.5 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                      active
+                        ? 'border-[#0F766E] bg-[#0F766E] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E]'
+                    }`}
+                  >
+                    {MONEY_OUT_METHOD_LABELS[method]}
+                  </button>
+                );
+              })}
+            </div>
+            {paymentMethod === 'credit' && (
+              <p className="mt-2 text-xs text-gray-500">
+                No money has left your till yet. This won&apos;t show in your cashbook until you pay.
+              </p>
+            )}
+          </div>
+
           <Input label="Date" type="date" {...register('date')} />
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Notes</label>
