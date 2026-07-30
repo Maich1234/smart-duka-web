@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Smartphone, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw, Shield, X } from 'lucide-react';
 import api from '@/lib/api';
-
-type ModalStatus = 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
-type MpesaTransactionStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+import { useStkPoll, type StkStatus } from '@/hooks/useStkPoll';
 
 interface Props {
   open: boolean;
@@ -15,19 +13,6 @@ interface Props {
   currency?: string;
   onSuccess: (transactionId: string, mpesaReceiptNumber: string) => void;
   onCancel: () => void;
-}
-
-const POLL_INTERVAL_MS = 3000;
-const MAX_POLL_MS = 90000;
-
-function generateIdempotencyKey(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
 }
 
 function formatPhone(phone: string): string {
@@ -43,90 +28,57 @@ function formatCurrency(n: number, currency = 'KES') {
 }
 
 export default function MpesaPaymentModal({ open, phoneNumber, amount, accountReference, currency = 'KES', onSuccess, onCancel }: Props) {
-  const [status, setStatus] = useState<ModalStatus>('initiating');
-  const [transactionId, setTransactionId] = useState<string | null>(null);
-  const [receiptNumber, setReceiptNumber] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showVerifyInput, setShowVerifyInput] = useState(false);
   const [verifyCode, setVerifyCode] = useState('');
   const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
   const [pulse, setPulse] = useState(false);
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const idempotencyKeyRef = useRef<string>('');
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-  }, []);
-
-  const beginPolling = useCallback((txId: string) => {
-    stopPolling();
-    pollRef.current = setInterval(async () => {
-      if (Date.now() - startTimeRef.current > MAX_POLL_MS) {
-        stopPolling();
-        setStatus('timeout');
-        return;
-      }
-      try {
-        const res = await api.get(`/mpesa/status/${txId}`);
-        const s: MpesaTransactionStatus = res.data.data.status;
-        if (s !== 'pending') {
-          stopPolling();
-          if (s === 'success') {
-            setReceiptNumber(res.data.data.mpesaReceiptNumber);
-            setStatus('success');
-          } else if (s === 'cancelled') {
-            setStatus('cancelled');
-          } else if (s === 'timeout') {
-            setStatus('timeout');
-          } else {
-            setErrorMessage(res.data.data.errorMessage ?? 'Payment was not completed.');
-            setStatus('failed');
-          }
-        }
-      } catch { /* network hiccup — keep polling */ }
-    }, POLL_INTERVAL_MS);
-  }, [stopPolling]);
-
-  const sendSTKPush = useCallback(async (key: string) => {
-    setStatus('initiating');
-    setTransactionId(null);
-    setReceiptNumber(null);
-    setErrorMessage(null);
-    setShowVerifyInput(false);
-    setVerifyCode('');
-    try {
-      const res = await api.post('/mpesa/initiate',
+  const {
+    stage: status,
+    id: transactionId,
+    receipt: receiptNumber,
+    errorMessage,
+    isTerminal,
+    start,
+    reset,
+    resolveExternally,
+  } = useStkPoll({
+    initiate: async (idempotencyKey) => {
+      const res = await api.post(
+        '/mpesa/initiate',
         { phoneNumber, amount, accountReference },
-        key ? { headers: { 'Idempotency-Key': key } } : undefined
+        { headers: { 'X-Idempotency-Key': idempotencyKey } }
       );
-      const data = res.data;
-      setTransactionId(data.data.transactionId);
-      if (data.idempotent && data.data.status !== 'pending') {
-        const s: MpesaTransactionStatus = data.data.status;
-        if (s === 'success') { setReceiptNumber(data.data.mpesaReceiptNumber ?? null); setStatus('success'); }
-        else if (s === 'cancelled') setStatus('cancelled');
-        else if (s === 'timeout') setStatus('timeout');
-        else { setErrorMessage(data.data.errorMessage ?? 'Payment not completed.'); setStatus('failed'); }
-        return;
-      }
-      setStatus('pending');
-      startTimeRef.current = Date.now();
-      beginPolling(data.data.transactionId);
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      setErrorMessage(e.response?.data?.message || e.message || 'Failed to send payment request');
-      setStatus('failed');
-    }
-  }, [phoneNumber, amount, accountReference, beginPolling]);
+      const d = res.data.data;
+      return {
+        id: d.transactionId,
+        status: d.status as StkStatus,
+        receipt: d.mpesaReceiptNumber,
+        errorMessage: d.errorMessage,
+      };
+    },
+    poll: async (id) => {
+      const res = await api.get(`/mpesa/status/${id}`);
+      const d = res.data.data;
+      return {
+        status: d.status as StkStatus,
+        receipt: d.mpesaReceiptNumber,
+        errorMessage: d.errorMessage ?? 'Payment was not completed.',
+      };
+    },
+  });
 
   useEffect(() => {
-    if (!open) { stopPolling(); return; }
-    idempotencyKeyRef.current = generateIdempotencyKey();
-    sendSTKPush(idempotencyKeyRef.current);
-    return () => stopPolling();
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!open) {
+      reset();
+      return;
+    }
+    setShowVerifyInput(false);
+    setVerifyCode('');
+    setVerifyError('');
+    start();
+  }, [open, start, reset]);
 
   // Pulse animation for pending state
   useEffect(() => {
@@ -139,19 +91,22 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
     const code = verifyCode.trim().toUpperCase();
     if (code.length < 6) return;
     setVerifying(true);
+    setVerifyError('');
     try {
       const res = await api.post('/mpesa/verify-receipt', { receiptNumber: code });
       const d = res.data.data;
       if (d.status === 'success') {
-        setReceiptNumber(d.mpesaReceiptNumber);
-        setTransactionId(d.transactionId);
-        setStatus('success');
+        resolveExternally({
+          id: d.transactionId,
+          status: 'success',
+          receipt: d.mpesaReceiptNumber,
+        });
       } else {
-        alert(`Transaction found but status is "${d.status}". ${res.data.message}`);
+        setVerifyError(`That code is recorded as "${d.status}", not paid.`);
       }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      alert(e.response?.data?.message || 'Receipt code not found. Double-check and try again.');
+      setVerifyError(e.response?.data?.message || 'Receipt code not found. Double-check and try again.');
     } finally {
       setVerifying(false);
     }
@@ -159,7 +114,6 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
 
   if (!open) return null;
 
-  const isTerminal = ['failed', 'cancelled', 'timeout'].includes(status);
   const maskedPhone = formatPhone(phoneNumber);
 
   return (
@@ -182,8 +136,9 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
 
         <div className="p-7 flex flex-col items-center text-center">
 
-          {/* INITIATING */}
-          {status === 'initiating' && (
+          {/* INITIATING. 'idle' is the single frame before the effect fires;
+              showing the sending state avoids a flash of an empty dialog. */}
+          {(status === 'initiating' || status === 'idle') && (
             <>
               <div className="w-18 h-18 w-[72px] h-[72px] rounded-2xl flex items-center justify-center mb-5 shadow-lg" style={{ background: 'linear-gradient(135deg, #0F766E, #14B8A6)' }}>
                 <Smartphone className="w-8 h-8 text-white" />
@@ -288,8 +243,11 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
                 )}
               </p>
               <div className="flex gap-3 w-full mb-4">
+                {/* A fresh idempotency key per attempt, so this actually
+                    sends a new prompt. Reusing the first attempt's key made
+                    Try Again replay the stored failure instead. */}
                 <button
-                  onClick={() => sendSTKPush(idempotencyKeyRef.current)}
+                  onClick={start}
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all"
                   style={{ backgroundColor: '#0F766E' }}
                 >
@@ -340,6 +298,9 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
                       {verifying ? '...' : 'Verify'}
                     </button>
                   </div>
+                  {verifyError && (
+                    <p className="mt-2 text-xs text-red-600 text-left">{verifyError}</p>
+                  )}
                 </div>
               )}
             </>

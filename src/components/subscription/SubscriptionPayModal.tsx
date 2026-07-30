@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Smartphone, Check, XCircle, Clock, AlertCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import { useStkPoll, type StkStatus } from '@/hooks/useStkPoll';
 import {
   initiateSubscriptionPayment,
   getSubscriptionPaymentStatus,
@@ -12,6 +13,10 @@ import {
   type BillingCycle,
 } from '@/services/subscription';
 
+/**
+ * The STK stages come from useStkPoll; 'input' and 'recover' are this
+ * screen's own steps either side of it.
+ */
 type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'recover';
 
 interface Promo {
@@ -55,10 +60,7 @@ export default function SubscriptionPayModal({
   onClose,
   onSuccess,
 }: SubscriptionPayModalProps) {
-  const [stage, setStage] = useState<Stage>('input');
   const [digits, setDigits] = useState(() => (defaultPhone ?? '').replace(/^\+?254/, '').replace(/\D/g, '').slice(0, 9));
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<string | null>(null);
   const [promoInput, setPromoInput] = useState('');
   const [promo, setPromo] = useState<Promo | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -66,23 +68,42 @@ export default function SubscriptionPayModal({
   // Kept so the recovery path can tell the owner which attempt it is chasing.
   const [smsText, setSmsText] = useState('');
   const [recovering, setRecovering] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef = useRef(0);
+  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const stopPolling = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+  const stk = useStkPoll({
+    initiate: async (idempotencyKey) => {
+      const res = await initiateSubscriptionPayment(
+        { phoneNumber: `+254${digits}`, billingCycle, planSlug, promoCode: promo?.code },
+        idempotencyKey
+      );
+      return { id: res.data.paymentId, status: res.data.status as StkStatus };
+    },
+    poll: async (paymentId) => {
+      const res = await getSubscriptionPaymentStatus(paymentId);
+      return {
+        status: res.data.status as StkStatus,
+        receipt: res.data.receipt,
+        errorMessage: res.data.errorMessage,
+      };
+    },
+    intervalMs: POLL_INTERVAL_MS,
+    timeoutMs: POLL_TIMEOUT_MS,
+  });
+
+  // The hook owns the STK stages; 'input' and 'recover' sit either side of it.
+  const stage: Stage = recoverOpen ? 'recover' : stk.stage === 'idle' ? 'input' : stk.stage;
+  const receipt = stk.receipt;
+  const errorMessage = localError ?? stk.errorMessage;
+
+  const backToInput = () => {
+    stk.reset();
+    setRecoverOpen(false);
+    setLocalError(null);
   };
 
-  useEffect(() => stopPolling, []);
-
   const reset = () => {
-    stopPolling();
-    setStage('input');
-    setErrorMessage(null);
-    setReceipt(null);
+    backToInput();
     setSmsText('');
   };
   const handleClose = () => {
@@ -96,49 +117,10 @@ export default function SubscriptionPayModal({
 
   const phoneValid = /^[17]\d{8}$/.test(digits);
 
-  const startPolling = (paymentId: string) => {
-    startedAtRef.current = Date.now();
-    pollRef.current = setInterval(async () => {
-      if (Date.now() - startedAtRef.current > POLL_TIMEOUT_MS) {
-        stopPolling();
-        setStage('timeout');
-        setErrorMessage('The payment request expired before it was confirmed.');
-        return;
-      }
-      try {
-        const res = await getSubscriptionPaymentStatus(paymentId);
-        const { status, receipt: rcpt, errorMessage: err } = res.data;
-        if (status === 'pending') return;
-        stopPolling();
-        setReceipt(rcpt);
-        setErrorMessage(err);
-        setStage(status);
-      } catch {
-        // Network jitter — keep polling silently until the timeout.
-      }
-    }, POLL_INTERVAL_MS);
-  };
-
-  const pay = async () => {
+  const pay = () => {
     if (!phoneValid) return;
-    setStage('initiating');
-    setErrorMessage(null);
-    try {
-      const res = await initiateSubscriptionPayment(
-        { phoneNumber: `+254${digits}`, billingCycle, planSlug, promoCode: promo?.code },
-        crypto.randomUUID()
-      );
-      if (res.data.status === 'pending') {
-        setStage('pending');
-        startPolling(res.data.paymentId);
-      } else {
-        setStage(res.data.status);
-      }
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setStage('failed');
-      setErrorMessage(e.response?.data?.message ?? 'Could not start the payment. Check your connection and try again.');
-    }
+    setLocalError(null);
+    stk.start();
   };
 
   const applyPromo = async () => {
@@ -175,18 +157,18 @@ export default function SubscriptionPayModal({
   const recoverFromSms = async () => {
     if (!smsText.trim() || recovering) return;
     setRecovering(true);
-    setErrorMessage(null);
+    setLocalError(null);
     try {
       const res = await reconcileSubscriptionByMessage(smsText);
       if (res.data.status === 'success') {
-        setReceipt(res.data.receipt);
-        setStage('success');
+        setRecoverOpen(false);
+        stk.resolveExternally({ status: 'success', receipt: res.data.receipt });
       } else {
-        setErrorMessage(res.message);
+        setLocalError(res.message);
       }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setErrorMessage(e.response?.data?.message ?? 'We could not verify that payment. Please contact support.');
+      setLocalError(e.response?.data?.message ?? 'We could not verify that payment. Please contact support.');
     } finally {
       setRecovering(false);
     }
@@ -301,12 +283,12 @@ export default function SubscriptionPayModal({
           <p className="text-sm text-gray-500 mb-4">
             {errorMessage ?? (stage === 'cancelled' ? 'The M-Pesa prompt was dismissed.' : 'The payment did not go through. No money was taken.')}
           </p>
-          <Button onClick={() => setStage('input')} className="w-full">Try again</Button>
+          <Button onClick={backToInput} className="w-full">Try again</Button>
           {/* The failure that actually strands people is a Safaricom callback
               that never arrives: money left the till but the subscription
               stayed locked. This is the way out. */}
           <button
-            onClick={() => { setErrorMessage(null); setStage('recover'); }}
+            onClick={() => { setLocalError(null); setRecoverOpen(true); }}
             className="mt-3 text-sm font-semibold hover:underline"
             style={{ color: '#0F766E' }}
           >
@@ -333,7 +315,7 @@ export default function SubscriptionPayModal({
           <Button onClick={recoverFromSms} disabled={!smsText.trim() || recovering} className="w-full mt-4">
             {recovering ? 'Checking with M-Pesa…' : 'Verify payment'}
           </Button>
-          <button onClick={() => setStage('input')} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Back</button>
+          <button onClick={backToInput} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Back</button>
         </div>
       )}
     </Modal>

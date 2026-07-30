@@ -170,7 +170,7 @@ export async function initiateSubscriptionPayment(
   const res = await api.post(
     '/subscriptions/pay',
     params,
-    idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined
+    idempotencyKey ? { headers: { 'X-Idempotency-Key': idempotencyKey } } : undefined
   );
   return res.data;
 }
