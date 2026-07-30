@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Users, Mail, Phone, Search, ChevronRight, LogOut, Circle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Users, Mail, Phone, Search, ChevronRight, LogOut, Circle, CheckCircle2, XCircle, Loader2, UserMinus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,7 +14,13 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
-import { forceLogoutStaff, checkStaffEmailAvailability, type Staff, type StaffActiveSession } from '@/services/staff';
+import {
+  forceLogoutStaff,
+  checkStaffEmailAvailability,
+  getStaffDeletionRequests,
+  type Staff,
+  type StaffActiveSession,
+} from '@/services/staff';
 import { useAuthStore } from '@/store/authStore';
 import { buildSystemEmailDomain, slugifyLocalPart } from '@/utils/staffEmailSlug';
 
@@ -78,6 +84,12 @@ export default function StaffPage() {
 
   const staff = staffRaw?.data ?? [];
   const totalPages = staffRaw?.pagination?.pages ?? 1;
+
+  const { data: deletionRequestData } = useQuery({
+    queryKey: ['staffDeletionRequests'],
+    queryFn: getStaffDeletionRequests,
+  });
+  const deletionRequests = deletionRequestData?.data ?? [];
 
   const resetEmailFields = () => {
     setEmailMode('real');
@@ -186,6 +198,37 @@ export default function StaffPage() {
           <span className="sm:hidden">Add</span>
         </Button>
       </div>
+
+      {/* Pending account-closure requests. Unanswered requests go through on
+          their own after the approval window, so they can't be tucked away
+          behind the "Past 2 days" filter or a search term. */}
+      {deletionRequests.length > 0 && (
+        <div className="rounded-2xl p-5 border space-y-3" style={{ backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }}>
+          <div className="flex items-center gap-2">
+            <UserMinus className="w-4 h-4" style={{ color: '#B45309' }} />
+            <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>
+              {deletionRequests.length === 1
+                ? '1 account closure request'
+                : `${deletionRequests.length} account closure requests`}
+            </p>
+          </div>
+          {deletionRequests.map((request) => (
+            <Link
+              key={request._id}
+              href={`/owner/staff/${request._id}`}
+              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: '#0F172A' }}>{request.name}</p>
+                <p className="text-xs text-gray-500">
+                  Approves on its own by {format(new Date(request.autoApprovesAt), 'MMM d, yyyy')}
+                </p>
+              </div>
+              <span className="text-xs font-semibold shrink-0" style={{ color: '#0F766E' }}>Review →</span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Search + date filter */}
       <div className="flex gap-3 items-center">

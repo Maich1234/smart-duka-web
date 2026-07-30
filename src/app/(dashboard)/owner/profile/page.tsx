@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import LegalLinks from '@/components/profile/LegalLinks';
+import DeleteAccountSection from '@/components/profile/DeleteAccountSection';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -403,6 +404,8 @@ export default function ProfilePage() {
           </div>
         </form>
       </Card>
+
+      <DeleteAccountSection />
 
       <LegalLinks />
     </div>
