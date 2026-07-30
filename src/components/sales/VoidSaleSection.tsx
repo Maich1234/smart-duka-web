@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ban, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
+import { useMoney } from '@/lib/money';
 
 export interface VoidableSale {
   _id: string;
@@ -14,8 +15,7 @@ export interface VoidableSale {
   voidReason?: string;
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 /**
  * Void action for a sale detail modal, alongside RefundSaleSection.
@@ -38,6 +38,7 @@ export default function VoidSaleSection({
   canVoid: boolean;
   onDone?: () => void;
 }) {
+  const fmt = useMoney();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState('');

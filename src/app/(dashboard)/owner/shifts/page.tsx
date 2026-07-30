@@ -12,16 +12,17 @@ import Button from '@/components/ui/Button';
 import EndShiftModal from '@/components/shifts/EndShiftModal';
 import { getShifts, type Shift } from '@/services/shifts';
 import { useShop } from '@/hooks/useShop';
+import { useMoney } from '@/lib/money';
 
 const PAGE_SIZE = 15;
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 const staffName = (shift: Shift) =>
   typeof shift.staff === 'object' && shift.staff ? shift.staff.name : 'Unknown';
 
 export default function ShiftsPage() {
+  const fmt = useMoney();
   const { shiftManagementEnabled, isLoading: shopLoading } = useShop();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<'all' | 'active' | 'closed'>('all');

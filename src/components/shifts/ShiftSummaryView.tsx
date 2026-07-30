@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import type { ShiftSummary } from '@/services/shifts';
+import { useMoney } from '@/lib/money';
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
@@ -27,6 +27,7 @@ export default function ShiftSummaryView({
   openingFloat?: number;
   closingCount?: number;
 }) {
+  const fmt = useMoney();
   const discrepancy = summary.cashDiscrepancy;
 
   return (

@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
+import { useMoney } from '@/lib/money';
 
 interface Product {
   _id: string;
@@ -28,6 +29,7 @@ interface ProductsResponse {
 }
 
 export default function InventoryPage() {
+  const fmt = useMoney();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -131,7 +133,7 @@ export default function InventoryPage() {
                         <Badge color="gray">{p.category || 'General'}</Badge>
                       </td>
                       <td className="px-4 py-3 font-semibold" style={{ color: '#0F172A' }}>
-                        KES {p.sellingPrice?.toLocaleString()}
+                        {fmt(p.sellingPrice)}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
                         {p.quantity} {p.unitOfMeasure || 'unit'}

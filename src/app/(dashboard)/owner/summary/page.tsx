@@ -7,9 +7,9 @@ import { Lightbulb, TrendingDown, TrendingUp } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import { getDailySummary } from '@/services/shifts';
+import { useMoney } from '@/lib/money';
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -30,6 +30,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
  * legitimately have nothing yet. That's an empty state, not an error.
  */
 export default function DailySummaryPage() {
+  const fmt = useMoney();
   const [date, setDate] = useState(today());
 
   const { data, isLoading, isError } = useQuery({

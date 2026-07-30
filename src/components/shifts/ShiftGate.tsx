@@ -7,9 +7,9 @@ import Button from '@/components/ui/Button';
 import StartShiftModal from './StartShiftModal';
 import EndShiftModal from './EndShiftModal';
 import { useShift } from '@/hooks/useShift';
+import { useMoney } from '@/lib/money';
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 function elapsed(startedAt: string): string {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000));
@@ -31,6 +31,7 @@ function elapsed(startedAt: string): string {
  * be unable to sell because one endpoint is unavailable.
  */
 export default function ShiftGate({ children }: { children: React.ReactNode }) {
+  const fmt = useMoney();
   const { enabled, shift, isLoading } = useShift();
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);

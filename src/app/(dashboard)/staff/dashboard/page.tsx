@@ -10,6 +10,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useAuthStore } from '@/store/authStore';
+import { useMoney } from '@/lib/money';
 
 interface StaffStats {
   todaySalesTotal: number;
@@ -26,6 +27,7 @@ interface Sale {
 }
 
 export default function StaffDashboardPage() {
+  const fmt = useMoney();
   const user = useAuthStore((s) => s.user);
 
   const { data: stats, isLoading: statsLoading } = useQuery<StaffStats>({
@@ -52,7 +54,7 @@ export default function StaffDashboardPage() {
           <StatsCard
             icon={TrendingUp}
             label="My Sales Today"
-            value={`KES ${(stats?.todaySalesTotal || 0).toLocaleString()}`}
+            value={fmt(stats?.todaySalesTotal)}
             iconColor="#0F766E"
             iconBg="#CCFBF1"
           />
@@ -109,7 +111,7 @@ export default function StaffDashboardPage() {
                     <p className="text-xs text-gray-400">{format(new Date(sale.createdAt), 'HH:mm')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: '#0F766E' }}>KES {sale.totalAmount?.toLocaleString()}</p>
+                    <p className="text-sm font-bold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</p>
                     <Badge color={sale.paymentMethod === 'mpesa' ? 'teal' : 'gray'} className="text-xs">
                       {sale.paymentMethod || 'cash'}
                     </Badge>

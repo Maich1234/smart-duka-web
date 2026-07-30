@@ -20,6 +20,7 @@ import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/component
 import VoidSaleSection from '@/components/sales/VoidSaleSection';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
+import { useMoney } from '@/lib/money';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
@@ -54,13 +55,14 @@ interface SalesStats {
 type PayFilter = string;
 type Tab = 'new' | 'history';
 
-const fmt = (n: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 const cartKey = (e: CartEntry) => `${e.product._id}:${e.variantId ?? ''}`;
 
 // ─── Quantity modal ─────────────────────────────────────────────────────────
 function QuantityModal({ product, onConfirm, onClose }: {
   product: Product; onConfirm: (qty: number, price: number, variantId?: string, variantName?: string) => void; onClose: () => void;
 }) {
+  const fmt = useMoney();
   const [qty, setQty] = useState(1);
   const [price, setPrice] = useState(product.sellingPrice);
   const [variantId, setVariantId] = useState(product.variants?.[0]?._id ?? '');
@@ -147,6 +149,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
   shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
   onClose: () => void;
 }) {
+  const fmt = useMoney();
   const receiptUrl = sale.receiptToken ? `${window.location.origin}/r/${sale.receiptToken}` : null;
   const [printing, setPrinting] = useState(false);
 
@@ -258,6 +261,7 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
   shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
   onClose: () => void; onNewSale: () => void;
 }) {
+  const fmt = useMoney();
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
   const [printing, setPrinting] = useState(false);
 
@@ -314,6 +318,7 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function SalesPage() {
+  const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const shopName = user?.shop?.name ?? 'Smart Duka';

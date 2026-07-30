@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RotateCcw, Smartphone, Banknote, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
+import { useMoney } from '@/lib/money';
 
 export interface RefundInfo {
   amount?: number;
@@ -25,8 +26,7 @@ export interface RefundableSale {
   refund?: RefundInfo;
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 /**
  * Status banner + refund action for a sale detail modal.
@@ -40,6 +40,7 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
   canRefund: boolean;
   onDone?: () => void;
 }) {
+  const fmt = useMoney();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState('');
