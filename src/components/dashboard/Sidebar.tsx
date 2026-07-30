@@ -20,6 +20,8 @@ import {
   Sparkles,
   Bell,
   MessageSquare,
+  Clock,
+  CalendarDays,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
@@ -49,6 +51,8 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
   { href: '/owner/staff', icon: Users, label: 'Staff' },
   { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
+  { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
+  { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
   { href: '/owner/chat', icon: MessageSquare, label: 'Ask Smart Duka' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },

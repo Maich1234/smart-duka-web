@@ -17,6 +17,7 @@ import {
 } from '@/lib/paymentMethods';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import VoidSaleSection from '@/components/sales/VoidSaleSection';
+import ShiftGate from '@/components/shifts/ShiftGate';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 
@@ -381,6 +382,7 @@ export default function StaffSalesPage() {
         <p className="text-sm text-gray-500 mt-0.5">Search products and process the sale</p>
       </div>
 
+      <ShiftGate>
       <div className="grid xl:grid-cols-5 gap-5">
         {/* Product browser */}
         <div className="xl:col-span-3 space-y-4">
@@ -517,6 +519,7 @@ export default function StaffSalesPage() {
           </div>
         </div>
       </div>
+      </ShiftGate>
 
       {/* My Sales History */}
       {mySalesData.length > 0 && (
