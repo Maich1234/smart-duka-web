@@ -13,6 +13,7 @@ import {
 import api from '@/lib/api';
 import StatsCard from '@/components/dashboard/StatsCard';
 import Spinner from '@/components/ui/Spinner';
+import { useMoney } from '@/lib/money';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,7 +84,6 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 
 const ttStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' };
 const fmtK = (v: number) => `${(v / 1000).toFixed(1)}k`;
-const fmtKES = (v: number) => `KES ${v.toLocaleString()}`;
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
@@ -119,6 +119,7 @@ function EmptyChart({ message }: { message: string }) {
 // ── Tab panels ────────────────────────────────────────────────────────────────
 
 function OverviewTab({ data }: { data: ReportData | undefined }) {
+  const fmtKES = useMoney();
   const s = data?.summary;
   const netPositive = (s?.netProfit || 0) >= 0;
   const hasPayments = (s?.cashTotal || 0) + (s?.mpesaTotal || 0) > 0;
@@ -137,12 +138,12 @@ function OverviewTab({ data }: { data: ReportData | undefined }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatsCard icon={DollarSign} label="Total Revenue" value={`KES ${(s?.totalRevenue || 0).toLocaleString()}`} iconColor={TEAL} iconBg="#CCFBF1" />
+        <StatsCard icon={DollarSign} label="Total Revenue" value={fmtKES(s?.totalRevenue || 0)} iconColor={TEAL} iconBg="#CCFBF1" />
         <StatsCard icon={ShoppingCart} label="Transactions" value={s?.totalTransactions || 0} iconColor={GOLD} iconBg="#FEF3C7" />
-        <StatsCard icon={TrendingUp} label="Avg Sale" value={`KES ${(s?.averageSale || 0).toFixed(0)}`} iconColor={BLUE} iconBg="#EFF6FF" />
-        <StatsCard icon={Banknote} label="Cash" value={`KES ${(s?.cashTotal || 0).toLocaleString()}`} iconColor={TEAL} iconBg="#CCFBF1" />
-        <StatsCard icon={CreditCard} label="M-Pesa" value={`KES ${(s?.mpesaTotal || 0).toLocaleString()}`} iconColor={GOLD} iconBg="#FEF3C7" />
-        <StatsCard icon={DollarSign} label="Net Profit" value={`KES ${(s?.netProfit || 0).toLocaleString()}`} iconColor={netPositive ? '#16a34a' : CORAL} iconBg={netPositive ? '#dcfce7' : '#fee2e2'} />
+        <StatsCard icon={TrendingUp} label="Avg Sale" value={fmtKES(Math.round(s?.averageSale || 0))} iconColor={BLUE} iconBg="#EFF6FF" />
+        <StatsCard icon={Banknote} label="Cash" value={fmtKES(s?.cashTotal || 0)} iconColor={TEAL} iconBg="#CCFBF1" />
+        <StatsCard icon={CreditCard} label="M-Pesa" value={fmtKES(s?.mpesaTotal || 0)} iconColor={GOLD} iconBg="#FEF3C7" />
+        <StatsCard icon={DollarSign} label="Net Profit" value={fmtKES(s?.netProfit || 0)} iconColor={netPositive ? '#16a34a' : CORAL} iconBg={netPositive ? '#dcfce7' : '#fee2e2'} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
@@ -168,7 +169,7 @@ function OverviewTab({ data }: { data: ReportData | undefined }) {
                         <span className="text-sm text-gray-600">{d.name}</span>
                         <span className="ml-auto text-xs text-gray-400">{pct}%</span>
                       </div>
-                      <p className="text-base font-extrabold pl-4.5" style={{ color: '#0F172A' }}>KES {d.value.toLocaleString()}</p>
+                      <p className="text-base font-extrabold pl-4.5" style={{ color: '#0F172A' }}>{fmtKES(d.value)}</p>
                     </div>
                   );
                 })}
@@ -204,6 +205,7 @@ function OverviewTab({ data }: { data: ReportData | undefined }) {
 }
 
 function RevenueTab({ data }: { data: ReportData | undefined }) {
+  const fmtKES = useMoney();
   const series = data?.series || [];
 
   return (
@@ -258,6 +260,7 @@ function RevenueTab({ data }: { data: ReportData | undefined }) {
 }
 
 function ProductsTab({ data }: { data: ReportData | undefined }) {
+  const fmtKES = useMoney();
   const topProducts = (data?.topProducts || []).slice(0, 10);
 
   return (
@@ -294,6 +297,7 @@ function StaffTab({
   ratingsData: RatingsSummaryData | undefined;
   ratingsLoading: boolean;
 }) {
+  const fmtKES = useMoney();
   const byStaff = reportData?.byStaff || [];
   const staffRatings = ratingsData?.byStaff || [];
   const distribution = ratingsData?.distribution || [];
@@ -429,6 +433,7 @@ function StaffTab({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
+  const fmtKES = useMoney();
   const [period, setPeriod] = useState<Period>('today');
   const [tab, setTab] = useState<Tab>('overview');
 

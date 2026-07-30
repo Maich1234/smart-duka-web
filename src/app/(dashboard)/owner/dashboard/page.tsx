@@ -15,40 +15,27 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import TrialBanner from '@/components/subscription/TrialBanner';
-import api from '@/lib/api';
-
-interface Transaction {
-  _id: string;
-  totalAmount: number;
-  paymentMethod: string;
-  createdAt: string;
-  items: { productName: string }[];
-}
-
-interface LowStockProduct {
-  _id: string;
-  name: string;
-  quantity: number;
-  sellingPrice: number;
-}
-
-interface DashboardData {
-  todaySalesTotal: number;
-  transactionsToday: number;
-  totalProducts: number;
-  currentStockValue: number;
-  recentTransactions: Transaction[];
-  lowStockItems: LowStockProduct[];
-}
+import DailyBrief from '@/components/dashboard/DailyBrief';
+import NeedsAttention from '@/components/dashboard/NeedsAttention';
+import QuickActions from '@/components/dashboard/QuickActions';
+import DepletionSection from '@/components/dashboard/DepletionSection';
+import { useOwnerAttention } from '@/hooks/useAttention';
+import { buildDailyBrief } from '@/utils/dailyBrief';
+import { getOwnerDashboard, type OwnerDashboardData } from '@/services/dashboard';
+import { useShop } from '@/hooks/useShop';
 
 export default function OwnerDashboardPage() {
-  const { data, isLoading } = useQuery<DashboardData>({
+  const { currency, purchasingEnabled } = useShop();
+  const { data, isLoading } = useQuery<OwnerDashboardData>({
     queryKey: ['owner-dashboard'],
-    queryFn: async () => {
-      const res = await api.get('/dashboard/owner');
-      return res.data.data;
-    },
+    queryFn: getOwnerDashboard,
   });
+
+  // Shops price in their own currency; this used to say KES to everyone.
+  const fmt = (n?: number) => `${currency} ${(n ?? 0).toLocaleString()}`;
+
+  const brief = buildDailyBrief(data, fmt);
+  const attention = useOwnerAttention(data);
 
   return (
     <div className="space-y-6">
@@ -59,6 +46,12 @@ export default function OwnerDashboardPage() {
 
       <TrialBanner />
 
+      <NeedsAttention items={attention} />
+
+      <QuickActions purchasingEnabled={purchasingEnabled} />
+
+      <DailyBrief bullets={brief} />
+
       {/* Stats */}
       {isLoading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
@@ -67,7 +60,7 @@ export default function OwnerDashboardPage() {
           <StatsCard
             icon={TrendingUp}
             label="Today's Sales"
-            value={`KES ${(data?.todaySalesTotal || 0).toLocaleString()}`}
+            value={fmt(data?.todaySalesTotal)}
             iconColor="#0F766E"
             iconBg="#CCFBF1"
           />
@@ -112,14 +105,14 @@ export default function OwnerDashboardPage() {
                     <div>
                       <p className="text-sm font-medium" style={{ color: '#0F172A' }}>
                         {tx.items?.[0]?.productName || 'Sale'}
-                        {tx.items?.length > 1 ? ` +${tx.items.length - 1} more` : ''}
+                        {(tx.items?.length ?? 0) > 1 ? ` +${tx.items!.length - 1} more` : ''}
                       </p>
                       <p className="text-xs text-gray-400">{format(new Date(tx.createdAt), 'HH:mm')}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold" style={{ color: '#0F766E' }}>
-                      KES {tx.totalAmount?.toLocaleString()}
+                      {fmt(tx.totalAmount)}
                     </p>
                     <Badge color={tx.paymentMethod === 'mpesa' ? 'teal' : 'gray'}>
                       {tx.paymentMethod || 'cash'}
@@ -152,7 +145,7 @@ export default function OwnerDashboardPage() {
                 <div key={product._id} className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium truncate max-w-35" style={{ color: '#0F172A' }}>{product.name}</p>
-                    <p className="text-xs text-gray-400">KES {product.sellingPrice}</p>
+                    <p className="text-xs text-gray-400">{fmt(product.sellingPrice)}</p>
                   </div>
                   <Badge color={product.quantity === 0 ? 'red' : 'yellow'}>
                     {product.quantity} left
@@ -163,6 +156,8 @@ export default function OwnerDashboardPage() {
           )}
         </Card>
       </div>
+
+      <DepletionSection />
     </div>
   );
 }

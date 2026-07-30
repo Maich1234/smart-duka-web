@@ -13,6 +13,8 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import { useMoney } from '@/lib/money';
+import { useShop } from '@/hooks/useShop';
 
 interface Expense {
   _id: string;
@@ -33,6 +35,8 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function StaffExpensesPage() {
+  const fmt = useMoney();
+  const { currency } = useShop();
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -100,7 +104,7 @@ export default function StaffExpensesPage() {
                       <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>
                     </td>
                     <td className="px-4 py-3"><Badge color="gray">{e.category}</Badge></td>
-                    <td className="px-4 py-3 font-semibold text-red-600">KES {e.amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-semibold text-red-600">{fmt(e.amount)}</td>
                     <td className="px-4 py-3 text-gray-500">{format(new Date(e.date || e.createdAt), 'dd MMM yyyy')}</td>
                   </tr>
                 ))}
@@ -126,7 +130,7 @@ export default function StaffExpensesPage() {
             </select>
             {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>}
           </div>
-          <Input label="Amount (KES) *" type="number" step="0.01" placeholder="0.00" error={errors.amount?.message} {...register('amount')} />
+          <Input label={`Amount (${currency}) *`} type="number" step="0.01" placeholder="0.00" error={errors.amount?.message} {...register('amount')} />
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Description</label>
             <textarea {...register('description')} rows={2} placeholder="Optional notes…"

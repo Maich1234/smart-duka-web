@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { AlertTriangle, Smartphone, Mail } from 'lucide-react';
+import { AlertTriangle, Smartphone, Mail, Users } from 'lucide-react';
 import { SiteNav } from '@/components/marketing/SiteNav';
 
 export const metadata: Metadata = {
@@ -56,16 +56,42 @@ export default function DeleteAccountPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:p-8 space-y-8">
           <section>
             <h2 className="text-lg font-bold mb-4" style={{ color: '#0F172A' }}>
-              Option 1 — from the app (fastest)
+              Option 1 — from your account (fastest)
             </h2>
             <div className="flex gap-4 mb-4">
               <Smartphone className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#0F766E' }} />
               <ol className="space-y-2 leading-relaxed" style={{ color: '#334155' }}>
-                <li>1. Open Smart Duka and sign in.</li>
+                <li>
+                  1. Sign in — on the Smart Duka app, or{' '}
+                  <Link href="/login" className="font-semibold underline" style={{ color: '#0F766E' }}>
+                    here on the web
+                  </Link>
+                  .
+                </li>
                 <li>2. Go to <strong>Profile</strong>.</li>
-                <li>3. Scroll to the bottom and tap <strong>Delete my account</strong>.</li>
+                <li>3. Scroll to the bottom and choose <strong>Delete my account</strong>.</li>
                 <li>4. Enter your password and type <strong>DELETE</strong> to confirm.</li>
               </ol>
+            </div>
+            {/* Staff closures are owner-approved, so this page must not promise
+                a same-day deletion to a cashier who reads it. */}
+            <div
+              className="flex gap-4 rounded-xl p-5 mt-4"
+              style={{ backgroundColor: '#FEF3C7' }}
+            >
+              <Users className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#B45309' }} />
+              <div>
+                <p className="font-semibold mb-1" style={{ color: '#78350F' }}>
+                  If you work for a shop, your owner approves it first
+                </p>
+                <p className="text-sm leading-relaxed" style={{ color: '#78350F' }}>
+                  Staff accounts are issued by a shop, so the request goes to the shop owner before the
+                  14-day countdown starts. Your account keeps working normally while it waits, and you can
+                  withdraw the request at any time. If the owner doesn&apos;t respond within 14 days it
+                  goes ahead without them — an unanswered request can&apos;t block you indefinitely. Your
+                  sales and shift records stay with the shop as its bookkeeping either way.
+                </p>
+              </div>
             </div>
           </section>
 

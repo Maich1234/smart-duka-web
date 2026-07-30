@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Lock, Trash2, CheckCircle, XCircle, Mail, Phone, Calendar, Clock, Smartphone, LogOut } from 'lucide-react';
+import { ArrowLeft, Pencil, Lock, Trash2, CheckCircle, XCircle, Mail, Phone, Calendar, Clock, Smartphone, LogOut, UserMinus, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import api from '@/lib/api';
@@ -12,7 +12,21 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
-import { forceLogoutStaff, type StaffActiveSession } from '@/services/staff';
+import CommissionCard from '@/components/sales/CommissionCard';
+import { useShop } from '@/hooks/useShop';
+import {
+  getCommissionPeriodRange,
+  getStaffCommission,
+  type CommissionPeriod,
+} from '@/services/commission';
+import type { AxiosError } from 'axios';
+import {
+  forceLogoutStaff,
+  approveStaffDeletion,
+  declineStaffDeletion,
+  getStaffDeletionRequests,
+  type StaffActiveSession,
+} from '@/services/staff';
 
 interface Permission {
   value: string;
@@ -31,6 +45,9 @@ interface StaffDetail {
   updatedAt: string;
   salesCount?: number;
   activeSession: StaffActiveSession | null;
+  /** Requested-but-not-scheduled means the closure is waiting on the owner. */
+  deletionRequestedAt?: string | null;
+  deletionScheduledAt?: string | null;
 }
 
 const AVATAR_COLORS = [
@@ -68,6 +85,9 @@ export default function StaffDetailPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [forceLogoutOpen, setForceLogoutOpen] = useState(false);
+  const [approveClosureOpen, setApproveClosureOpen] = useState(false);
+  const [declineClosureOpen, setDeclineClosureOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetError, setResetError] = useState('');
@@ -102,6 +122,51 @@ export default function StaffDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', id] });
       setForceLogoutOpen(false);
+    },
+  });
+
+  // Account-closure requests: the owner decides, but only until the backend's
+  // approval window expires — after that an unanswered request goes ahead.
+  //
+  // The windows come from the server's own constants rather than being written
+  // into the copy, so DELETION_GRACE_DAYS / DELETION_APPROVAL_WINDOW_DAYS can
+  // change without this page quietly telling people the wrong number. Shares
+  // its cache with the staff list's banner, so it costs no extra request.
+  const { showStaffCommission, currency } = useShop();
+  const [commissionPeriod, setCommissionPeriod] = useState<CommissionPeriod>('month');
+  const commissionRange = getCommissionPeriodRange(commissionPeriod);
+  const commissionQuery = useQuery({
+    queryKey: ['staffCommission', id, commissionPeriod],
+    queryFn: () => getStaffCommission(id, commissionRange),
+    enabled: showStaffCommission && !!id,
+    retry: false,
+  });
+
+  const { data: closureRequests } = useQuery({
+    queryKey: ['staffDeletionRequests'],
+    queryFn: getStaffDeletionRequests,
+    staleTime: 60_000,
+  });
+  const graceDays = closureRequests?.meta?.graceDays ?? 14;
+  const approvalWindowDays = closureRequests?.meta?.approvalWindowDays ?? 14;
+  const pendingClosure = closureRequests?.data.find((r) => r._id === id);
+
+  const approveClosureMutation = useMutation({
+    mutationFn: () => approveStaffDeletion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff', id] });
+      queryClient.invalidateQueries({ queryKey: ['staffDeletionRequests'] });
+      setApproveClosureOpen(false);
+    },
+  });
+
+  const declineClosureMutation = useMutation({
+    mutationFn: () => declineStaffDeletion(id, declineReason.trim() || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff', id] });
+      queryClient.invalidateQueries({ queryKey: ['staffDeletionRequests'] });
+      setDeclineClosureOpen(false);
+      setDeclineReason('');
     },
   });
 
@@ -193,6 +258,53 @@ export default function StaffDetailPage() {
         </div>
       </div>
 
+      {/* Account-closure request — the owner's decision, so it sits above the
+          routine profile actions. */}
+      {staff.deletionRequestedAt && !staff.deletionScheduledAt && (
+        <div className="rounded-2xl p-5 border" style={{ backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }}>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0">
+              <UserMinus className="w-4 h-4" style={{ color: '#B45309' }} />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div>
+                <p className="font-semibold" style={{ color: '#0F172A' }}>Account closure request</p>
+                <p className="text-xs" style={{ color: '#78350F' }}>
+                  Asked on {format(new Date(staff.deletionRequestedAt), 'MMM d, yyyy')}
+                </p>
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#78350F' }}>
+                {staff.name} has asked to close their account. Nothing has changed yet — approving starts a{' '}
+                {graceDays}-day cooling-off period, and your shop&apos;s sales and shift records stay in the
+                books either way.
+                {pendingClosure
+                  ? ` Left unanswered, it goes ahead on its own on ${format(new Date(pendingClosure.autoApprovesAt), 'MMM d, yyyy')}.`
+                  : ` If you don't answer within ${approvalWindowDays} days of the request it goes ahead on its own.`}
+              </p>
+              <div className="flex gap-3 pt-1">
+                <Button variant="outline" className="flex-1" onClick={() => setDeclineClosureOpen(true)}>
+                  Decline
+                </Button>
+                <Button variant="danger" className="flex-1" onClick={() => setApproveClosureOpen(true)}>
+                  Approve
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {staff.deletionScheduledAt && (
+        <div className="rounded-2xl p-5 flex items-start gap-3" style={{ backgroundColor: '#FEE2E2' }}>
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+          <p className="text-sm leading-relaxed font-medium" style={{ color: '#991B1B' }}>
+            Closure approved — this account closes on{' '}
+            {format(new Date(staff.deletionScheduledAt), 'MMM d, yyyy')}. {staff.name} can still cancel
+            before then.
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-3">
         <Link href={`/owner/staff/${id}/edit`} className="flex-1">
@@ -239,6 +351,21 @@ export default function StaffDetailPage() {
           <p className="text-sm text-gray-400">Not currently signed in on any device.</p>
         )}
       </div>
+
+      {/* Commission — only where the shop actually pays it */}
+      {showStaffCommission && (
+        <div>
+          <h3 className="font-bold mb-3" style={{ color: '#0F172A' }}>Commission</h3>
+          <CommissionCard
+            data={commissionQuery.data}
+            isLoading={commissionQuery.isLoading}
+            forbidden={(commissionQuery.error as AxiosError)?.response?.status === 403}
+            period={commissionPeriod}
+            onPeriodChange={setCommissionPeriod}
+            currency={currency}
+          />
+        </div>
+      )}
 
       {/* Permissions */}
       {allPermissions.length > 0 && (
@@ -329,6 +456,57 @@ export default function StaffDetailPage() {
           <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
           <Button variant="danger" loading={deleteMutation.isPending} onClick={() => deleteMutation.mutate()}>
             Remove
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Approve Closure Modal */}
+      <Modal
+        isOpen={approveClosureOpen}
+        onClose={() => setApproveClosureOpen(false)}
+        title={`Approve ${staff.name}'s closure?`}
+      >
+        <p className="text-gray-600 mb-6">
+          Their account will close after a {graceDays}-day cooling-off period. They keep working normally until
+          then, and can still cancel. Your shop&apos;s sales and shift records are not affected.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <Button variant="outline" onClick={() => setApproveClosureOpen(false)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={approveClosureMutation.isPending}
+            onClick={() => approveClosureMutation.mutate()}
+          >
+            Approve
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Decline Closure Modal */}
+      <Modal
+        isOpen={declineClosureOpen}
+        onClose={() => setDeclineClosureOpen(false)}
+        title="Decline this request?"
+      >
+        <p className="text-gray-600 mb-4">
+          {staff.name}&apos;s account stays open and they&apos;ll be told you declined. They can ask
+          again, so it&apos;s worth saying why.
+        </p>
+        <Input
+          label="Reason (optional)"
+          placeholder="e.g. Finish this month's stock take first"
+          value={declineReason}
+          maxLength={300}
+          onChange={(e) => setDeclineReason(e.target.value)}
+        />
+        <div className="flex gap-3 justify-end mt-6">
+          <Button variant="outline" onClick={() => setDeclineClosureOpen(false)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={declineClosureMutation.isPending}
+            onClick={() => declineClosureMutation.mutate()}
+          >
+            Decline request
           </Button>
         </div>
       </Modal>

@@ -6,6 +6,7 @@ import { Search, Package } from 'lucide-react';
 import api from '@/lib/api';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
+import { useMoney } from '@/lib/money';
 
 interface Product {
   _id: string;
@@ -18,6 +19,7 @@ interface Product {
 }
 
 export default function StaffInventoryPage() {
+  const fmt = useMoney();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
@@ -91,7 +93,7 @@ export default function StaffInventoryPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3"><Badge color="gray">{p.category || 'General'}</Badge></td>
-                      <td className="px-4 py-3 font-semibold" style={{ color: '#0F766E' }}>KES {p.sellingPrice?.toLocaleString()}</td>
+                      <td className="px-4 py-3 font-semibold" style={{ color: '#0F766E' }}>{fmt(p.sellingPrice)}</td>
                       <td className="px-4 py-3 text-gray-600">{p.quantity} {p.unitOfMeasure || 'unit'}</td>
                       <td className="px-4 py-3">{stockStatus(p)}</td>
                     </tr>

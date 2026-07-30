@@ -1,231 +1,86 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save } from 'lucide-react';
-import Link from 'next/link';
-import api from '@/lib/api';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import Card from '@/components/ui/Card';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Spinner from '@/components/ui/Spinner';
-
-const schema = z.object({
-  name: z.string().min(1, 'Product name is required'),
-  category: z.string().min(1, 'Category is required'),
-  sellingPrice: z.string().refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter a valid selling price'),
-  costPrice: z.string().refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter a valid cost price'),
-  quantity: z.string().refine((v) => !isNaN(Number(v)) && Number(v) >= 0, 'Enter a valid quantity'),
-  unitOfMeasure: z.string().min(1, 'Unit is required'),
-  lowStockAlert: z.string().optional(),
-  description: z.string().optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+import ProductForm, {
+  EMPTY_PRODUCT_FORM,
+  productToForm,
+  toPayload,
+  validate,
+  type ProductFormState,
+} from '@/components/inventory/ProductForm';
+import { getProduct, getProducts, updateProduct } from '@/services/products';
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const [form, setForm] = useState<ProductFormState>(EMPTY_PRODUCT_FORM);
+  const [seeded, setSeeded] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState('');
+
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: async () => {
-      const res = await api.get(`/products/${id}`);
-      return res.data.data;
-    },
+    queryFn: () => getProduct(id),
     enabled: !!id,
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    setError,
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const { data: productsData } = useQuery({
+    queryKey: ['products', ''],
+    queryFn: () => getProducts({ search: '' }),
+  });
 
+  // Seed once. A background refetch must not overwrite an in-progress edit.
   useEffect(() => {
-    if (product) {
-      reset({
-        name: product.name ?? '',
-        category: product.category ?? '',
-        sellingPrice: String(product.sellingPrice ?? ''),
-        costPrice: String(product.costPrice ?? ''),
-        quantity: String(product.quantity ?? '0'),
-        unitOfMeasure: product.unitOfMeasure ?? 'unit',
-        lowStockAlert: String(product.lowStockAlert ?? '5'),
-        description: product.description ?? '',
-      });
+    if (product && !seeded) {
+      setForm(productToForm(product));
+      setSeeded(true);
     }
-  }, [product, reset]);
+  }, [product, seeded]);
 
   const mutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const payload = {
-        name: data.name,
-        category: data.category,
-        sellingPrice: Number(data.sellingPrice),
-        costPrice: Number(data.costPrice),
-        quantity: Number(data.quantity),
-        unitOfMeasure: data.unitOfMeasure,
-        lowStockAlert: data.lowStockAlert ? Number(data.lowStockAlert) : 5,
-        description: data.description || undefined,
-      };
-      const res = await api.patch(`/products/${id}`, payload);
-      return res.data;
-    },
+    mutationFn: () => updateProduct(id, toPayload(form)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       router.push('/owner/inventory');
     },
-    onError: (err: unknown) => {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError('root', { message: e.response?.data?.message || 'Failed to update product' });
+    onError: (err: { response?: { data?: { message?: string } } }) => {
+      setServerError(err?.response?.data?.message || 'Could not save the product.');
     },
   });
 
-  if (isLoading) {
+  const handleSave = () => {
+    const found = validate(form);
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
+    setServerError('');
+    mutation.mutate();
+  };
+
+  if (isLoading || !seeded) {
     return (
-      <div className="flex justify-center py-24">
+      <div className="flex justify-center py-16">
         <Spinner size="lg" />
       </div>
     );
   }
 
-  if (!product) {
-    return (
-      <div className="text-center py-24 text-gray-400">
-        Product not found.{' '}
-        <Link href="/owner/inventory" className="text-[#0F766E] underline">
-          Back to inventory
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center gap-4">
-        <Link href="/owner/inventory">
-          <button className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Edit Product</h1>
-          <p className="text-gray-500 text-sm">Update product details and stock information</p>
-        </div>
-      </div>
-
-      {errors.root && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-          {errors.root.message}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-6">
-        <Card>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: '#0F172A' }}>Basic Information</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Input
-                label="Product Name *"
-                placeholder="e.g. Unga Pembe 2kg"
-                error={errors.name?.message}
-                {...register('name')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Category *</label>
-              <select
-                {...register('category')}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white"
-              >
-                <option value="">Select category…</option>
-                {['Groceries', 'Beverages', 'Household', 'Electronics', 'Clothing', 'Health & Beauty', 'Stationery', 'Other'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Unit *</label>
-              <select
-                {...register('unitOfMeasure')}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white"
-              >
-                <option value="">Select unit…</option>
-                {['unit', 'kg', 'g', 'l', 'ml', 'dozen', 'pack', 'box', 'bag'].map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
-              {errors.unitOfMeasure && <p className="mt-1 text-xs text-red-500">{errors.unitOfMeasure.message}</p>}
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Description</label>
-              <textarea
-                {...register('description')}
-                rows={3}
-                placeholder="Optional product description…"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white resize-none"
-              />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: '#0F172A' }}>Pricing & Stock</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Input
-              label="Selling Price (KES) *"
-              type="number"
-              step="0.01"
-              placeholder="e.g. 180"
-              error={errors.sellingPrice?.message}
-              {...register('sellingPrice')}
-            />
-            <Input
-              label="Cost Price (KES) *"
-              type="number"
-              step="0.01"
-              placeholder="e.g. 120"
-              error={errors.costPrice?.message}
-              {...register('costPrice')}
-            />
-            <Input
-              label="Current Stock *"
-              type="number"
-              placeholder="e.g. 50"
-              error={errors.quantity?.message}
-              {...register('quantity')}
-            />
-            <Input
-              label="Low Stock Alert Threshold"
-              type="number"
-              placeholder="e.g. 10"
-              hint="Get alerted when stock falls below this"
-              error={errors.lowStockAlert?.message}
-              {...register('lowStockAlert')}
-            />
-          </div>
-        </Card>
-
-        <div className="flex gap-3 justify-end">
-          <Link href="/owner/inventory">
-            <Button variant="outline">Cancel</Button>
-          </Link>
-          <Button type="submit" loading={mutation.isPending}>
-            <Save className="w-4 h-4" />
-            Save Changes
-          </Button>
-        </div>
-      </form>
-    </div>
+    <ProductForm
+      isEditing
+      form={form}
+      setForm={setForm}
+      errors={errors}
+      onSave={handleSave}
+      saving={mutation.isPending}
+      // A product can't contain itself.
+      availableProducts={(productsData?.data ?? []).filter((p) => p._id !== id)}
+      serverError={serverError}
+    />
   );
 }

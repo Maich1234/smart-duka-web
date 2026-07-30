@@ -19,9 +19,15 @@ import {
   X,
   Sparkles,
   Bell,
+  MessageSquare,
+  Clock,
+  CalendarDays,
+  Coins,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
+import { useShop } from '@/hooks/useShop';
+import { hasAnyPermission, type PermissionUser } from '@/lib/permissions';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -30,28 +36,71 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-const ownerLinks = [
+interface NavLink {
+  href: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  /** Shown only if the user holds at least one of these. Omit for everyone. */
+  permissions?: string[];
+  /** Shown only when the shop has switched this module on. */
+  requiresFlag?: 'purchasingEnabled' | 'shiftManagementEnabled' | 'showStaffCommission';
+}
+
+const ownerLinks: NavLink[] = [
   { href: '/owner/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/owner/inventory', icon: Package, label: 'Inventory' },
   { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
   { href: '/owner/staff', icon: Users, label: 'Staff' },
   { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
+  { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
+  { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
+  { href: '/owner/chat', icon: MessageSquare, label: 'Ask Smart Duka' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
+  { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
+  { href: '/owner/payment-methods', icon: Wallet, label: 'Payment Methods' },
   { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
   { href: '/owner/notifications', icon: Bell, label: 'Notifications' },
   { href: '/owner/profile', icon: User, label: 'Profile' },
 ];
 
-const staffLinks = [
+const staffLinks: NavLink[] = [
   { href: '/staff/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/staff/inventory', icon: Package, label: 'Products' },
-  { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale' },
-  { href: '/staff/expenses', icon: Receipt, label: 'Expenses' },
+  { href: '/staff/inventory', icon: Package, label: 'Products', permissions: ['view_products'] },
+  { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
+  { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
+  { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
+  // Purchasing lives under /owner for both roles — one route tree rather than
+  // a mirrored one. The dashboard layout lets permitted staff through.
+  {
+    href: '/owner/purchases',
+    icon: ShoppingBag,
+    label: 'Purchasing',
+    requiresFlag: 'purchasingEnabled',
+    permissions: ['view_purchases'],
+  },
   { href: '/staff/notifications', icon: Bell, label: 'Notifications' },
   { href: '/staff/profile', icon: User, label: 'Profile' },
 ];
+
+/**
+ * Drop links the user can't use — either because they lack the permission or
+ * because the shop hasn't switched the module on. The routes themselves are
+ * guarded too (see the dashboard layout); this half just avoids offering
+ * someone a door that won't open.
+ */
+function visibleLinks(
+  links: NavLink[],
+  user: PermissionUser,
+  flags: Record<string, boolean>
+): NavLink[] {
+  return links.filter((link) => {
+    if (link.requiresFlag && !flags[link.requiresFlag]) return false;
+    if (link.permissions && !hasAnyPermission(user, link.permissions)) return false;
+    return true;
+  });
+}
 
 function SidebarContent({
   collapsed,
@@ -68,7 +117,13 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
-  const links = user?.role === 'owner' ? ownerLinks : staffLinks;
+  const { purchasingEnabled, shiftManagementEnabled, showStaffCommission } = useShop();
+
+  const links = visibleLinks(user?.role === 'owner' ? ownerLinks : staffLinks, user, {
+    purchasingEnabled,
+    shiftManagementEnabled,
+    showStaffCommission,
+  });
 
   return (
     <>

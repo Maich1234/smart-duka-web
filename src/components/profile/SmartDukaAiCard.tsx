@@ -4,14 +4,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Sparkles, ShieldCheck, HelpCircle, ChevronRight } from 'lucide-react';
-import api from '@/lib/api';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import { useAiAccess } from '@/hooks/useAiAccess';
+import { SHOP_QUERY_KEY } from '@/hooks/useShop';
+import { updateShopConfig } from '@/services/shop';
 
-// Same hosted Help Center the mobile app links out to (constants/config.ts's
-// HELP_CENTER_URL there) — one shared content source, no separate web copy.
-const HELP_URL = 'https://smart-duka--01nm282g2e.expo.app/help/smart-duka-ai';
+// This article lives here now. It used to point at the mobile app's hosted
+// Help Center, which was correct before this app became the canonical front
+// end and stale afterwards.
+const HELP_URL = '/help/smart-duka-ai';
 
 /**
  * Profile's "Smart Duka AI" card — its own section, separate from the plain
@@ -24,9 +26,9 @@ export function SmartDukaAiCard() {
   const queryClient = useQueryClient();
 
   const toggleMutation = useMutation({
-    mutationFn: (enabled: boolean) => api.put('/shop', { aiEnabled: enabled }),
+    mutationFn: (enabled: boolean) => updateShopConfig({ aiEnabled: enabled }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shopConfig'] });
+      queryClient.invalidateQueries({ queryKey: SHOP_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['aiInsight'] });
     },
   });
@@ -91,7 +93,9 @@ export function SmartDukaAiCard() {
         </div>
       )}
 
-      <a
+      {/* New tab on purpose: the surrounding page is a settings form, and
+          navigating away mid-edit would discard unsaved changes. */}
+      <Link
         href={HELP_URL}
         target="_blank"
         rel="noopener noreferrer"
@@ -107,7 +111,7 @@ export function SmartDukaAiCard() {
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" />
-      </a>
+      </Link>
 
       <Modal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} title="Smart Duka AI & your data" size="sm">
         <p className="text-sm text-gray-600 leading-relaxed">

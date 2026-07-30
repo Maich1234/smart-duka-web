@@ -6,6 +6,7 @@ import { Search, Smartphone, X, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
+import { useMoney } from '@/lib/money';
 
 type TxStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
 
@@ -54,11 +55,11 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 
 // ─── Transaction Detail Modal ────────────────────────────────────────────────
 function TxDetailModal({ tx, onClose }: { tx: MpesaTransaction; onClose: () => void }) {
+  const fmt = useMoney();
   const cfg = STATUS_CONFIG[tx.status] ?? STATUS_CONFIG.failed;
 
   const rows = [
@@ -120,6 +121,7 @@ function TxDetailModal({ tx, onClose }: { tx: MpesaTransaction; onClose: () => v
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function PaymentsPage() {
+  const fmt = useMoney();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedTx, setSelectedTx] = useState<MpesaTransaction | null>(null);

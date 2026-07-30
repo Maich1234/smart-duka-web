@@ -1,13 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useShop } from '@/hooks/useShop';
 
 export type AiAccessState = 'no_subscription' | 'not_in_plan' | 'disabled' | 'enabled';
-
-interface ShopConfigResponse {
-  success: boolean;
-  data: { aiEnabled?: boolean };
-}
 
 /**
  * Single source of truth for Gemini feature access, combining subscription
@@ -18,16 +12,12 @@ interface ShopConfigResponse {
  */
 export function useAiAccess() {
   const { access, plan, isLoading: isSubscriptionLoading } = useSubscription();
-  const { data: shopConfigData, isLoading: isShopLoading } = useQuery({
-    queryKey: ['shopConfig'],
-    queryFn: () => api.get<ShopConfigResponse>('/shop').then((res) => res.data),
-  });
+  const { aiEnabled, isLoading: isShopLoading } = useShop();
 
   const isSubscribed = access?.state === 'trialing' || access?.state === 'active' || access?.state === 'grace';
   // Don't lock on a plan that hasn't loaded yet — only treat it as "not in
   // plan" once we actually have the plan doc and it omits the feature.
   const inPlan = plan ? (plan.features?.includes('ai_insights') ?? false) : true;
-  const aiEnabled = shopConfigData?.data?.aiEnabled ?? true;
 
   const state: AiAccessState = !isSubscribed
     ? 'no_subscription'

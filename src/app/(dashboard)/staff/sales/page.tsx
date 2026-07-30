@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus, X,
@@ -9,10 +9,19 @@ import {
 import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { useShop } from '@/hooks/useShop';
+import { hasAnyPermission, hasPermission } from '@/lib/permissions';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
+import {
+  CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
+} from '@/lib/paymentMethods';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
+import VoidSaleSection from '@/components/sales/VoidSaleSection';
+import ShiftGate from '@/components/shifts/ShiftGate';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
+import { useMoney } from '@/lib/money';
+import { availableToAdd, clampQty, stepFor } from '@/lib/stock';
 
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
 interface Product {
@@ -24,25 +33,44 @@ interface Product {
 interface CartEntry { product: Product; qty: number; unitPrice: number; variantId?: string; variantName?: string; }
 interface SaleItem { name?: string; productName?: string; quantity: number; unitPrice: number; subtotal: number; variantName?: string; }
 interface Sale {
-  _id: string; invoiceNumber: string; totalAmount: number; paymentMethod: 'cash' | 'mpesa'; createdAt: string;
+  _id: string; invoiceNumber: string; totalAmount: number; paymentMethod: string; paymentMethodLabel?: string; createdAt: string;
   items: SaleItem[]; receiptToken?: string; mpesaReceiptNumber?: string;
   status?: 'completed' | 'voided' | 'refund_pending' | 'refunded'; refund?: RefundInfo;
 }
 
-const fmt = (n: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(n);
+
 const cartKey = (e: CartEntry) => `${e.product._id}:${e.variantId ?? ''}`;
 
 // ─── Quantity Modal ─────────────────────────────────────────────────────────
-function QuantityModal({ product, onConfirm, onClose }: {
-  product: Product; onConfirm: (qty: number, price: number, variantId?: string, variantName?: string) => void; onClose: () => void;
+function QuantityModal({ product, inCart, onConfirm, onClose }: {
+  product: Product;
+  /** Units of this product already in the basket, keyed by variant. */
+  inCart: (variantId?: string) => number;
+  onConfirm: (qty: number, price: number, variantId?: string, variantName?: string) => void;
+  onClose: () => void;
 }) {
-  const [qty, setQty] = useState(1);
+  const fmt = useMoney();
+  const [qtyText, setQtyText] = useState('1');
   const [price, setPrice] = useState(product.sellingPrice);
   const [variantId, setVariantId] = useState(product.variants?.[0]?._id ?? '');
   const selectedVariant = product.variants?.find((v) => v._id === variantId);
   const effectivePrice = selectedVariant ? selectedVariant.sellingPrice : price;
-  const max = product.trackInventory && product.productType !== 'bundle' ? (selectedVariant ? selectedVariant.quantity : product.quantity) : 999;
+  // Subtracts what's already in the basket, so adding the same product
+  // twice can't quietly exceed the shelf.
+  const max = availableToAdd(product, variantId || undefined, inCart(variantId || undefined));
   const isWeighted = product.productType === 'weighted' || product.productType === 'refillable';
+  const step = stepFor(product.productType);
+  const qty = parseFloat(qtyText);
+  // Typed quantities are never rewritten — being silently corrected at a
+  // till is worse than being told. The steppers still clamp, since those
+  // are increments rather than something someone typed.
+  const overStock = Number.isFinite(max) && qty > max;
+  const belowMin = !Number.isFinite(qty) || qty < step;
+  const qtyProblem = belowMin
+    ? `Enter at least ${step}${isWeighted ? ` ${product.unitOfMeasure}` : ''}.`
+    : overStock
+      ? `Only ${max} ${product.unitOfMeasure} available${inCart(variantId || undefined) > 0 ? ' after what is already in the cart' : ''}.`
+      : '';
   const canOverride = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -74,26 +102,33 @@ function QuantityModal({ product, onConfirm, onClose }: {
         <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Quantity{isWeighted ? ` (${product.unitOfMeasure})` : ''}</label>
           <div className="flex items-center gap-3">
-            <button onClick={() => setQty((q) => Math.max(isWeighted ? 0.1 : 1, parseFloat((q - (isWeighted ? 0.1 : 1)).toFixed(1))))}
+            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || step) - step, step, max)))}
               className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50">
               <Minus className="w-4 h-4 text-gray-600" />
             </button>
-            <input type="number" value={qty} onChange={(e) => setQty(Math.max(isWeighted ? 0.1 : 1, parseFloat(e.target.value) || 1))}
-              step={isWeighted ? 0.1 : 1} min={isWeighted ? 0.1 : 1} max={max}
+            <input type="number" value={qtyText} onChange={(e) => setQtyText(e.target.value)}
+              step={step} min={step} max={Number.isFinite(max) ? max : undefined}
               className="flex-1 text-center text-xl font-bold py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" />
-            <button onClick={() => setQty((q) => Math.min(max, parseFloat((q + (isWeighted ? 0.1 : 1)).toFixed(1))))}
-              disabled={qty >= max} className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
+            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || 0) + step, step, max)))}
+              disabled={Number.isFinite(max) && qty >= max} className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
               <Plus className="w-4 h-4 text-gray-600" />
             </button>
           </div>
-          {max < 999 && <p className="text-xs text-gray-400 mt-1.5 text-center">{max} {product.unitOfMeasure} available</p>}
+          {qtyProblem ? (
+            <p className="text-xs mt-1.5 text-center font-medium" style={{ color: '#B91C1C' }}>{qtyProblem}</p>
+          ) : Number.isFinite(max) ? (
+            <p className="text-xs mt-1.5 text-center" style={{ color: max === 0 ? '#B91C1C' : '#9CA3AF' }}>
+              {max === 0 ? 'All remaining stock is already in the cart' : `${max} ${product.unitOfMeasure} available`}
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center justify-between mb-4 p-3 rounded-xl" style={{ backgroundColor: '#F0FDFA' }}>
           <span className="text-sm font-medium text-gray-600">Subtotal</span>
-          <span className="text-lg font-bold" style={{ color: '#0F766E' }}>{fmt(effectivePrice * qty)}</span>
+          <span className="text-lg font-bold" style={{ color: '#0F766E' }}>{fmt(effectivePrice * (Number.isFinite(qty) ? qty : 0))}</span>
         </div>
         <button onClick={() => onConfirm(qty, effectivePrice, variantId || undefined, selectedVariant?.name)}
-          className="w-full py-3 rounded-xl font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
+          disabled={!!qtyProblem}
+          className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: '#0F766E' }}>
           Add to Cart
         </button>
       </div>
@@ -107,6 +142,7 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
   shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
   onClose: () => void; onNewSale: () => void;
 }) {
+  const fmt = useMoney();
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
   const [printing, setPrinting] = useState(false);
 
@@ -129,7 +165,7 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
         </div>
         <h3 className="text-xl font-bold mb-1" style={{ color: '#0F172A' }}>Sale Complete!</h3>
         <p className="text-gray-500 text-sm mb-5">
-          #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+          #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {saleMethodLabel(sale)}
         </p>
         {sale.mpesaReceiptNumber && (
           <div className="mb-5 px-5 py-3 rounded-xl border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
@@ -160,12 +196,14 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
 }
 
 // ─── Sale Detail Modal ──────────────────────────────────────────────────────
-function SaleDetailModal({ sale, shopName, shopConfig, canRefund, onClose }: {
+function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClose }: {
   sale: Sale; shopName: string;
   shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
   canRefund: boolean;
+  canVoid: boolean;
   onClose: () => void;
 }) {
+  const fmt = useMoney();
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
   const [printing, setPrinting] = useState(false);
 
@@ -243,6 +281,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, onClose }: {
           </div>
 
           <RefundSaleSection sale={sale} canRefund={canRefund} />
+          <VoidSaleSection sale={sale} canVoid={canVoid} />
         </div>
       </div>
     </div>
@@ -251,19 +290,16 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, onClose }: {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function StaffSalesPage() {
+  const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const shopName = user?.shop?.name ?? 'Smart Duka';
   // Owner-granted refund permissions ('refund_all_sales' covers own sales too;
   // this page only ever lists the viewer's own sales)
-  const canRefund = !!user && (user.role === 'owner'
-    || !!user.permissions?.includes('refund_own_sales')
-    || !!user.permissions?.includes('refund_all_sales'));
+  const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);
+  const canVoid = hasPermission(user, 'void_sale');
 
-  const { data: shopData } = useQuery({
-    queryKey: ['shop-config'],
-    queryFn: async () => { const res = await api.get('/shop'); return res.data.data; },
-  });
+  const { shop: shopData } = useShop();
   const shopConfig = {
     phone: shopData?.phone,
     currency: shopData?.currency,
@@ -274,7 +310,7 @@ export default function StaffSalesPage() {
 
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartEntry[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>(CASH_METHOD_KEY);
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneDigits, setPhoneDigits] = useState('');
   const [quantityModalProduct, setQuantityModalProduct] = useState<Product | null>(null);
@@ -314,6 +350,17 @@ export default function StaffSalesPage() {
   });
   const mpesaEnabled = paymentStatus?.isConfigured ?? false;
 
+  // The shop's own till buttons; falls back to Cash + M-PESA for shops that
+  // never opened the setting, so nobody is left without a way to sell.
+  const saleMethods = useMemo(() => resolveSaleMethods(shopData?.paymentMethods), [shopData]);
+
+  // If the selected button is removed or switched off, fall back to the first.
+  useEffect(() => {
+    if (saleMethods.length > 0 && !saleMethods.some((m) => m.key === paymentMethod)) {
+      setPaymentMethod(saleMethods[0].key);
+    }
+  }, [saleMethods, paymentMethod]);
+
   const createSaleMutation = useMutation({
     mutationFn: async (data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string }) => {
       const res = await api.post('/sales', data);
@@ -331,12 +378,41 @@ export default function StaffSalesPage() {
     setCart((prev) => {
       const key = `${quantityModalProduct!._id}:${variantId ?? ''}`;
       const existing = prev.find((e) => cartKey(e) === key);
-      if (existing) return prev.map((e) => cartKey(e) === key ? { ...e, qty: e.qty + qty } : e);
+      if (existing) {
+        // The modal already caps itself, but another till may have sold some
+        // since this product list was fetched — clamp again rather than trust
+        // possibly stale stock.
+        const product = quantityModalProduct!;
+        const ceiling = availableToAdd(product, variantId, 0);
+        const step = stepFor(product.productType);
+        return prev.map((e) =>
+          cartKey(e) === key ? { ...e, qty: clampQty(e.qty + qty, step, ceiling) } : e
+        );
+      }
       return [...prev, { product: quantityModalProduct!, qty, unitPrice, variantId, variantName }];
     });
     setQuantityModalProduct(null);
   };
-  const updateQty = (key: string, delta: number) => setCart((prev) => prev.map((e) => cartKey(e) === key ? { ...e, qty: Math.max(0.1, e.qty + delta) } : e).filter((e) => e.qty > 0));
+  /** Units of a product already in the basket, so the modal can cap itself. */
+  const inCart = (productId: string) => (variantId?: string) =>
+    cart.find((e) => cartKey(e) === `${productId}:${variantId ?? ''}`)?.qty ?? 0;
+
+  const updateQty = (key: string, delta: number) => {
+    setCart((prev) =>
+      prev.flatMap((e) => {
+        if (cartKey(e) !== key) return [e];
+        const step = stepFor(e.product.productType);
+        // Stepping below one unit removes the line — a basket holding 0.1 of
+        // a loaf of bread is not something anyone meant.
+        const next = e.qty + delta;
+        if (next < step) return [];
+        // Cap at what's on the shelf. This had no upper bound at all, so
+        // holding "+" built a basket the server would refuse at checkout.
+        const ceiling = availableToAdd(e.product, e.variantId, 0);
+        return [{ ...e, qty: clampQty(next, step, ceiling) }];
+      })
+    );
+  };
   const removeFromCart = (key: string) => setCart((prev) => prev.filter((e) => cartKey(e) !== key));
   const totalAmount = cart.reduce((s, e) => s + e.unitPrice * e.qty, 0);
   const buildItems = () => cart.map((e) => ({ productId: e.product._id, quantity: e.qty, ...(e.variantId ? { variantId: e.variantId } : {}), ...(e.unitPrice !== e.product.sellingPrice ? { unitPrice: e.unitPrice } : {}) }));
@@ -348,12 +424,15 @@ export default function StaffSalesPage() {
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
-    if (paymentMethod === 'mpesa') {
-      if (!mpesaEnabled) return alert('M-Pesa is not configured for this shop. Contact the owner.');
-      if (!isValidPhone) return alert('Enter a valid Kenyan phone number.');
+    // STK Push is the only flow with a precondition, and only where the shop
+    // has connected M-Pesa Business. Everything else records and prints.
+    if (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled) {
+      // Belt and braces — the checkout button is already disabled while the
+      // number is invalid, and the field shows the reason inline.
+      if (!isValidPhone) return;
       setMpesaModalOpen(true); return;
     }
-    createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'cash' });
+    createSaleMutation.mutate({ items: buildItems(), paymentMethod });
   };
 
   return (
@@ -363,6 +442,7 @@ export default function StaffSalesPage() {
         <p className="text-sm text-gray-500 mt-0.5">Search products and process the sale</p>
       </div>
 
+      <ShiftGate>
       <div className="grid xl:grid-cols-5 gap-5">
         {/* Product browser */}
         <div className="xl:col-span-3 space-y-4">
@@ -457,14 +537,19 @@ export default function StaffSalesPage() {
                   <span className="text-2xl font-extrabold" style={{ color: '#0F766E' }}>{fmt(totalAmount)}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {([['cash', 'Cash', Banknote], ['mpesa', 'M-Pesa', Smartphone]] as const).map(([v, label, Icon]) => (
-                    <button key={v} onClick={() => setPaymentMethod(v as 'cash' | 'mpesa')}
-                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === v ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500'}`}>
-                      <Icon className="w-4 h-4" /> {label}
-                    </button>
-                  ))}
+                  {saleMethods.map((method) => {
+                    const Icon = methodIcon(method);
+                    return (
+                      <button key={method.key} onClick={() => setPaymentMethod(method.key)}
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500'}`}>
+                        <Icon className="w-4 h-4" /> {method.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {paymentMethod === 'mpesa' && (
+                {/* Phone entry belongs to STK Push, which needs credentials.
+                    Unconfigured M-Pesa is just another button. */}
+                {paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && (
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Customer Phone</label>
                     <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
@@ -473,7 +558,6 @@ export default function StaffSalesPage() {
                         className="flex-1 px-3 py-2.5 text-sm bg-white outline-none tracking-widest" />
                     </div>
                     {phoneDigits && !isValidPhone && <p className="text-xs text-red-500 mt-1">Enter a valid number starting with 7 or 1</p>}
-                    {!mpesaEnabled && <div className="mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200"><p className="text-xs text-amber-700">M-Pesa not configured. Contact the shop owner.</p></div>}
                   </div>
                 )}
                 {createSaleMutation.error && (
@@ -481,11 +565,11 @@ export default function StaffSalesPage() {
                     {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
                   </div>
                 )}
-                <button onClick={handleCheckout} disabled={createSaleMutation.isPending || (paymentMethod === 'mpesa' && (!isValidPhone || !mpesaEnabled))}
+                <button onClick={handleCheckout} disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white disabled:opacity-60" style={{ backgroundColor: '#0F766E' }}>
                   {createSaleMutation.isPending
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
-                    : paymentMethod === 'mpesa'
+                    : paymentMethod === MPESA_METHOD_KEY && mpesaEnabled
                     ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request — {fmt(totalAmount)}</>
                     : <><CheckCircle className="w-4 h-4" /> Complete Sale — {fmt(totalAmount)}</>}
                 </button>
@@ -495,6 +579,7 @@ export default function StaffSalesPage() {
           </div>
         </div>
       </div>
+      </ShiftGate>
 
       {/* My Sales History */}
       {mySalesData.length > 0 && (
@@ -512,7 +597,7 @@ export default function StaffSalesPage() {
                   <div className="flex items-center justify-end gap-1.5">
                     <SaleStatusBadge status={sale.status} />
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-500'}`}>
-                      {sale.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}
+                      {saleMethodLabel(sale)}
                     </span>
                   </div>
                 </div>
@@ -530,10 +615,10 @@ export default function StaffSalesPage() {
       )}
 
       {/* Modals */}
-      {quantityModalProduct && <QuantityModal product={quantityModalProduct} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
+      {quantityModalProduct && <QuantityModal product={quantityModalProduct} inCart={inCart(quantityModalProduct._id)} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
       <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
       {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
-      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} onClose={() => setSelectedSale(null)} />}
+      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} canVoid={canVoid} onClose={() => setSelectedSale(null)} />}
     </div>
   );
 }

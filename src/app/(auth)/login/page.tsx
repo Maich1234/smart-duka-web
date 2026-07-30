@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -10,6 +10,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getDeviceInfo } from '@/utils/deviceId';
+import { hasCompletedOnboarding } from '@/store/onboardingStore';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -20,12 +21,31 @@ type FormData = z.infer<typeof schema>;
 
 const UNVERIFIED_MESSAGE = 'Please verify your email before logging in.';
 
+/**
+ * Why the previous session ended, handed over by SessionExpiredHandler as a
+ * query param. It has to travel through the URL rather than the store,
+ * because getting here means the store was just cleared.
+ */
+const EXPIRY_NOTICES: Record<string, string> = {
+  expired: 'Your session expired. Please sign in again.',
+  revoked_elsewhere: 'You were signed out because this account was used on another device.',
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [expiryNotice, setExpiryNotice] = useState('');
+
+  // Read from window rather than useSearchParams: this page is otherwise
+  // statically prerenderable, and useSearchParams would force a Suspense
+  // boundary around it for no benefit.
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get('reason');
+    if (reason && EXPIRY_NOTICES[reason]) setExpiryNotice(EXPIRY_NOTICES[reason]);
+  }, []);
 
   const {
     register,
@@ -36,15 +56,24 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setServerError('');
     setUnverifiedEmail('');
+    setExpiryNotice('');
     try {
       const res = await api.post('/auth/login', { ...data, device: getDeviceInfo() });
       const userData = res.data.data;
-      login(userData, userData.token);
-      if (userData.role === 'owner') {
-        router.push('/owner/dashboard');
-      } else {
+      // The refresh token is what keeps this session alive past the access
+      // token's one hour. Dropping it here was why web users were signed out
+      // hourly.
+      login(userData, userData.token, userData.refreshToken);
+      if (userData.role !== 'owner') {
         router.push('/staff/dashboard');
+        return;
       }
+      // Registration returns no token — email verification comes first — so
+      // onboarding can't run post-register. It runs on an owner's first
+      // sign-in instead, and only once. A shop with no country set has never
+      // been through setup, which covers signing in on a new browser.
+      const needsOnboarding = !hasCompletedOnboarding() && !userData.shop?.country;
+      router.push(needsOnboarding ? '/onboarding/setup' : '/owner/dashboard');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       const message = error.response?.data?.message || 'Login failed. Please try again.';
@@ -57,6 +86,12 @@ export default function LoginPage() {
     <div>
       <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0F172A' }}>Welcome back</h1>
       <p className="text-gray-500 text-sm mb-8">Sign in to your Smart Duka account</p>
+
+      {expiryNotice && !serverError && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+          {expiryNotice}
+        </div>
+      )}
 
       {serverError && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
@@ -133,6 +168,15 @@ export default function LoginPage() {
           )}
         </button>
       </form>
+
+      {/* The backend allows a staff member one device at a time and revokes
+          the previous session on login (owners are exempt). Said up front,
+          because discovering it as a surprise logout on the shop phone
+          mid-shift is a much worse way to learn it. */}
+      <p className="mt-4 text-xs text-gray-400 text-center">
+        Staff accounts can only be signed in on one device at a time — signing in here will
+        end the session on your phone.
+      </p>
 
       <p className="mt-6 text-center text-sm text-gray-500">
         Don&apos;t have an account?{' '}
