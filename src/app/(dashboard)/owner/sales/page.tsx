@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, History, Banknote, Smartphone,
   Trash2, Plus, Minus, X, TrendingUp, TrendingDown,
-  Receipt, Package, Clock, CheckCircle, ArrowRight,
+  Receipt, Package, CheckCircle, ArrowRight,
   Filter, ChevronDown, ExternalLink, Printer,
 } from 'lucide-react';
 import { format } from 'date-fns';

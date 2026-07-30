@@ -71,6 +71,15 @@ const staffLinks: NavLink[] = [
   { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
   { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
   { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
+  // Purchasing lives under /owner for both roles — one route tree rather than
+  // a mirrored one. The dashboard layout lets permitted staff through.
+  {
+    href: '/owner/purchases',
+    icon: ShoppingBag,
+    label: 'Purchasing',
+    requiresFlag: 'purchasingEnabled',
+    permissions: ['view_purchases'],
+  },
   { href: '/staff/notifications', icon: Bell, label: 'Notifications' },
   { href: '/staff/profile', icon: User, label: 'Profile' },
 ];

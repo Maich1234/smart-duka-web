@@ -1,11 +1,15 @@
 import axios from 'axios';
+import { API_BASE_URL } from './config';
 
 // A second axios instance, deliberately not shared with src/lib/api.ts — its
 // own interceptor reads the admin token (never the shop token) and its own
 // 401 handler redirects to /admin/login (never /login), so the two auth
 // flows can never leak into each other client-side.
+//
+// Only the host is shared. Hardcoding it here meant pointing the app at a
+// staging backend left the admin console still talking to production.
 const adminApi = axios.create({
-  baseURL: 'https://smart-duka-backend-iota.vercel.app/api/v1/admin',
+  baseURL: `${API_BASE_URL}/admin`,
   headers: {
     'Content-Type': 'application/json',
   },
