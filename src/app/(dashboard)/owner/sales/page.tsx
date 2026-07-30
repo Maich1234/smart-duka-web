@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useShop } from '@/hooks/useShop';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
+import VoidSaleSection from '@/components/sales/VoidSaleSection';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 
@@ -242,8 +243,9 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
             )}
           </div>
 
-          {/* Owners can always refund */}
+          {/* Owners hold every permission, so both are always available */}
           <RefundSaleSection sale={sale} canRefund />
+          <VoidSaleSection sale={sale} canVoid />
         </div>
       </div>
     </div>

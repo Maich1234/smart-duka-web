@@ -10,12 +10,13 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useShop } from '@/hooks/useShop';
-import { hasAnyPermission } from '@/lib/permissions';
+import { hasAnyPermission, hasPermission } from '@/lib/permissions';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import {
   CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
 } from '@/lib/paymentMethods';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
+import VoidSaleSection from '@/components/sales/VoidSaleSection';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 
@@ -165,10 +166,11 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
 }
 
 // ─── Sale Detail Modal ──────────────────────────────────────────────────────
-function SaleDetailModal({ sale, shopName, shopConfig, canRefund, onClose }: {
+function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClose }: {
   sale: Sale; shopName: string;
   shopConfig: { phone?: string; currency?: string; thankYouNote?: string; logoUrl?: string; motto?: string };
   canRefund: boolean;
+  canVoid: boolean;
   onClose: () => void;
 }) {
   const receiptUrl = sale.receiptToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}` : null;
@@ -248,6 +250,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, onClose }: {
           </div>
 
           <RefundSaleSection sale={sale} canRefund={canRefund} />
+          <VoidSaleSection sale={sale} canVoid={canVoid} />
         </div>
       </div>
     </div>
@@ -262,6 +265,7 @@ export default function StaffSalesPage() {
   // Owner-granted refund permissions ('refund_all_sales' covers own sales too;
   // this page only ever lists the viewer's own sales)
   const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);
+  const canVoid = hasPermission(user, 'void_sale');
 
   const { shop: shopData } = useShop();
   const shopConfig = {
@@ -549,7 +553,7 @@ export default function StaffSalesPage() {
       {quantityModalProduct && <QuantityModal product={quantityModalProduct} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
       <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
       {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
-      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} onClose={() => setSelectedSale(null)} />}
+      {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} canVoid={canVoid} onClose={() => setSelectedSale(null)} />}
     </div>
   );
 }
