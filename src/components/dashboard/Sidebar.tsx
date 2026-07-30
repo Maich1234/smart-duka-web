@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Clock,
   CalendarDays,
+  Coins,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
@@ -68,6 +69,7 @@ const staffLinks: NavLink[] = [
   { href: '/staff/inventory', icon: Package, label: 'Products', permissions: ['view_products'] },
   { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
   { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
+  { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
   { href: '/staff/notifications', icon: Bell, label: 'Notifications' },
   { href: '/staff/profile', icon: User, label: 'Profile' },
 ];

@@ -12,6 +12,14 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import CommissionCard from '@/components/sales/CommissionCard';
+import { useShop } from '@/hooks/useShop';
+import {
+  getCommissionPeriodRange,
+  getStaffCommission,
+  type CommissionPeriod,
+} from '@/services/commission';
+import type { AxiosError } from 'axios';
 import {
   forceLogoutStaff,
   approveStaffDeletion,
@@ -124,6 +132,16 @@ export default function StaffDetailPage() {
   // into the copy, so DELETION_GRACE_DAYS / DELETION_APPROVAL_WINDOW_DAYS can
   // change without this page quietly telling people the wrong number. Shares
   // its cache with the staff list's banner, so it costs no extra request.
+  const { showStaffCommission, currency } = useShop();
+  const [commissionPeriod, setCommissionPeriod] = useState<CommissionPeriod>('month');
+  const commissionRange = getCommissionPeriodRange(commissionPeriod);
+  const commissionQuery = useQuery({
+    queryKey: ['staffCommission', id, commissionPeriod],
+    queryFn: () => getStaffCommission(id, commissionRange),
+    enabled: showStaffCommission && !!id,
+    retry: false,
+  });
+
   const { data: closureRequests } = useQuery({
     queryKey: ['staffDeletionRequests'],
     queryFn: getStaffDeletionRequests,
@@ -333,6 +351,21 @@ export default function StaffDetailPage() {
           <p className="text-sm text-gray-400">Not currently signed in on any device.</p>
         )}
       </div>
+
+      {/* Commission — only where the shop actually pays it */}
+      {showStaffCommission && (
+        <div>
+          <h3 className="font-bold mb-3" style={{ color: '#0F172A' }}>Commission</h3>
+          <CommissionCard
+            data={commissionQuery.data}
+            isLoading={commissionQuery.isLoading}
+            forbidden={(commissionQuery.error as AxiosError)?.response?.status === 403}
+            period={commissionPeriod}
+            onPeriodChange={setCommissionPeriod}
+            currency={currency}
+          />
+        </div>
+      )}
 
       {/* Permissions */}
       {allPermissions.length > 0 && (
