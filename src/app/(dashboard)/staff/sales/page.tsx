@@ -21,6 +21,7 @@ import ShiftGate from '@/components/shifts/ShiftGate';
 import Spinner from '@/components/ui/Spinner';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 import { useMoney } from '@/lib/money';
+import { availableToAdd, clampQty, stepFor } from '@/lib/stock';
 
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
 interface Product {
@@ -41,8 +42,12 @@ interface Sale {
 const cartKey = (e: CartEntry) => `${e.product._id}:${e.variantId ?? ''}`;
 
 // ─── Quantity Modal ─────────────────────────────────────────────────────────
-function QuantityModal({ product, onConfirm, onClose }: {
-  product: Product; onConfirm: (qty: number, price: number, variantId?: string, variantName?: string) => void; onClose: () => void;
+function QuantityModal({ product, inCart, onConfirm, onClose }: {
+  product: Product;
+  /** Units of this product already in the basket, keyed by variant. */
+  inCart: (variantId?: string) => number;
+  onConfirm: (qty: number, price: number, variantId?: string, variantName?: string) => void;
+  onClose: () => void;
 }) {
   const fmt = useMoney();
   const [qty, setQty] = useState(1);
@@ -50,8 +55,11 @@ function QuantityModal({ product, onConfirm, onClose }: {
   const [variantId, setVariantId] = useState(product.variants?.[0]?._id ?? '');
   const selectedVariant = product.variants?.find((v) => v._id === variantId);
   const effectivePrice = selectedVariant ? selectedVariant.sellingPrice : price;
-  const max = product.trackInventory && product.productType !== 'bundle' ? (selectedVariant ? selectedVariant.quantity : product.quantity) : 999;
+  // Subtracts what's already in the basket, so adding the same product
+  // twice can't quietly exceed the shelf.
+  const max = availableToAdd(product, variantId || undefined, inCart(variantId || undefined));
   const isWeighted = product.productType === 'weighted' || product.productType === 'refillable';
+  const step = stepFor(product.productType);
   const canOverride = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -83,19 +91,23 @@ function QuantityModal({ product, onConfirm, onClose }: {
         <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Quantity{isWeighted ? ` (${product.unitOfMeasure})` : ''}</label>
           <div className="flex items-center gap-3">
-            <button onClick={() => setQty((q) => Math.max(isWeighted ? 0.1 : 1, parseFloat((q - (isWeighted ? 0.1 : 1)).toFixed(1))))}
+            <button onClick={() => setQty((q) => clampQty(q - step, step, max))}
               className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50">
               <Minus className="w-4 h-4 text-gray-600" />
             </button>
-            <input type="number" value={qty} onChange={(e) => setQty(Math.max(isWeighted ? 0.1 : 1, parseFloat(e.target.value) || 1))}
-              step={isWeighted ? 0.1 : 1} min={isWeighted ? 0.1 : 1} max={max}
+            <input type="number" value={qty} onChange={(e) => setQty(clampQty(parseFloat(e.target.value), step, max))}
+              step={step} min={step} max={Number.isFinite(max) ? max : undefined}
               className="flex-1 text-center text-xl font-bold py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" />
-            <button onClick={() => setQty((q) => Math.min(max, parseFloat((q + (isWeighted ? 0.1 : 1)).toFixed(1))))}
+            <button onClick={() => setQty((q) => clampQty(q + step, step, max))}
               disabled={qty >= max} className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
               <Plus className="w-4 h-4 text-gray-600" />
             </button>
           </div>
-          {max < 999 && <p className="text-xs text-gray-400 mt-1.5 text-center">{max} {product.unitOfMeasure} available</p>}
+          {Number.isFinite(max) && (
+            <p className="text-xs mt-1.5 text-center" style={{ color: max === 0 ? '#B91C1C' : '#9CA3AF' }}>
+              {max === 0 ? 'All remaining stock is already in the cart' : `${max} ${product.unitOfMeasure} available`}
+            </p>
+          )}
         </div>
         <div className="flex items-center justify-between mb-4 p-3 rounded-xl" style={{ backgroundColor: '#F0FDFA' }}>
           <span className="text-sm font-medium text-gray-600">Subtotal</span>
@@ -352,12 +364,41 @@ export default function StaffSalesPage() {
     setCart((prev) => {
       const key = `${quantityModalProduct!._id}:${variantId ?? ''}`;
       const existing = prev.find((e) => cartKey(e) === key);
-      if (existing) return prev.map((e) => cartKey(e) === key ? { ...e, qty: e.qty + qty } : e);
+      if (existing) {
+        // The modal already caps itself, but another till may have sold some
+        // since this product list was fetched — clamp again rather than trust
+        // possibly stale stock.
+        const product = quantityModalProduct!;
+        const ceiling = availableToAdd(product, variantId, 0);
+        const step = stepFor(product.productType);
+        return prev.map((e) =>
+          cartKey(e) === key ? { ...e, qty: clampQty(e.qty + qty, step, ceiling) } : e
+        );
+      }
       return [...prev, { product: quantityModalProduct!, qty, unitPrice, variantId, variantName }];
     });
     setQuantityModalProduct(null);
   };
-  const updateQty = (key: string, delta: number) => setCart((prev) => prev.map((e) => cartKey(e) === key ? { ...e, qty: Math.max(0.1, e.qty + delta) } : e).filter((e) => e.qty > 0));
+  /** Units of a product already in the basket, so the modal can cap itself. */
+  const inCart = (productId: string) => (variantId?: string) =>
+    cart.find((e) => cartKey(e) === `${productId}:${variantId ?? ''}`)?.qty ?? 0;
+
+  const updateQty = (key: string, delta: number) => {
+    setCart((prev) =>
+      prev.flatMap((e) => {
+        if (cartKey(e) !== key) return [e];
+        const step = stepFor(e.product.productType);
+        // Stepping below one unit removes the line — a basket holding 0.1 of
+        // a loaf of bread is not something anyone meant.
+        const next = e.qty + delta;
+        if (next < step) return [];
+        // Cap at what's on the shelf. This had no upper bound at all, so
+        // holding "+" built a basket the server would refuse at checkout.
+        const ceiling = availableToAdd(e.product, e.variantId, 0);
+        return [{ ...e, qty: clampQty(next, step, ceiling) }];
+      })
+    );
+  };
   const removeFromCart = (key: string) => setCart((prev) => prev.filter((e) => cartKey(e) !== key));
   const totalAmount = cart.reduce((s, e) => s + e.unitPrice * e.qty, 0);
   const buildItems = () => cart.map((e) => ({ productId: e.product._id, quantity: e.qty, ...(e.variantId ? { variantId: e.variantId } : {}), ...(e.unitPrice !== e.product.sellingPrice ? { unitPrice: e.unitPrice } : {}) }));
@@ -560,7 +601,7 @@ export default function StaffSalesPage() {
       )}
 
       {/* Modals */}
-      {quantityModalProduct && <QuantityModal product={quantityModalProduct} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
+      {quantityModalProduct && <QuantityModal product={quantityModalProduct} inCart={inCart(quantityModalProduct._id)} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
       <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
       {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
       {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} canVoid={canVoid} onClose={() => setSelectedSale(null)} />}

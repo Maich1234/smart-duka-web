@@ -168,8 +168,8 @@ export function toPayload(form: ProductFormState): ProductPayload {
     productType: form.productType,
     sellingPrice: parseFloat(form.sellingPrice) || 0,
     costPrice: parseFloat(form.costPrice) || 0,
-    quantity: composite ? 0 : parseInt(form.quantity, 10) || 0,
-    lowStockAlert: parseInt(form.lowStockAlert, 10) || 5,
+    quantity: composite ? 0 : Math.max(0, parseInt(form.quantity, 10) || 0),
+    lowStockAlert: Math.max(0, parseInt(form.lowStockAlert, 10) || 5),
     trackInventory: composite ? false : form.trackInventory,
     unitOfMeasure: form.unitOfMeasure || 'unit',
   };
@@ -191,7 +191,7 @@ export function toPayload(form: ProductFormState): ProductPayload {
       name: v.name.trim(),
       sellingPrice: parseFloat(v.sellingPrice) || 0,
       costPrice: parseFloat(v.costPrice) || 0,
-      quantity: parseInt(v.quantity, 10) || 0,
+      quantity: Math.max(0, parseInt(v.quantity, 10) || 0),
       sku: v.sku.trim() || undefined,
       lowStockAlert: parseInt(v.lowStockAlert, 10) || 5,
       commission: v.commissionEnabled
@@ -443,12 +443,14 @@ export default function ProductForm({
               <Input
                 label="Current stock"
                 type="number"
+                min="0"
                 value={form.quantity}
                 onChange={(e) => update({ quantity: e.target.value })}
               />
               <Input
                 label="Low stock alert"
                 type="number"
+                min="0"
                 hint="Warn when stock drops below this"
                 value={form.lowStockAlert}
                 onChange={(e) => update({ lowStockAlert: e.target.value })}
@@ -617,6 +619,7 @@ export default function ProductForm({
                     <Input
                       label="Stock"
                       type="number"
+                      min="0"
                       value={variant.quantity}
                       onChange={(e) => patchVariant(index, { quantity: e.target.value })}
                     />
