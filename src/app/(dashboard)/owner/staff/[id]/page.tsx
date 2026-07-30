@@ -16,6 +16,7 @@ import {
   forceLogoutStaff,
   approveStaffDeletion,
   declineStaffDeletion,
+  getStaffDeletionRequests,
   type StaffActiveSession,
 } from '@/services/staff';
 
@@ -118,6 +119,20 @@ export default function StaffDetailPage() {
 
   // Account-closure requests: the owner decides, but only until the backend's
   // approval window expires — after that an unanswered request goes ahead.
+  //
+  // The windows come from the server's own constants rather than being written
+  // into the copy, so DELETION_GRACE_DAYS / DELETION_APPROVAL_WINDOW_DAYS can
+  // change without this page quietly telling people the wrong number. Shares
+  // its cache with the staff list's banner, so it costs no extra request.
+  const { data: closureRequests } = useQuery({
+    queryKey: ['staffDeletionRequests'],
+    queryFn: getStaffDeletionRequests,
+    staleTime: 60_000,
+  });
+  const graceDays = closureRequests?.meta?.graceDays ?? 14;
+  const approvalWindowDays = closureRequests?.meta?.approvalWindowDays ?? 14;
+  const pendingClosure = closureRequests?.data.find((r) => r._id === id);
+
   const approveClosureMutation = useMutation({
     mutationFn: () => approveStaffDeletion(id),
     onSuccess: () => {
@@ -241,9 +256,12 @@ export default function StaffDetailPage() {
                 </p>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#78350F' }}>
-                {staff.name} has asked to close their account. Nothing has changed yet — approving starts a
-                14-day cooling-off period, and your shop&apos;s sales and shift records stay in the books
-                either way. If you don&apos;t answer within 14 days of the request it goes ahead on its own.
+                {staff.name} has asked to close their account. Nothing has changed yet — approving starts a{' '}
+                {graceDays}-day cooling-off period, and your shop&apos;s sales and shift records stay in the
+                books either way.
+                {pendingClosure
+                  ? ` Left unanswered, it goes ahead on its own on ${format(new Date(pendingClosure.autoApprovesAt), 'MMM d, yyyy')}.`
+                  : ` If you don't answer within ${approvalWindowDays} days of the request it goes ahead on its own.`}
               </p>
               <div className="flex gap-3 pt-1">
                 <Button variant="outline" className="flex-1" onClick={() => setDeclineClosureOpen(true)}>
@@ -416,7 +434,7 @@ export default function StaffDetailPage() {
         title={`Approve ${staff.name}'s closure?`}
       >
         <p className="text-gray-600 mb-6">
-          Their account will close after a 14-day cooling-off period. They keep working normally until
+          Their account will close after a {graceDays}-day cooling-off period. They keep working normally until
           then, and can still cancel. Your shop&apos;s sales and shift records are not affected.
         </p>
         <div className="flex gap-3 justify-end">
