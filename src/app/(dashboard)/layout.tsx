@@ -7,6 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import Spinner from '@/components/ui/Spinner';
+import SessionExpiredHandler from '@/components/auth/SessionExpiredHandler';
 import clsx from 'clsx';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+      <SessionExpiredHandler />
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(!collapsed)}

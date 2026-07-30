@@ -5,8 +5,11 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ShoppingCart, CheckCircle, XCircle, Star, Send, Package, Clock, Hash } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/config';
 
-const API_BASE_URL = 'https://smart-duka-backend-iota.vercel.app/api/v1';
+// Deliberately a bare axios call rather than @/lib/api: this page is public,
+// so it must never attach an Authorization header or get caught by the
+// session-expiry redirect. Only the host is shared.
 
 /**
  * Mirrors the payload of GET /public/receipt/:token exactly.
