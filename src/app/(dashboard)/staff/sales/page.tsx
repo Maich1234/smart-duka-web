@@ -366,7 +366,9 @@ export default function StaffSalesPage() {
     // STK Push is the only flow with a precondition, and only where the shop
     // has connected M-Pesa Business. Everything else records and prints.
     if (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled) {
-      if (!isValidPhone) return alert('Enter a valid Kenyan phone number.');
+      // Belt and braces — the checkout button is already disabled while the
+      // number is invalid, and the field shows the reason inline.
+      if (!isValidPhone) return;
       setMpesaModalOpen(true); return;
     }
     createSaleMutation.mutate({ items: buildItems(), paymentMethod });

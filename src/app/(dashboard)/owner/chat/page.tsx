@@ -166,7 +166,10 @@ export default function ChatPage() {
   const showThreadLoading = isLoadingHistory || (!!conversationId && isLoadingThread);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-3xl mx-auto">
+    // dvh, not vh: on mobile browsers 100vh ignores the address bar, which
+    // would push the composer below the fold on the one screen where it has
+    // to stay reachable.
+    <div className="flex flex-col h-[calc(100dvh-11rem)] min-h-[24rem] max-w-3xl mx-auto">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Ask Smart Duka</h1>
