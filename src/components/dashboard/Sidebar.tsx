@@ -57,6 +57,7 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
   { href: '/owner/chat', icon: MessageSquare, label: 'Ask Smart Duka' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
+  { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
   { href: '/owner/payment-methods', icon: Wallet, label: 'Payment Methods' },
   { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
