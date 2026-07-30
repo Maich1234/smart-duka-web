@@ -1,3 +1,48 @@
+import QRCode from 'qrcode';
+
+/**
+ * Renders a QR as an inline SVG.
+ *
+ * Uses qrcode's synchronous create() and draws the matrix by hand rather than
+ * the async toString(), so buildReceiptHtml stays synchronous. That matters:
+ * printReceiptHtml calls window.open(), and awaiting anything first takes it
+ * out of the click's call stack, where popup blockers kill it.
+ *
+ * One <path> rather than a grid of <rect> elements — thermal printers render
+ * a single path far more reliably. Consecutive dark modules in a row are
+ * merged into one run, which is what keeps the markup small.
+ */
+function qrSvg(text: string, sizePx = 120): string {
+  try {
+    const { modules } = QRCode.create(text, { errorCorrectionLevel: 'M' });
+    const count = modules.size;
+    const data = modules.data;
+    let path = '';
+    for (let row = 0; row < count; row++) {
+      let col = 0;
+      while (col < count) {
+        if (!data[row * count + col]) { col++; continue; }
+        const start = col;
+        while (col < count && data[row * count + col]) col++;
+        path += `M${start} ${row}h${col - start}v1h-${col - start}z`;
+      }
+    }
+    // quiet zone of 2 modules, required for scanners to lock on
+    const q = 2;
+    const box = count + q * 2;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box} ${box}" ` +
+      `width="${sizePx}" height="${sizePx}" shape-rendering="crispEdges">` +
+      `<rect width="${box}" height="${box}" fill="#fff"/>` +
+      `<g transform="translate(${q},${q})" fill="#000"><path d="${path}"/></g>` +
+      `</svg>`
+    );
+  } catch {
+    // A receipt that prints without its QR beats one that doesn't print.
+    return '';
+  }
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -90,9 +135,12 @@ export function buildReceiptHtml(
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}/r/${sale.receiptToken}`
     : null;
 
+  // The URL is printed under the code as well, so a customer whose camera
+  // won't scan can still type it in.
   const qrSection = receiptUrl
     ? `<div style="text-align:center;margin-top:14px;padding-top:10px;border-top:1px dashed #000">
-        <p style="margin:0 0 4px;font-size:9px;color:#666">Scan to verify this receipt &amp; rate your service</p>
+        <p style="margin:0 0 6px;font-size:9px;color:#666">Scan to verify this receipt &amp; rate your service</p>
+        <div style="margin:0 auto 4px;line-height:0">${qrSvg(receiptUrl)}</div>
         <p style="margin:0;font-size:8px;color:#888;word-break:break-all">${escapeHtml(receiptUrl)}</p>
       </div>`
     : '';

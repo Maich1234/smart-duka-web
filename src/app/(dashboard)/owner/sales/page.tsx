@@ -68,7 +68,7 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
   onClose: () => void;
 }) {
   const fmt = useMoney();
-  const [qty, setQty] = useState(1);
+  const [qtyText, setQtyText] = useState('1');
   const [price, setPrice] = useState(product.sellingPrice);
   const [variantId, setVariantId] = useState(product.variants?.[0]?._id ?? '');
   const selectedVariant = product.variants?.find((v) => v._id === variantId);
@@ -78,6 +78,17 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
   const max = availableToAdd(product, variantId || undefined, inCart(variantId || undefined));
   const isWeighted = product.productType === 'weighted' || product.productType === 'refillable';
   const step = stepFor(product.productType);
+  const qty = parseFloat(qtyText);
+  // Typed quantities are never rewritten — being silently corrected at a
+  // till is worse than being told. The steppers still clamp, since those
+  // are increments rather than something someone typed.
+  const overStock = Number.isFinite(max) && qty > max;
+  const belowMin = !Number.isFinite(qty) || qty < step;
+  const qtyProblem = belowMin
+    ? `Enter at least ${step}${isWeighted ? ` ${product.unitOfMeasure}` : ''}.`
+    : overStock
+      ? `Only ${max} ${product.unitOfMeasure} available${inCart(variantId || undefined) > 0 ? ' after what is already in the cart' : ''}.`
+      : '';
   const canOverridePrice = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
 
   return (
@@ -120,33 +131,36 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
             Quantity{isWeighted ? ` (${product.unitOfMeasure})` : ''}
           </label>
           <div className="flex items-center gap-3">
-            <button onClick={() => setQty((q) => clampQty(q - step, step, max))}
+            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || step) - step, step, max)))}
               className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
               <Minus className="w-4 h-4 text-gray-600" />
             </button>
-            <input type="number" value={qty} onChange={(e) => setQty(clampQty(parseFloat(e.target.value), step, max))}
+            <input type="number" value={qtyText} onChange={(e) => setQtyText(e.target.value)}
               step={step} min={step} max={Number.isFinite(max) ? max : undefined}
               className="flex-1 text-center text-xl font-bold py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" style={{ color: '#0F172A' }} />
-            <button onClick={() => setQty((q) => clampQty(q + step, step, max))}
-              disabled={qty >= max}
+            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || 0) + step, step, max)))}
+              disabled={Number.isFinite(max) && qty >= max}
               className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-40">
               <Plus className="w-4 h-4 text-gray-600" />
             </button>
           </div>
-          {Number.isFinite(max) && (
+          {qtyProblem ? (
+            <p className="text-xs mt-1.5 text-center font-medium" style={{ color: '#B91C1C' }}>{qtyProblem}</p>
+          ) : Number.isFinite(max) ? (
             <p className="text-xs mt-1.5 text-center" style={{ color: max === 0 ? '#B91C1C' : '#9CA3AF' }}>
               {max === 0 ? 'All remaining stock is already in the cart' : `${max} ${product.unitOfMeasure} available`}
             </p>
-          )}
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between mb-4 p-3 rounded-xl" style={{ backgroundColor: '#F0FDFA' }}>
           <span className="text-sm font-medium text-gray-600">Subtotal</span>
-          <span className="text-lg font-bold" style={{ color: '#0F766E' }}>{fmt(effectivePrice * qty)}</span>
+          <span className="text-lg font-bold" style={{ color: '#0F766E' }}>{fmt(effectivePrice * (Number.isFinite(qty) ? qty : 0))}</span>
         </div>
 
         <button onClick={() => onConfirm(qty, effectivePrice, variantId || undefined, selectedVariant?.name)}
-          className="w-full py-3 rounded-xl font-semibold text-white transition-all" style={{ backgroundColor: '#0F766E' }}>
+          disabled={!!qtyProblem}
+          className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all" style={{ backgroundColor: '#0F766E' }}>
           Add to Cart
         </button>
       </div>
