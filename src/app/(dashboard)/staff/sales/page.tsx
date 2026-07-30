@@ -9,6 +9,8 @@ import {
 import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { useShop } from '@/hooks/useShop';
+import { hasAnyPermission } from '@/lib/permissions';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import {
   CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
@@ -259,14 +261,9 @@ export default function StaffSalesPage() {
   const shopName = user?.shop?.name ?? 'Smart Duka';
   // Owner-granted refund permissions ('refund_all_sales' covers own sales too;
   // this page only ever lists the viewer's own sales)
-  const canRefund = !!user && (user.role === 'owner'
-    || !!user.permissions?.includes('refund_own_sales')
-    || !!user.permissions?.includes('refund_all_sales'));
+  const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);
 
-  const { data: shopData } = useQuery({
-    queryKey: ['shop-config'],
-    queryFn: async () => { const res = await api.get('/shop'); return res.data.data; },
-  });
+  const { shop: shopData } = useShop();
   const shopConfig = {
     phone: shopData?.phone,
     currency: shopData?.currency,

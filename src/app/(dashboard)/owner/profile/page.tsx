@@ -9,32 +9,14 @@ import { useMutation } from '@tanstack/react-query';
 import { User, Store, Lock, CheckCircle, Upload, ImageIcon, Globe, DollarSign, FileText, Heart } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { useInvalidateShop, useShop } from '@/hooks/useShop';
+import { usePresets } from '@/hooks/usePresets';
+import { updateShopConfig, uploadShopLogo } from '@/services/shop';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
 import { SmartDukaAiCard } from '@/components/profile/SmartDukaAiCard';
-
-const COUNTRIES = [
-  { code: 'KE', name: 'Kenya', flag: '🇰🇪', currency: 'KES' },
-  { code: 'UG', name: 'Uganda', flag: '🇺🇬', currency: 'UGX' },
-  { code: 'TZ', name: 'Tanzania', flag: '🇹🇿', currency: 'TZS' },
-  { code: 'RW', name: 'Rwanda', flag: '🇷🇼', currency: 'RWF' },
-  { code: 'ET', name: 'Ethiopia', flag: '🇪🇹', currency: 'ETB' },
-  { code: 'BI', name: 'Burundi', flag: '🇧🇮', currency: 'BIF' },
-  { code: 'SS', name: 'South Sudan', flag: '🇸🇸', currency: 'SSP' },
-  { code: 'US', name: 'United States', flag: '🇺🇸', currency: 'USD' },
-];
-
-const CURRENCIES = [
-  { code: 'KES', name: 'Kenyan Shilling', flag: '🇰🇪' },
-  { code: 'UGX', name: 'Ugandan Shilling', flag: '🇺🇬' },
-  { code: 'TZS', name: 'Tanzanian Shilling', flag: '🇹🇿' },
-  { code: 'RWF', name: 'Rwandan Franc', flag: '🇷🇼' },
-  { code: 'ETB', name: 'Ethiopian Birr', flag: '🇪🇹' },
-  { code: 'BIF', name: 'Burundian Franc', flag: '🇧🇮' },
-  { code: 'SSP', name: 'S. Sudanese Pound', flag: '🇸🇸' },
-  { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
-];
+import ShopFeaturesCard from '@/components/profile/ShopFeaturesCard';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -65,12 +47,16 @@ interface ShopConfig {
 
 export default function ProfilePage() {
   const { user, login } = useAuthStore();
+  const { shop: shopData } = useShop();
+  const invalidateShop = useInvalidateShop();
+  const { countries, currencies } = usePresets();
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [shopSuccess, setShopSuccess] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [savingShop, setSavingShop] = useState(false);
   const [shopError, setShopError] = useState('');
+  const [touched, setTouched] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [shop, setShop] = useState<ShopConfig>({
@@ -86,23 +72,29 @@ export default function ProfilePage() {
     motto: '',
   });
 
+  // Server state seeds the form once. A background refetch must not overwrite
+  // whatever the owner is part-way through typing, hence the `touched` guard.
   useEffect(() => {
-    api.get('/shop').then((res) => {
-      const d = res.data.data;
-      setShop({
-        name: d.name ?? '',
-        address: d.address ?? '',
-        phone: d.phone ?? '',
-        email: d.email ?? '',
-        taxRate: d.taxRate ?? 0,
-        country: d.country ?? 'KE',
-        currency: d.currency ?? 'KES',
-        receiptThankYouNote: d.receiptThankYouNote ?? '',
-        logoUrl: d.logoUrl ?? '',
-        motto: d.motto ?? '',
-      });
-    }).catch(() => {});
-  }, []);
+    if (!shopData || touched) return;
+    setShop({
+      name: shopData.name ?? '',
+      address: shopData.address ?? '',
+      phone: shopData.phone ?? '',
+      email: shopData.email ?? '',
+      taxRate: shopData.taxRate ?? 0,
+      country: shopData.country ?? 'KE',
+      currency: shopData.currency ?? 'KES',
+      receiptThankYouNote: shopData.receiptThankYouNote ?? '',
+      logoUrl: shopData.logoUrl ?? '',
+      motto: shopData.motto ?? '',
+    });
+  }, [shopData, touched]);
+
+  /** Edit a shop field and mark the form dirty so refetches stop seeding it. */
+  const patchShop = (patch: Partial<ShopConfig>) => {
+    setTouched(true);
+    setShop((prev) => ({ ...prev, ...patch }));
+  };
 
   const profileForm = useForm<ProfileData>({
     resolver: zodResolver(profileSchema),
@@ -137,7 +129,10 @@ export default function ProfilePage() {
     setSavingShop(true);
     setShopError('');
     try {
-      await api.put('/shop', {
+      // Only these fields; the feature flags are owned by ShopFeaturesCard and
+      // save themselves. PUT /shop merges per-field, so omitting them here
+      // leaves them alone.
+      await updateShopConfig({
         name: shop.name,
         address: shop.address,
         phone: shop.phone,
@@ -149,6 +144,8 @@ export default function ProfilePage() {
         logoUrl: shop.logoUrl,
         motto: shop.motto,
       });
+      setTouched(false);
+      invalidateShop();
       setShopSuccess(true);
       setTimeout(() => setShopSuccess(false), 3000);
     } catch (err: unknown) {
@@ -164,13 +161,14 @@ export default function ProfilePage() {
     if (!file) return;
     setUploadingLogo(true);
     try {
-      const form = new FormData();
-      form.append('logo', file);
-      const res = await api.post('/shop/logo', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setShop((prev) => ({ ...prev, logoUrl: res.data.data.logoUrl }));
+      // The upload endpoint persists the URL itself, so this is already saved
+      // — patchShop just keeps the preview in step.
+      const logoUrl = await uploadShopLogo(file);
+      patchShop({ logoUrl });
+      invalidateShop();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-      alert(msg || 'Logo upload failed');
+      setShopError(msg || 'Logo upload failed');
     } finally {
       setUploadingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = '';
@@ -178,8 +176,10 @@ export default function ProfilePage() {
   };
 
   const handleCountryChange = (code: string) => {
-    const country = COUNTRIES.find((c) => c.code === code);
-    setShop((prev) => ({ ...prev, country: code, currency: country?.currency ?? prev.currency }));
+    // Follow the country's currency, since that's right far more often than
+    // not, but leave it editable below for shops that price in something else.
+    const country = countries.find((c) => c.code === code);
+    patchShop({ country: code, currency: country?.currency ?? shop.currency });
   };
 
   return (
@@ -243,25 +243,25 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name</label>
-                <input value={shop.name} onChange={(e) => setShop((p) => ({ ...p, name: e.target.value }))}
+                <input value={shop.name} onChange={(e) => patchShop({ name: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <input value={shop.address} onChange={(e) => setShop((p) => ({ ...p, address: e.target.value }))}
+                <input value={shop.address} onChange={(e) => patchShop({ address: e.target.value })}
                   placeholder="e.g. Tom Mboya St, Nairobi"
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input value={shop.phone} onChange={(e) => setShop((p) => ({ ...p, phone: e.target.value }))}
+                  <input value={shop.phone} onChange={(e) => patchShop({ phone: e.target.value })}
                     placeholder="07XXXXXXXX"
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Business Email</label>
-                  <input type="email" value={shop.email} onChange={(e) => setShop((p) => ({ ...p, email: e.target.value }))}
+                  <input type="email" value={shop.email} onChange={(e) => patchShop({ email: e.target.value })}
                     placeholder="shop@example.com"
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
                 </div>
@@ -280,16 +280,16 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                 <select value={shop.country} onChange={(e) => handleCountryChange(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 bg-white">
-                  {COUNTRIES.map((c) => (
+                  {countries.map((c) => (
                     <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                <select value={shop.currency} onChange={(e) => setShop((p) => ({ ...p, currency: e.target.value }))}
+                <select value={shop.currency} onChange={(e) => patchShop({ currency: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 bg-white">
-                  {CURRENCIES.map((c) => (
+                  {currencies.map((c) => (
                     <option key={c.code} value={c.code}>{c.flag} {c.name} ({c.code})</option>
                   ))}
                 </select>
@@ -299,7 +299,7 @@ export default function ProfilePage() {
                   <DollarSign className="w-3 h-3 inline mr-1" />Tax Rate (%)
                 </label>
                 <input type="number" min="0" max="100" step="0.1" value={shop.taxRate}
-                  onChange={(e) => setShop((p) => ({ ...p, taxRate: parseFloat(e.target.value) || 0 }))}
+                  onChange={(e) => patchShop({ taxRate: parseFloat(e.target.value) || 0 })}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
             </div>
@@ -344,7 +344,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Business Motto / Tagline</label>
-                <input value={shop.motto} onChange={(e) => setShop((p) => ({ ...p, motto: e.target.value }))}
+                <input value={shop.motto} onChange={(e) => patchShop({ motto: e.target.value })}
                   placeholder="Quality you can trust"
                   maxLength={200}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
@@ -354,7 +354,7 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <Heart className="w-3 h-3 inline mr-1" />Thank-You Note (shown on receipt)
                 </label>
-                <textarea value={shop.receiptThankYouNote} onChange={(e) => setShop((p) => ({ ...p, receiptThankYouNote: e.target.value }))}
+                <textarea value={shop.receiptThankYouNote} onChange={(e) => patchShop({ receiptThankYouNote: e.target.value })}
                   placeholder="Thank you, dear customer!"
                   maxLength={150}
                   rows={2}
@@ -370,6 +370,8 @@ export default function ProfilePage() {
       </Card>
 
       {/* Smart Duka AI */}
+      <ShopFeaturesCard />
+
       <SmartDukaAiCard />
 
       {/* Change Password */}

@@ -7,6 +7,8 @@ import {
   Wallet, ChevronUp, ChevronDown, Trash2, Plus, CheckCircle, Link2, Info,
 } from 'lucide-react';
 import api from '@/lib/api';
+import { useShop, SHOP_QUERY_KEY } from '@/hooks/useShop';
+import { updateShopConfig } from '@/services/shop';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import {
@@ -36,10 +38,7 @@ const MAX_METHODS = 12;
 export default function PaymentMethodsPage() {
   const queryClient = useQueryClient();
 
-  const { data: shopData, isLoading } = useQuery({
-    queryKey: ['shop-config'],
-    queryFn: async () => { const res = await api.get('/shop'); return res.data.data; },
-  });
+  const { shop: shopData, isLoading } = useShop();
   const { data: paymentStatus } = useQuery({
     queryKey: ['payment-status'],
     queryFn: async () => { const res = await api.get('/payment-config/status'); return res.data.data?.mpesa; },
@@ -61,8 +60,10 @@ export default function PaymentMethodsPage() {
   }, [shopData, dirty]);
 
   const saveMutation = useMutation({
-    mutationFn: async (next: ShopPaymentMethod[]) => {
-      const res = await api.put('/shop', {
+    mutationFn: (next: ShopPaymentMethod[]) =>
+      updateShopConfig({
+        // Sent whole, stored whole — array position is the button order, and
+        // a partial merge would make removing a button impossible.
         paymentMethods: next.map((m, i) => ({
           key: m.key,
           label: m.label.trim(),
@@ -70,14 +71,12 @@ export default function PaymentMethodsPage() {
           enabled: m.enabled !== false,
           order: i,
         })),
-      });
-      return res.data.data;
-    },
+      }),
     onSuccess: () => {
       setDirty(false);
       setError('');
       setSaved(true);
-      queryClient.invalidateQueries({ queryKey: ['shop-config'] });
+      queryClient.invalidateQueries({ queryKey: SHOP_QUERY_KEY });
       setTimeout(() => setSaved(false), 3000);
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {

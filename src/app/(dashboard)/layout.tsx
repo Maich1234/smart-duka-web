@@ -8,7 +8,22 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import Spinner from '@/components/ui/Spinner';
 import SessionExpiredHandler from '@/components/auth/SessionExpiredHandler';
+import NoAccessPanel from '@/components/dashboard/NoAccessPanel';
+import { canAccessRoute } from '@/lib/permissions';
 import clsx from 'clsx';
+
+/**
+ * Owner-prefixed routes that permitted staff may also open.
+ *
+ * Purchasing is mounted once, under /owner, rather than mirrored under both
+ * roles the way the mobile app does it — one route tree is less to keep in
+ * sync. Access is decided by permission (see ROUTE_PERMISSIONS), not by the
+ * URL prefix.
+ */
+const STAFF_REACHABLE_OWNER_ROUTES = ['/owner/purchases'];
+
+const isStaffReachable = (pathname: string) =>
+  STAFF_REACHABLE_OWNER_ROUTES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -34,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/login');
       return;
     }
-    if (user?.role === 'staff' && pathname.startsWith('/owner')) {
+    if (user?.role === 'staff' && pathname.startsWith('/owner') && !isStaffReachable(pathname)) {
       router.push('/staff/dashboard');
       return;
     } else if (user?.role === 'owner' && pathname.startsWith('/staff')) {
@@ -74,7 +89,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+          {canAccessRoute(user, pathname) ? (
+            children
+          ) : (
+            <NoAccessPanel homeHref={user?.role === 'owner' ? '/owner/dashboard' : '/staff/dashboard'} />
+          )}
+        </main>
       </div>
     </div>
   );

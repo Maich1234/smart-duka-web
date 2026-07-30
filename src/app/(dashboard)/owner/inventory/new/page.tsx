@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { usePresets } from '@/hooks/usePresets';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
@@ -26,6 +27,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function NewProductPage() {
+  const { unitsOfMeasure } = usePresets();
   const router = useRouter();
   const queryClient = useQueryClient();
   const {
@@ -112,8 +114,10 @@ export default function NewProductPage() {
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white"
               >
                 <option value="">Select unit…</option>
-                {['unit', 'kg', 'g', 'l', 'ml', 'dozen', 'pack', 'box', 'bag'].map((u) => (
-                  <option key={u} value={u}>{u}</option>
+                {/* From GET /presets, so this list can't drift from the units
+                    the backend will actually accept. */}
+                {unitsOfMeasure.map((u) => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
                 ))}
               </select>
               {errors.unitOfMeasure && <p className="mt-1 text-xs text-red-500">{errors.unitOfMeasure.message}</p>}

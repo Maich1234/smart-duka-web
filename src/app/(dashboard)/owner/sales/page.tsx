@@ -14,6 +14,7 @@ import {
   CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
 } from '@/lib/paymentMethods';
 import { useAuthStore } from '@/store/authStore';
+import { useShop } from '@/hooks/useShop';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import Spinner from '@/components/ui/Spinner';
@@ -315,10 +316,7 @@ export default function SalesPage() {
   const { user } = useAuthStore();
   const shopName = user?.shop?.name ?? 'Smart Duka';
 
-  const { data: shopData } = useQuery({
-    queryKey: ['shop-config'],
-    queryFn: async () => { const res = await api.get('/shop'); return res.data.data; },
-  });
+  const { shop: shopData } = useShop();
   const shopConfig = {
     phone: shopData?.phone,
     currency: shopData?.currency,
