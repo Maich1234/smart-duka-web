@@ -6,6 +6,9 @@ export interface Shop {
   _id: string;
   name: string;
   phone?: string;
+  /** Absent until the shop has been through setup — the onboarding signal. */
+  country?: string;
+  currency?: string;
 }
 
 export interface User {

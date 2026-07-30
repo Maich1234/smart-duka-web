@@ -10,6 +10,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getDeviceInfo } from '@/utils/deviceId';
+import { hasCompletedOnboarding } from '@/store/onboardingStore';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -63,11 +64,16 @@ export default function LoginPage() {
       // token's one hour. Dropping it here was why web users were signed out
       // hourly.
       login(userData, userData.token, userData.refreshToken);
-      if (userData.role === 'owner') {
-        router.push('/owner/dashboard');
-      } else {
+      if (userData.role !== 'owner') {
         router.push('/staff/dashboard');
+        return;
       }
+      // Registration returns no token — email verification comes first — so
+      // onboarding can't run post-register. It runs on an owner's first
+      // sign-in instead, and only once. A shop with no country set has never
+      // been through setup, which covers signing in on a new browser.
+      const needsOnboarding = !hasCompletedOnboarding() && !userData.shop?.country;
+      router.push(needsOnboarding ? '/onboarding/setup' : '/owner/dashboard');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       const message = error.response?.data?.message || 'Login failed. Please try again.';
