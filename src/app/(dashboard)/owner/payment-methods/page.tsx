@@ -9,6 +9,8 @@ import {
 import api from '@/lib/api';
 import { useShop, SHOP_QUERY_KEY } from '@/hooks/useShop';
 import { updateShopConfig } from '@/services/shop';
+import MpesaConfigForm from '@/components/payments/MpesaConfigForm';
+import VerificationModal from '@/components/payments/VerificationModal';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import {
@@ -50,6 +52,9 @@ export default function PaymentMethodsPage() {
   const [newLabel, setNewLabel] = useState('');
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  // Held in state only — persisting it would defeat re-verification.
+  const [configToken, setConfigToken] = useState<string | null>(null);
 
   // Server state seeds the editor once; after that the local list is the draft
   // being edited, so a background refetch must not wipe unsaved changes.
@@ -261,12 +266,44 @@ export default function PaymentMethodsPage() {
           </p>
         </div>
 
-        <Link href="/owner/payments"
-          className="flex items-center gap-2 mt-4 text-sm font-semibold text-[#0F766E] hover:underline">
-          <Link2 className="w-4 h-4" />
-          {mpesaConfigured ? 'M-Pesa Business settings' : 'Connect M-Pesa Business for STK prompts'}
-        </Link>
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          {/* Used to link to /owner/payments, which is the transaction
+              ledger — not where you connect anything. */}
+          <button
+            type="button"
+            onClick={() => setVerifying(true)}
+            className="flex items-center gap-2 text-sm font-semibold text-[#0F766E] hover:underline"
+          >
+            <Link2 className="w-4 h-4" />
+            {mpesaConfigured ? 'M-Pesa Business settings' : 'Connect M-Pesa Business for STK prompts'}
+          </button>
+          <Link href="/owner/payments" className="text-sm text-gray-500 hover:underline">
+            View M-Pesa transactions
+          </Link>
+        </div>
       </Card>
+
+      {configToken && (
+        <MpesaConfigForm
+          verificationToken={configToken}
+          onDone={() => setConfigToken(null)}
+          onTokenExpired={() => {
+            // Short-lived by design. Send them back through OTP rather than
+            // showing a generic failure they can't act on.
+            setConfigToken(null);
+            setVerifying(true);
+          }}
+        />
+      )}
+
+      <VerificationModal
+        isOpen={verifying}
+        onClose={() => setVerifying(false)}
+        onVerified={(token) => {
+          setVerifying(false);
+          setConfigToken(token);
+        }}
+      />
 
       <div className="flex justify-end">
         <Button onClick={handleSave} loading={saveMutation.isPending} disabled={!dirty || saveMutation.isPending}>

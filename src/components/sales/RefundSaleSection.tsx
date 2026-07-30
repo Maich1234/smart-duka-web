@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RotateCcw, Smartphone, Banknote, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
@@ -157,7 +158,11 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
               </button>
               {!mpesaRefundsReady && (
                 <p className="text-xs text-amber-600">
-                  M-Pesa refunds need the Initiator credentials from the Daraja portal (set them in the app under Profile → Payments). You can still refund in cash.
+                  M-Pesa refunds need the Initiator credentials from the Daraja portal. Add them under{' '}
+                  <Link href="/owner/payment-methods" className="font-semibold underline">
+                    Payment Methods
+                  </Link>
+                  . You can still refund in cash.
                 </p>
               )}
               <button onClick={() => { setError(''); refundMutation.mutate('cash'); }} disabled={refundMutation.isPending}
