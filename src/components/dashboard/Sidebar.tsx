@@ -19,6 +19,7 @@ import {
   X,
   Sparkles,
   Bell,
+  MessageSquare,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
@@ -49,6 +50,7 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/staff', icon: Users, label: 'Staff' },
   { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
+  { href: '/owner/chat', icon: MessageSquare, label: 'Ask Smart Duka' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
   { href: '/owner/payment-methods', icon: Wallet, label: 'Payment Methods' },

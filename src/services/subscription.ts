@@ -30,6 +30,19 @@ export interface SubscriptionPlan {
   priceComparison: string;
   pricing: PlanPricing;
   recommended: boolean;
+  /**
+   * Per-tier caps on Smart Duka AI chat. Every field is null on plans that
+   * don't cap that dimension, and the whole object is absent on plans with no
+   * caps at all — so null means unlimited, not zero.
+   *
+   * The server enforces these (enforceChatLimits); the client reads them only
+   * to warn before someone hits a wall.
+   */
+  chatLimits?: {
+    maxConversations: number | null;
+    maxNewConversationsPerDay: number | null;
+    maxMessagesPerDay: number | null;
+  } | null;
 }
 
 export interface PlansResponse {
