@@ -102,7 +102,7 @@ export default function PlatformConfigPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Platform Config</h1>
-        <p className="text-gray-500 text-sm mt-1">SmartDuka&apos;s own M-Pesa collection credentials — used to charge subscription payments, never a shop&apos;s own Daraja account</p>
+        <p className="text-gray-500 text-sm mt-1">Dukana&apos;s own M-Pesa collection credentials — used to charge subscription payments, never a shop&apos;s own Daraja account</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">

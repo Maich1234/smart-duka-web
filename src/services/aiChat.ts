@@ -1,7 +1,7 @@
 import api from '@/lib/api';
 
 /**
- * Smart Duka AI chat — the business consultant thread.
+ * Dukana AI chat — the business consultant thread.
  *
  * Owner-only on the backend (the whole /ai router is `ownerOnly`), and gated
  * behind an active subscription, the plan's ai_insights feature, and the
@@ -59,7 +59,7 @@ export async function sendChatMessage(params: {
     return res.data;
   } catch (err: unknown) {
     if ((err as { code?: string })?.code === 'ECONNABORTED') {
-      throw new Error('Smart Duka AI is taking longer than usual. Please try again.');
+      throw new Error('Dukana AI is taking longer than usual. Please try again.');
     }
     throw err;
   }

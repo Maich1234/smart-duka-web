@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: '#0F172A' }}>
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-extrabold" style={{ color: '#0F172A' }}>SmartDuka Admin</h1>
+          <h1 className="text-xl font-extrabold" style={{ color: '#0F172A' }}>Dukana Admin</h1>
           <p className="text-sm text-gray-500 mt-1">Internal staff only</p>
         </div>
 

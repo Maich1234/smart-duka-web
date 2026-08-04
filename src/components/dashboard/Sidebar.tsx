@@ -55,7 +55,7 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
   { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
-  { href: '/owner/chat', icon: MessageSquare, label: 'Ask Smart Duka' },
+  { href: '/owner/chat', icon: MessageSquare, label: 'Ask Dukana' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
   { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
@@ -133,7 +133,7 @@ function SidebarContent({
           <ShoppingBag className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
-          <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>Smart Duka</span>
+          <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>Dukana</span>
         )}
         {showCloseButton && (
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">

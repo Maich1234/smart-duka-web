@@ -346,7 +346,7 @@ export default function SalesPage() {
   const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const shopName = user?.shop?.name ?? 'Smart Duka';
+  const shopName = user?.shop?.name ?? 'Dukana';
 
   const { shop: shopData } = useShop();
   const shopConfig = {

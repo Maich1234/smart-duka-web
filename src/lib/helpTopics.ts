@@ -7,7 +7,7 @@
  * is a server-rendered, indexable page.
  *
  * Originally written for the in-app Help & Learning Center. Plain-language explanations
- * of Smart Duka's real features only — nothing here should describe a
+ * of Dukana's real features only — nothing here should describe a
  * feature that doesn't exist yet in the app.
  */
 
@@ -35,20 +35,20 @@ export const HELP_CATEGORIES = [
   'Staff & Permissions',
   'Reports & Settings',
   'Receipts & Customers',
-  'Smart Duka AI',
+  'Dukana AI',
 ] as const;
 
 export const HELP_TOPICS: HelpTopic[] = [
   {
     slug: 'getting-started',
-    title: 'Getting Started with Smart Duka',
+    title: 'Getting Started with Dukana',
     category: 'Getting Started',
-    summary: 'What Smart Duka does, and the difference between an owner and a staff account.',
+    summary: 'What Dukana does, and the difference between an owner and a staff account.',
     keywords: ['intro', 'overview', 'owner', 'staff', 'role', 'account'],
     sections: [
       {
         paragraphs: [
-          'Smart Duka helps you run a shop from your phone: add products, record sales, track stock, manage staff, and see reports — all in one place.',
+          'Dukana helps you run a shop from your phone: add products, record sales, track stock, manage staff, and see reports — all in one place.',
         ],
       },
       {
@@ -163,7 +163,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         bullets: [
           'Quantity — how many you currently have in stock',
           'Track Inventory — turn this off for items you don\'t want stock warnings for (it\'s switched off automatically for Bundles and Variant products, since their stock comes from their parts)',
-          'Low Stock Alert — the quantity at which Smart Duka warns you to restock',
+          'Low Stock Alert — the quantity at which Dukana warns you to restock',
         ],
       },
       {
@@ -199,7 +199,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Low Stock Alert',
         paragraphs: [
-          'Each product has a Low Stock Alert number. When the quantity on hand drops to or below that number, Smart Duka flags it as low stock and can send you a notification, so you know to restock before you run out.',
+          'Each product has a Low Stock Alert number. When the quantity on hand drops to or below that number, Dukana flags it as low stock and can send you a notification, so you know to restock before you run out.',
         ],
       },
       {
@@ -220,7 +220,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     sections: [
       {
         paragraphs: [
-          'If you sell a combination of products together as one item — a combo meal, a cleaning kit, a gift set — set it up as a Bundle. A Bundle is Smart Duka\'s version of a "recipe" or bill of materials: instead of tracking its own stock, it\'s made of a list of other products and quantities.',
+          'If you sell a combination of products together as one item — a combo meal, a cleaning kit, a gift set — set it up as a Bundle. A Bundle is Dukana\'s version of a "recipe" or bill of materials: instead of tracking its own stock, it\'s made of a list of other products and quantities.',
         ],
       },
       {
@@ -228,7 +228,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         bullets: [
           'Create the Bundle product and give it its own selling price (usually less than buying the parts separately)',
           'Add each component product and how many of it the bundle uses',
-          'When a Bundle is sold, Smart Duka automatically reduces the stock of each component — you never adjust the bundle\'s own stock',
+          'When a Bundle is sold, Dukana automatically reduces the stock of each component — you never adjust the bundle\'s own stock',
           'The bundle is only available to sell if all of its components are in stock',
         ],
       },
@@ -247,7 +247,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     sections: [
       {
         paragraphs: [
-          'Smart Duka\'s discounts are "Buy X Get Y Free" promotions set up on individual products — there\'s no separate percentage-off or coupon-code discount, and cashiers never type in a discount at checkout.',
+          'Dukana\'s discounts are "Buy X Get Y Free" promotions set up on individual products — there\'s no separate percentage-off or coupon-code discount, and cashiers never type in a discount at checkout.',
         ],
       },
       {
@@ -260,7 +260,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'How it applies at checkout',
         paragraphs: [
-          'There\'s nothing for staff to turn on — the moment a customer buys enough of a product to qualify, Smart Duka applies the best available promotion for that product automatically and reduces the total. If a product has more than one promotion, only the one that saves the customer the most is used; they don\'t stack.',
+          'There\'s nothing for staff to turn on — the moment a customer buys enough of a product to qualify, Dukana applies the best available promotion for that product automatically and reduces the total. If a product has more than one promotion, only the one that saves the customer the most is used; they don\'t stack.',
         ],
       },
       {
@@ -390,7 +390,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'The QR code',
         paragraphs: [
-          'Each receipt includes a unique QR code. Scanning it opens a page inside Smart Duka showing "Verified Authentic Receipt" with the receipt details — this proves the receipt is genuine and wasn\'t altered.',
+          'Each receipt includes a unique QR code. Scanning it opens a page inside Dukana showing "Verified Authentic Receipt" with the receipt details — this proves the receipt is genuine and wasn\'t altered.',
         ],
       },
       {
@@ -436,27 +436,27 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     slug: 'smart-duka-ai',
-    title: 'Smart Duka AI',
-    category: 'Smart Duka AI',
-    summary: 'What Smart Duka AI does, how to turn it on, and what data it uses.',
-    keywords: ['ai', 'gemini', 'smart duka ai', 'insights', 'chat', 'business consultant', 'privacy', 'toggle'],
+    title: 'Dukana AI',
+    category: 'Dukana AI',
+    summary: 'What Dukana AI does, how to turn it on, and what data it uses.',
+    keywords: ['ai', 'gemini', 'dukana ai', 'insights', 'chat', 'business consultant', 'privacy', 'toggle'],
     sections: [
       {
         paragraphs: [
-          'Smart Duka AI is an optional, subscription-included feature that reads a summary of your shop\'s real numbers and explains them in plain language — it doesn\'t generate its own figures or make decisions for you. It powers the Daily Insight and the "Ask Smart Duka" business chat.',
+          'Dukana AI is an optional, subscription-included feature that reads a summary of your shop\'s real numbers and explains them in plain language — it doesn\'t generate its own figures or make decisions for you. It powers the Daily Insight and the "Ask Dukana" business chat.',
         ],
       },
       {
         heading: 'Turning it on or off',
         paragraphs: [
-          'Go to Profile → Smart Duka AI. If you\'re on an active subscription, you\'ll see a switch — turn it on to start using Daily Insight and chat. Turning it off immediately stops any data being sent to Gemini; your shop keeps working as normal, just without the AI features.',
+          'Go to Profile → Dukana AI. If you\'re on an active subscription, you\'ll see a switch — turn it on to start using Daily Insight and chat. Turning it off immediately stops any data being sent to Gemini; your shop keeps working as normal, just without the AI features.',
         ],
       },
       {
         heading: 'What it can do',
         bullets: [
           'Daily Insight — a health score and a short explanation of what changed in your business today',
-          'Ask Smart Duka — a chat where you can ask questions about your sales, stock, staff, and expenses',
+          'Ask Dukana — a chat where you can ask questions about your sales, stock, staff, and expenses',
         ],
       },
       {
@@ -468,7 +468,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Subscription required',
         paragraphs: [
-          'Smart Duka AI is included with any active subscription (trial, paid, or grace period). If your subscription isn\'t active, Profile shows what the feature offers and the current status of your subscription.',
+          'Dukana AI is included with any active subscription (trial, paid, or grace period). If your subscription isn\'t active, Profile shows what the feature offers and the current status of your subscription.',
         ],
       },
     ],

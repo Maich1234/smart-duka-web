@@ -113,7 +113,7 @@ export default function ReceiptPage() {
           <h1 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Receipt Not Found</h1>
           <p className="text-gray-500 text-sm mb-6">{error || 'This receipt link is invalid or has expired.'}</p>
           <Link href="/" className="text-sm font-medium underline" style={{ color: '#0F766E' }}>
-            Go to Smart Duka
+            Go to Dukana
           </Link>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function ReceiptPage() {
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <ShoppingCart className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-sm" style={{ color: '#0F766E' }}>Smart Duka</span>
+            <span className="font-bold text-sm" style={{ color: '#0F766E' }}>Dukana</span>
           </Link>
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-6 h-6 text-green-600" />
@@ -255,7 +255,7 @@ export default function ReceiptPage() {
         {/* Footer */}
         <p className="text-center text-xs text-gray-400">
           Powered by{' '}
-          <Link href="/" className="font-medium" style={{ color: '#0F766E' }}>Smart Duka</Link>
+          <Link href="/" className="font-medium" style={{ color: '#0F766E' }}>Dukana</Link>
           {' '}— POS for Kenyan Businesses
         </p>
       </div>

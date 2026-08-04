@@ -24,5 +24,5 @@ function resolveSiteUrl(): string {
 /** No trailing slash — callers append paths beginning with "/". */
 export const SITE_URL = resolveSiteUrl();
 
-export const SITE_NAME = 'Smart Duka';
+export const SITE_NAME = 'Dukana';
 export const SUPPORT_EMAIL = 'support@smartduka.co.ke';

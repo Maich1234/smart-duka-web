@@ -13,7 +13,7 @@ export default function TypingIndicator() {
             style={{ backgroundColor: '#0F766E', animationDelay: `${i * 150}ms` }}
           />
         ))}
-        <span className="sr-only">Smart Duka AI is typing</span>
+        <span className="sr-only">Dukana AI is typing</span>
       </div>
     </div>
   );

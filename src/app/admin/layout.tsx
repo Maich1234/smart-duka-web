@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="ml-2 font-bold" style={{ color: '#0F172A' }}>SmartDuka Admin</span>
+          <span className="ml-2 font-bold" style={{ color: '#0F172A' }}>Dukana Admin</span>
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>

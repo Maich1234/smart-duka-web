@@ -33,11 +33,11 @@ const contactMethods = [
 
 const faqs = [
   {
-    q: 'Is Smart Duka free to use?',
+    q: 'Is Dukana free to use?',
     a: 'Yes! The Free plan lets you get started with up to 50 products and 1 staff account at no cost. Upgrade to Pro when you need more.',
   },
   {
-    q: 'Does Smart Duka work offline?',
+    q: 'Does Dukana work offline?',
     a: 'Yes. The mobile app queues sales offline and syncs automatically when you reconnect. The web app requires an internet connection.',
   },
   {
@@ -45,7 +45,7 @@ const faqs = [
     a: 'You add your M-Pesa Business (Paybill or Till) credentials in settings. During checkout, customers receive an STK Push prompt on their phone and pay directly.',
   },
   {
-    q: 'Can multiple staff use Smart Duka at the same time?',
+    q: 'Can multiple staff use Dukana at the same time?',
     a: 'Absolutely. Each staff member gets their own login with customisable permissions. The owner sees all activity in real time.',
   },
   {
@@ -77,7 +77,7 @@ export default function ContactPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
                 <ShoppingCart className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Smart Duka</span>
+              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Dukana</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
               <Link href="/" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Home</Link>
@@ -259,9 +259,9 @@ export default function ContactPage() {
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <ShoppingCart className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-gray-300 font-semibold">Smart Duka</span>
+            <span className="text-gray-300 font-semibold">Dukana</span>
           </div>
-          <p>© 2025 Smart Duka. Built with ❤️ for Kenyan businesses.</p>
+          <p>© 2025 Dukana. Built with ❤️ for Kenyan businesses.</p>
           <div className="flex gap-4 mt-3 md:mt-0">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <Link href="/about" className="hover:text-white transition-colors">About</Link>

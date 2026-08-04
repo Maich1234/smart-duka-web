@@ -16,7 +16,7 @@ import { updateShopConfig, uploadShopLogo } from '@/services/shop';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
-import { SmartDukaAiCard } from '@/components/profile/SmartDukaAiCard';
+import { DukanaAiCard } from '@/components/profile/DukanaAiCard';
 import ShopFeaturesCard from '@/components/profile/ShopFeaturesCard';
 
 const profileSchema = z.object({
@@ -370,10 +370,10 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Smart Duka AI */}
+      {/* Dukana AI */}
       <ShopFeaturesCard />
 
-      <SmartDukaAiCard />
+      <DukanaAiCard />
 
       {/* Change Password */}
       <Card>

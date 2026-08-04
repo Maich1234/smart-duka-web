@@ -26,7 +26,7 @@ function SidebarContent({ onLinkClick, onClose }: { onLinkClick?: () => void; on
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0F172A' }}>
           <ShieldCheck className="w-5 h-5 text-white" />
         </div>
-        <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>SmartDuka Admin</span>
+        <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>Dukana Admin</span>
         {onClose && (
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors lg:hidden">
             <X className="w-5 h-5" />

@@ -41,7 +41,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
             <ShoppingBag className="w-5 h-5 text-white" />
           </span>
-          <span className="font-extrabold text-lg" style={{ color: '#0F172A' }}>Smart Duka</span>
+          <span className="font-extrabold text-lg" style={{ color: '#0F172A' }}>Dukana</span>
         </div>
         {children}
       </div>

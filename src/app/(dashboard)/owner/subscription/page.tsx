@@ -138,7 +138,7 @@ export default function SubscriptionPage() {
     <div className="space-y-6 max-w-xl">
       <div>
         <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Subscription</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage your Smart Duka plan and billing</p>
+        <p className="text-gray-500 text-sm mt-1">Manage your Dukana plan and billing</p>
       </div>
 
       {toast && (
@@ -166,7 +166,7 @@ export default function SubscriptionPage() {
           {access?.cancelled && <span className="text-xs text-gray-400">Cancelled — active until period end</span>}
         </div>
 
-        <h2 className="text-xl font-extrabold" style={{ color: '#0F172A' }}>{plan?.name ? `${plan.name} plan` : 'Smart Duka'}</h2>
+        <h2 className="text-xl font-extrabold" style={{ color: '#0F172A' }}>{plan?.name ? `${plan.name} plan` : 'Dukana'}</h2>
         {!!plan?.tagline && <p className="text-sm text-gray-500 mt-0.5">{plan.tagline}</p>}
 
         <div className="h-px bg-gray-100 my-4" />

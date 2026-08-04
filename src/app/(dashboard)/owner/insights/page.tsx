@@ -15,7 +15,7 @@ import {
 } from '@/components/insights/InsightSections';
 
 export default function InsightsPage() {
-  // Subscription state, plan feature, and the shop's own Smart Duka AI
+  // Subscription state, plan feature, and the shop's own Dukana AI
   // toggle. Matches the backend's requireActiveSubscription + requireFeature
   // + requireAiEnabled on GET /ai/insight.
   const { hasAiAccess: hasAiInsights, state: aiAccessState, isLoading: isSubscriptionLoading } = useAiAccess();

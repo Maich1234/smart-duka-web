@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/marketing/SiteNav';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy – Smart Duka',
+  title: 'Privacy Policy – Dukana',
   description:
-    'How Smart Duka collects, uses, shares, and retains your data — including business data sent to Google Gemini for AI insights, and what happens when you close your account.',
+    'How Dukana collects, uses, shares, and retains your data — including business data sent to Google Gemini for AI insights, and what happens when you close your account.',
   alternates: { canonical: '/privacy' },
 };
 
@@ -48,8 +48,8 @@ export default function PrivacyPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:p-8 space-y-8">
           <Section title="Who we are">
             <P>
-              Smart Duka is a point-of-sale and shop-management service for retail businesses in Kenya and
-              East Africa. This policy covers the Smart Duka mobile app, the Smart Duka web app, and this
+              Dukana is a point-of-sale and shop-management service for retail businesses in Kenya and
+              East Africa. This policy covers the Dukana mobile app, the Dukana web app, and this
               website.
             </P>
             <P>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
             <Bullets
               items={[
                 'Safaricom (M-Pesa / Daraja) — to request and confirm payments. They receive the payer phone number and amount.',
-                'Google Gemini — to generate AI business insights and answer your questions in Ask Smart Duka. See below.',
+                'Google Gemini — to generate AI business insights and answer your questions in Ask Dukana. See below.',
                 'Google Firebase — to deliver push notifications.',
                 'Vercel and MongoDB Atlas — hosting and database infrastructure.',
                 'Cloudinary — to store shop logos you upload.',
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
 
           <Section title="AI features and Google Gemini">
             <P>
-              Smart Duka&apos;s AI insights and the Ask Smart Duka assistant work by sending a{' '}
+              Dukana&apos;s AI insights and the Ask Dukana assistant work by sending a{' '}
               <strong>summary of your business data</strong> to Google Gemini: aggregated sales totals,
               stock levels, expenses, and staff performance figures. This is a transfer of your business
               data to a third party, so we want to be exact about it:
@@ -116,7 +116,7 @@ export default function PrivacyPage() {
             <Bullets
               items={[
                 'No customer personal data is ever included.',
-                'AI features are off unless your shop has an active subscription, and an owner can switch Smart Duka AI off entirely from Profile at any time.',
+                'AI features are off unless your shop has an active subscription, and an owner can switch Dukana AI off entirely from Profile at any time.',
                 'When it is off, nothing is sent to Gemini at all.',
               ]}
             />
@@ -151,7 +151,7 @@ export default function PrivacyPage() {
 
           <Section title="Offline data on your device">
             <P>
-              So the app keeps working without a signal, Smart Duka stores a copy of your recent products
+              So the app keeps working without a signal, Dukana stores a copy of your recent products
               and any sales waiting to sync in a private database on your device. It is removed when you
               sign out or uninstall the app.
             </P>
@@ -175,7 +175,7 @@ export default function PrivacyPage() {
 
           <Section title="Children">
             <P>
-              Smart Duka is a business tool and is not directed at children. We do not knowingly collect
+              Dukana is a business tool and is not directed at children. We do not knowingly collect
               data from anyone under 18.
             </P>
           </Section>

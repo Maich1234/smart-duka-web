@@ -35,7 +35,7 @@ const SUGGESTIONS = [
 ];
 
 /**
- * Ask Smart Duka — the business consultant chat.
+ * Ask Dukana — the business consultant chat.
  *
  * Opens the most recent thread and creates one on the first message. Past
  * threads are reachable from the history panel, which is what makes the
@@ -172,7 +172,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-[calc(100dvh-11rem)] min-h-[24rem] max-w-3xl mx-auto">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Ask Smart Duka</h1>
+          <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Ask Dukana</h1>
           <p className="text-gray-500 text-sm mt-1">Grounded answers about your business</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -286,7 +286,7 @@ export default function ChatPage() {
         size="sm"
       >
         <p className="text-sm text-gray-600">
-          It will be removed from Smart Duka AI. This can&apos;t be undone.
+          It will be removed from Dukana AI. This can&apos;t be undone.
         </p>
         <div className="flex justify-end gap-3 mt-5">
           <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button>

@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/marketing/SiteNav';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service – Smart Duka',
+  title: 'Terms of Service – Dukana',
   description:
-    'The agreement covering your use of Smart Duka: subscriptions and billing, staff seats, your data, availability, and how either side can end the agreement.',
+    'The agreement covering your use of Dukana: subscriptions and billing, staff seats, your data, availability, and how either side can end the agreement.',
   alternates: { canonical: '/terms' },
 };
 
@@ -36,7 +36,7 @@ export default function TermsPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:p-8 space-y-8">
           <Section title="1. The agreement">
             <P>
-              These terms cover your use of Smart Duka — the mobile app, the web app, and this website. By
+              These terms cover your use of Dukana — the mobile app, the web app, and this website. By
               creating an account you agree to them. If you are creating an account on behalf of a business,
               you confirm you are authorised to accept these terms for that business.
             </P>
@@ -115,7 +115,7 @@ export default function TermsPage() {
             <P>You agree not to:</P>
             <Bullets
               items={[
-                'Use Smart Duka for anything unlawful, or to record transactions you know to be fraudulent.',
+                'Use Dukana for anything unlawful, or to record transactions you know to be fraudulent.',
                 'Share one paid account across separate businesses to avoid paying for seats.',
                 'Attempt to bypass subscription, seat, or permission checks, or access another shop’s data.',
                 'Resell or rebrand the service without a written agreement with us.',
@@ -129,14 +129,14 @@ export default function TermsPage() {
           <Section title="9. Payments through M-Pesa">
             <P>
               Payments you collect from your own customers go directly to your own M-Pesa till using
-              credentials you supply. Smart Duka records those payments; it never holds your money. You are
+              credentials you supply. Dukana records those payments; it never holds your money. You are
               responsible for keeping your M-Pesa credentials accurate and for any tax on your sales.
             </P>
           </Section>
 
           <Section title="10. Availability">
             <P>
-              We work hard to keep Smart Duka running, and the app is built to keep recording sales while
+              We work hard to keep Dukana running, and the app is built to keep recording sales while
               offline. Even so, we cannot promise uninterrupted service — connectivity, Safaricom&apos;s
               systems, and our hosting providers are all outside our full control. Keep your own record of
               anything critical.
@@ -145,7 +145,7 @@ export default function TermsPage() {
 
           <Section title="11. Limits on liability">
             <P>
-              Smart Duka is provided as-is. To the extent the law allows, we are not liable for lost
+              Dukana is provided as-is. To the extent the law allows, we are not liable for lost
               profits, lost sales, or indirect losses. Where liability cannot be excluded, it is limited to
               the subscription fees you paid us in the three months before the claim.
             </P>
@@ -155,7 +155,7 @@ export default function TermsPage() {
           <Section title="12. Changes">
             <P>
               We may update these terms. If a change materially affects you, we will notify shop owners in
-              the app before it takes effect. Continuing to use Smart Duka after that means you accept the
+              the app before it takes effect. Continuing to use Dukana after that means you accept the
               updated terms.
             </P>
           </Section>

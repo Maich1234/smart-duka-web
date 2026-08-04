@@ -4,9 +4,9 @@ import { AlertTriangle, Smartphone, Mail, Users } from 'lucide-react';
 import { SiteNav } from '@/components/marketing/SiteNav';
 
 export const metadata: Metadata = {
-  title: 'Delete your Smart Duka account',
+  title: 'Delete your Dukana account',
   description:
-    'How to permanently close your Smart Duka account and what happens to your data, including the 14-day cancellation window.',
+    'How to permanently close your Dukana account and what happens to your data, including the 14-day cancellation window.',
   alternates: { canonical: '/delete-account' },
 };
 
@@ -30,7 +30,7 @@ export default function DeleteAccountPage() {
 
       <main className="max-w-3xl mx-auto px-4 py-12 lg:py-16">
         <h1 className="text-3xl lg:text-4xl font-extrabold mb-4" style={{ color: '#0F172A' }}>
-          Delete your Smart Duka account
+          Delete your Dukana account
         </h1>
         <p className="text-lg leading-relaxed mb-10" style={{ color: '#475569' }}>
           You can close your account and have your personal data deleted at any time. Here&apos;s exactly
@@ -62,7 +62,7 @@ export default function DeleteAccountPage() {
               <Smartphone className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#0F766E' }} />
               <ol className="space-y-2 leading-relaxed" style={{ color: '#334155' }}>
                 <li>
-                  1. Sign in — on the Smart Duka app, or{' '}
+                  1. Sign in — on the Dukana app, or{' '}
                   <Link href="/login" className="font-semibold underline" style={{ color: '#0F766E' }}>
                     here on the web
                   </Link>

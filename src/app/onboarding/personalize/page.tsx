@@ -67,7 +67,7 @@ export default function OnboardingPersonalizePage() {
       <Card>
         <h1 className="text-xl font-extrabold mb-1" style={{ color: '#0F172A' }}>A few quick questions</h1>
         <p className="text-sm text-gray-500 mb-6">
-          So Smart Duka starts out set up the way you actually trade.
+          So Dukana starts out set up the way you actually trade.
         </p>
 
         <div className="space-y-6">

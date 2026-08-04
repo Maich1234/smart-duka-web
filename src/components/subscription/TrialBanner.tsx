@@ -30,7 +30,7 @@ export default function TrialBanner() {
 
   if (access.state === 'none') {
     Icon = Gift;
-    text = 'Your free trial is waiting — activate Smart Duka.';
+    text = 'Your free trial is waiting — activate Dukana.';
     tone = 'info';
     cta = 'Activate';
   } else if (access.state === 'trialing' && access.daysLeft <= 7 && !access.cancelled) {

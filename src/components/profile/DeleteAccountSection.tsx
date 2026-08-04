@@ -131,7 +131,7 @@ export default function DeleteAccountSection() {
               You asked to close your account
               {preview?.deletionRequestedAt ? ` on ${formatDay(preview.deletionRequestedAt)}` : ''}.
               Your shop owner has to approve it first. Nothing changes until they do, and you can
-              keep using Smart Duka normally.
+              keep using Dukana normally.
             </p>
             {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
             <Button

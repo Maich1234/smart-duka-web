@@ -75,7 +75,7 @@ const testimonials = [
   {
     name: 'Jane Wanjiku',
     role: 'Grocery Store Owner, Nairobi',
-    text: 'Smart Duka transformed how I manage my shop. I can check sales from my phone even when I am not at the store. My staff cannot steal anymore!',
+    text: 'Dukana transformed how I manage my shop. I can check sales from my phone even when I am not at the store. My staff cannot steal anymore!',
     rating: 5,
   },
   {
@@ -112,7 +112,7 @@ export default function LandingPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
                 <ShoppingCart className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Smart Duka</span>
+              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Dukana</span>
             </div>
 
             <div className="hidden md:flex items-center gap-8">
@@ -168,7 +168,7 @@ export default function LandingPage() {
                 <span className="block" style={{ color: '#0F766E' }}>Smarter, Faster</span>
               </h1>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Smart Duka is the all-in-one POS solution built for Kenyan dukas and retail shops.
+                Dukana is the all-in-one POS solution built for Kenyan dukas and retail shops.
                 Track inventory, manage staff, accept M-Pesa, and grow your business — all in one place.
               </p>
               <div className="flex flex-wrap gap-4">
@@ -186,7 +186,7 @@ export default function LandingPage() {
                     <div key={i} className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: ['#0F766E','#C8932A','#115E59','#14B8A6'][i] }}>{l}</div>
                   ))}
                 </div>
-                <p className="text-sm text-gray-600"><strong className="text-gray-900">5,000+ shops</strong> trust Smart Duka</p>
+                <p className="text-sm text-gray-600"><strong className="text-gray-900">5,000+ shops</strong> trust Dukana</p>
               </div>
             </div>
 
@@ -198,7 +198,7 @@ export default function LandingPage() {
                     <div className="w-3 h-3 rounded-full bg-yellow-400" />
                     <div className="w-3 h-3 rounded-full bg-green-400" />
                   </div>
-                  <span className="text-white text-sm font-medium ml-2">Smart Duka Dashboard</span>
+                  <span className="text-white text-sm font-medium ml-2">Dukana Dashboard</span>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-3">
@@ -262,7 +262,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-extrabold mb-4" style={{ color: '#0F172A' }}>Everything You Need to Run Your Shop</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">From checkout to analytics, Smart Duka covers every aspect of your retail business.</p>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">From checkout to analytics, Dukana covers every aspect of your retail business.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f) => (
@@ -393,7 +393,7 @@ export default function LandingPage() {
       <section className="py-20" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #115E59 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Ready to Grow Your Business?</h2>
-          <p className="text-lg mb-8 opacity-90 text-white">Join thousands of Kenyan shop owners who trust Smart Duka every day.</p>
+          <p className="text-lg mb-8 opacity-90 text-white">Join thousands of Kenyan shop owners who trust Dukana every day.</p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link href="/register" className="px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl" style={{ backgroundColor: '#C8932A', color: 'white' }}>
               Create Free Account
@@ -414,7 +414,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
                   <ShoppingCart className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-bold">Smart Duka</span>
+                <span className="text-lg font-bold">Dukana</span>
               </div>
               <p className="text-gray-400 text-sm">The smartest POS for Kenyan retail businesses.</p>
             </div>
@@ -444,7 +444,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-            <p>© 2025 Smart Duka. All rights reserved.</p>
+            <p>© 2025 Dukana. All rights reserved.</p>
             <p className="mt-2 md:mt-0">Built with ❤️ for Kenyan businesses</p>
           </div>
         </div>

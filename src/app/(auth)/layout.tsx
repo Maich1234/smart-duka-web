@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <ShoppingCart className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-extrabold text-white">Smart Duka</span>
+            <span className="text-2xl font-extrabold text-white">Dukana</span>
           </Link>
         </div>
 
@@ -25,7 +25,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <br />to Run Your Shop
           </h2>
           <p className="text-white/80 text-lg mb-10 leading-relaxed">
-            Join 5,000+ Kenyan businesses using Smart Duka to sell faster, manage inventory, and grow their revenue.
+            Join 5,000+ Kenyan businesses using Dukana to sell faster, manage inventory, and grow their revenue.
           </p>
 
           <div className="space-y-4">
@@ -56,7 +56,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               </div>
             ))}
           </div>
-          <p className="text-white/70 text-sm mt-2">5,000+ shop owners trust Smart Duka</p>
+          <p className="text-white/70 text-sm mt-2">5,000+ shop owners trust Dukana</p>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Smart Duka</span>
+            <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Dukana</span>
           </div>
           {children}
         </div>

@@ -44,7 +44,7 @@ export default function ChatComposer({ value, onChange, onSend, disabled }: Chat
             }
           }}
           placeholder="Ask about your sales, stock, staff…"
-          aria-label="Message Smart Duka AI"
+          aria-label="Message Dukana AI"
           className="flex-1 resize-none px-4 py-2.5 rounded-2xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-100 disabled:bg-gray-50"
           style={{ color: '#0F172A' }}
         />

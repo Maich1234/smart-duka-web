@@ -31,7 +31,7 @@ export interface SubscriptionPlan {
   pricing: PlanPricing;
   recommended: boolean;
   /**
-   * Per-tier caps on Smart Duka AI chat. Every field is null on plans that
+   * Per-tier caps on Dukana AI chat. Every field is null on plans that
    * don't cap that dimension, and the whole object is absent on plans with no
    * caps at all — so null means unlimited, not zero.
    *

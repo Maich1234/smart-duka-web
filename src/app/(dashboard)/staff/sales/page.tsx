@@ -293,7 +293,7 @@ export default function StaffSalesPage() {
   const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const shopName = user?.shop?.name ?? 'Smart Duka';
+  const shopName = user?.shop?.name ?? 'Dukana';
   // Owner-granted refund permissions ('refund_all_sales' covers own sales too;
   // this page only ever lists the viewer's own sales)
   const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);

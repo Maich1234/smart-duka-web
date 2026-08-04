@@ -85,7 +85,7 @@ export default function LoginPage() {
   return (
     <div>
       <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0F172A' }}>Welcome back</h1>
-      <p className="text-gray-500 text-sm mb-8">Sign in to your Smart Duka account</p>
+      <p className="text-gray-500 text-sm mb-8">Sign in to your Dukana account</p>
 
       {expiryNotice && !serverError && (
         <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">

@@ -5,9 +5,9 @@ import { SiteNav } from '@/components/marketing/SiteNav';
 import { HELP_CATEGORIES, HELP_TOPICS } from '@/lib/helpTopics';
 
 export const metadata: Metadata = {
-  title: 'Help & Learning Center – Smart Duka',
+  title: 'Help & Learning Center – Dukana',
   description:
-    'Plain-language guides for running your shop with Smart Duka: products and stock, sales and checkout, staff permissions, M-Pesa payments, reports, and receipts.',
+    'Plain-language guides for running your shop with Dukana: products and stock, sales and checkout, staff permissions, M-Pesa payments, reports, and receipts.',
   alternates: { canonical: '/help' },
 };
 
@@ -42,7 +42,7 @@ export default function HelpPage() {
             How can we help?
           </h1>
           <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
-            Plain-language guides for the parts of Smart Duka that can be confusing at first. Browse by
+            Plain-language guides for the parts of Dukana that can be confusing at first. Browse by
             topic below.
           </p>
         </div>

@@ -25,7 +25,7 @@ export function SiteNav({ active }: { active?: string }) {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Smart Duka</span>
+            <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Dukana</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

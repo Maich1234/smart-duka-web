@@ -9,7 +9,7 @@ interface ToggleProps {
 }
 
 /**
- * A switch. Extracted from the inline copy in SmartDukaAiCard once the shop
+ * A switch. Extracted from the inline copy in DukanaAiCard once the shop
  * settings grew five more of them.
  */
 export default function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
