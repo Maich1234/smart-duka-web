@@ -2,26 +2,22 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Mail, Phone, MapPin, Clock, Send, MessageSquare, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Mail, Phone, Clock, Send, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
+import { SUPPORT_EMAIL, SUPPORT_PHONE } from '@/lib/site';
+import { submitContactForm } from '@/services/support';
 
 const contactMethods = [
   {
     icon: Mail,
     title: 'Email Us',
-    detail: 'support@smartduka.co.ke',
+    detail: SUPPORT_EMAIL,
     sub: 'We reply within 24 hours',
   },
   {
     icon: Phone,
     title: 'Call or WhatsApp',
-    detail: '+254 700 123 456',
+    detail: SUPPORT_PHONE,
     sub: 'Mon–Sat, 8am – 6pm EAT',
-  },
-  {
-    icon: MapPin,
-    title: 'Visit Us',
-    detail: 'Westlands Business Park, Nairobi',
-    sub: 'By appointment only',
   },
   {
     icon: Clock,
@@ -57,14 +53,24 @@ const faqs = [
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSubmitted(true);
+    setError(null);
+    try {
+      await submitContactForm(form);
+      setSubmitted(true);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Something went wrong sending your message. Please try again.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -111,7 +117,7 @@ export default function ContactPage() {
       {/* Contact methods */}
       <section className="py-12 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {contactMethods.map((c) => (
               <div key={c.title} className="flex items-start gap-4 p-5 rounded-xl border border-gray-100 bg-gray-50">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#CCFBF1' }}>
@@ -213,6 +219,12 @@ export default function ContactPage() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 transition-all resize-none"
                     />
                   </div>
+                  {error && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl text-sm" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{error}</span>
+                    </div>
+                  )}
                   <button
                     type="submit"
                     disabled={loading}

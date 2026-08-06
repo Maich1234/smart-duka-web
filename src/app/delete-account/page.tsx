@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AlertTriangle, Smartphone, Mail, Users } from 'lucide-react';
 import { SiteNav } from '@/components/marketing/SiteNav';
+import { SUPPORT_EMAIL } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Delete your Dukana account',
@@ -104,8 +105,8 @@ export default function DeleteAccountPage() {
               <div className="space-y-3 leading-relaxed" style={{ color: '#334155' }}>
                 <p>
                   If you can&apos;t sign in — lost phone, forgotten password — email{' '}
-                  <a href="mailto:support@smartduka.co.ke" className="underline font-medium" style={{ color: '#0F766E' }}>
-                    support@smartduka.co.ke
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="underline font-medium" style={{ color: '#0F766E' }}>
+                    {SUPPORT_EMAIL}
                   </a>{' '}
                   from the address on your account with the subject{' '}
                   <strong>&quot;Delete my account&quot;</strong>.

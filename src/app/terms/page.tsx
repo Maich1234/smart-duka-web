@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteNav } from '@/components/marketing/SiteNav';
+import { SUPPORT_EMAIL } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Terms of Service – Dukana',
@@ -170,8 +171,8 @@ export default function TermsPage() {
           <Section title="14. Contact">
             <P>
               Questions about these terms:{' '}
-              <a href="mailto:support@smartduka.co.ke" className="underline" style={{ color: '#0F766E' }}>
-                support@smartduka.co.ke
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="underline" style={{ color: '#0F766E' }}>
+                {SUPPORT_EMAIL}
               </a>
               .
             </P>

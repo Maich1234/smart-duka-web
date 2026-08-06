@@ -25,4 +25,5 @@ function resolveSiteUrl(): string {
 export const SITE_URL = resolveSiteUrl();
 
 export const SITE_NAME = 'Dukana';
-export const SUPPORT_EMAIL = 'support@smartduka.co.ke';
+export const SUPPORT_EMAIL = 'info@dukana.app';
+export const SUPPORT_PHONE = '+254107596454';

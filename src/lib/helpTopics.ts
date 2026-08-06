@@ -474,6 +474,46 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
     relatedSlugs: ['getting-started', 'shop-settings'],
   },
+  {
+    slug: 'faq',
+    title: 'Frequently Asked Questions',
+    category: 'Getting Started',
+    summary: 'Quick answers to the questions people ask most before and after signing up.',
+    keywords: ['faq', 'frequently asked questions', 'free', 'offline', 'mpesa', 'staff', 'security', 'data'],
+    sections: [
+      {
+        heading: 'Is Dukana free to use?',
+        paragraphs: [
+          'Yes. The Free plan lets you get started with up to 50 products and 1 staff account at no cost. Upgrade when you need more.',
+        ],
+      },
+      {
+        heading: 'Does Dukana work offline?',
+        paragraphs: [
+          'Yes. The mobile app queues sales offline and syncs automatically when you reconnect. The web app requires an internet connection.',
+        ],
+      },
+      {
+        heading: 'How does M-Pesa integration work?',
+        paragraphs: [
+          'You add your M-Pesa Business (Paybill or Till) credentials in Payments. During checkout, customers receive an STK Push prompt on their phone and pay directly.',
+        ],
+      },
+      {
+        heading: 'Can multiple staff use Dukana at the same time?',
+        paragraphs: [
+          'Yes. Each staff member gets their own login with customisable permissions, and the owner sees all activity in real time.',
+        ],
+      },
+      {
+        heading: 'Is my data secure?',
+        paragraphs: [
+          'Yes. All data is encrypted in transit and at rest, M-Pesa credentials are encrypted, and your data is backed up regularly.',
+        ],
+      },
+    ],
+    relatedSlugs: ['getting-started', 'staff-permissions', 'shop-settings'],
+  },
 ];
 
 export function searchHelpTopics(query: string): HelpTopic[] {
