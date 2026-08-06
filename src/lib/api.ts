@@ -13,8 +13,16 @@ interface RetryableConfig extends InternalAxiosRequestConfig {
   _earlyRetries?: number;
 }
 
+// Without a timeout, axios waits forever by default. A device that's
+// connected but has no real internet (dead wifi, captive portal, weak
+// signal) doesn't fail the request outright — it just hangs — so every page
+// relying on this client would spin its loading state indefinitely instead
+// of ever reaching the isError branch.
+const DEFAULT_TIMEOUT_MS = 15000;
+
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: DEFAULT_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 });
 

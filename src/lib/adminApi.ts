@@ -8,8 +8,11 @@ import { API_BASE_URL } from './config';
 //
 // Only the host is shared. Hardcoding it here meant pointing the app at a
 // staging backend left the admin console still talking to production.
+// See lib/api.ts for why this needs an explicit timeout: without one, a
+// request against a dead connection hangs forever instead of failing.
 const adminApi = axios.create({
   baseURL: `${API_BASE_URL}/admin`,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
