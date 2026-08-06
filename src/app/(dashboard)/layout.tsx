@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useShop } from '@/hooks/useShop';
+import { preloadLogo } from '@/hooks/useLogoPreload';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
 import Spinner from '@/components/ui/Spinner';
@@ -30,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuthStore();
   const { access } = useSubscription();
+  const { shop } = useShop();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -37,6 +40,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch + cache the receipt logo as soon as it's known, regardless of
+  // whether the user ever opens the sales tab — so it's already a local
+  // data: URI, not a live fetch, by the time someone prints while offline.
+  useEffect(() => {
+    preloadLogo(shop?.logoUrl);
+  }, [shop?.logoUrl]);
 
   // Close mobile drawer on route change
   useEffect(() => {

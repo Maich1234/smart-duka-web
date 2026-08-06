@@ -15,6 +15,7 @@ import {
 } from '@/lib/paymentMethods';
 import { useAuthStore } from '@/store/authStore';
 import { useShop } from '@/hooks/useShop';
+import { usePreloadedLogo } from '@/hooks/useLogoPreload';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import VoidSaleSection from '@/components/sales/VoidSaleSection';
@@ -349,11 +350,12 @@ export default function SalesPage() {
   const shopName = user?.shop?.name ?? 'Dukana';
 
   const { shop: shopData } = useShop();
+  const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
   const shopConfig = {
     phone: shopData?.phone,
     currency: shopData?.currency,
     thankYouNote: shopData?.receiptThankYouNote,
-    logoUrl: shopData?.logoUrl,
+    logoUrl: preloadedLogoUrl,
     motto: shopData?.motto,
   };
   // Bounds for the sales date-range filter — sales can't predate the shop

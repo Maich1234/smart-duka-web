@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useShop } from '@/hooks/useShop';
+import { usePreloadedLogo } from '@/hooks/useLogoPreload';
 import { hasAnyPermission, hasPermission } from '@/lib/permissions';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import {
@@ -300,11 +301,12 @@ export default function StaffSalesPage() {
   const canVoid = hasPermission(user, 'void_sale');
 
   const { shop: shopData } = useShop();
+  const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
   const shopConfig = {
     phone: shopData?.phone,
     currency: shopData?.currency,
     thankYouNote: shopData?.receiptThankYouNote,
-    logoUrl: shopData?.logoUrl,
+    logoUrl: preloadedLogoUrl,
     motto: shopData?.motto,
   };
 
