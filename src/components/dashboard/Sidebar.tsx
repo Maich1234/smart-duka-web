@@ -23,6 +23,7 @@ import {
   Clock,
   CalendarDays,
   Coins,
+  Scale,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
@@ -54,6 +55,7 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
   { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
   { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
+  { href: '/owner/reconciliation', icon: Scale, label: 'Reconciliation' },
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
   { href: '/owner/chat', icon: MessageSquare, label: 'Ask Dukana' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
@@ -71,6 +73,7 @@ const staffLinks: NavLink[] = [
   { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
   { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
   { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
+  { href: '/staff/reconciliation', icon: Scale, label: 'My Reconciliation', permissions: ['view_reconciliation'] },
   // Purchasing lives under /owner for both roles — one route tree rather than
   // a mirrored one. The dashboard layout lets permitted staff through.
   {

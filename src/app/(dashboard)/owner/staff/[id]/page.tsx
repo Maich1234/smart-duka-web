@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Lock, Trash2, CheckCircle, XCircle, Mail, Phone, Calendar, Clock, Smartphone, LogOut, UserMinus, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Pencil, Lock, Trash2, CheckCircle, XCircle, Mail, Phone, Calendar, Clock, Smartphone, LogOut, UserMinus, AlertCircle, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import api from '@/lib/api';
@@ -13,12 +13,16 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import CommissionCard from '@/components/sales/CommissionCard';
+import { SaleStatusBadge } from '@/components/sales/RefundSaleSection';
 import { useShop } from '@/hooks/useShop';
+import { useMoney } from '@/lib/money';
 import {
   getCommissionPeriodRange,
   getStaffCommission,
   type CommissionPeriod,
 } from '@/services/commission';
+import { getSales } from '@/services/sales';
+import { getShifts } from '@/services/shifts';
 import type { AxiosError } from 'axios';
 import {
   forceLogoutStaff,
@@ -82,6 +86,7 @@ export default function StaffDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const fmtKES = useMoney();
   const [resetOpen, setResetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [forceLogoutOpen, setForceLogoutOpen] = useState(false);
@@ -140,6 +145,20 @@ export default function StaffDetailPage() {
     queryFn: () => getStaffCommission(id, commissionRange),
     enabled: showStaffCommission && !!id,
     retry: false,
+  });
+
+  // Recent sales (incl. voided) and shift history — a lightweight "what has
+  // this person actually done" view, so the owner doesn't need to cross-
+  // reference the full sales/shifts lists filtered by hand.
+  const { data: recentSales, isLoading: salesLoading } = useQuery({
+    queryKey: ['staff-sales', id],
+    queryFn: () => getSales({ staffId: id, limit: 5 }),
+    enabled: !!id,
+  });
+  const { data: recentShifts, isLoading: shiftsLoading } = useQuery({
+    queryKey: ['staff-shifts', id],
+    queryFn: () => getShifts({ staffId: id, limit: 5 }),
+    enabled: !!id,
   });
 
   const { data: closureRequests } = useQuery({
@@ -350,6 +369,82 @@ export default function StaffDetailPage() {
         ) : (
           <p className="text-sm text-gray-400">Not currently signed in on any device.</p>
         )}
+      </div>
+
+      {/* Sales & Shifts — recent activity, incl. voided sales and drawer history */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Sales &amp; Shifts</h3>
+        <p className="text-sm text-gray-500 mb-4">Recent activity for this staff member.</p>
+
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#0F766E' }}>
+              Recent sales
+            </p>
+            {salesLoading ? (
+              <div className="flex justify-center py-4"><Spinner /></div>
+            ) : (recentSales?.data.length ?? 0) === 0 ? (
+              <p className="text-sm text-gray-400 py-2">No sales recorded yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {recentSales!.data.map((sale) => (
+                  <div key={sale._id} className="flex items-center justify-between gap-3 py-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ShoppingCart className="w-3.5 h-3.5 shrink-0 text-gray-300" />
+                      <span className="text-sm text-gray-600 truncate">{sale.invoiceNumber}</span>
+                      <SaleStatusBadge status={sale.status} />
+                    </div>
+                    <span
+                      className={`text-sm font-semibold tabular-nums shrink-0 ${sale.status === 'voided' ? 'line-through text-gray-400' : ''}`}
+                      style={sale.status === 'voided' ? undefined : { color: '#0F172A' }}
+                    >
+                      {fmtKES(sale.totalAmount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#0F766E' }}>
+              Recent shifts
+            </p>
+            {shiftsLoading ? (
+              <div className="flex justify-center py-4"><Spinner /></div>
+            ) : (recentShifts?.data.length ?? 0) === 0 ? (
+              <p className="text-sm text-gray-400 py-2">No shifts recorded yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {recentShifts!.data.map((shift) => {
+                  const discrepancy = shift.summary?.cashDiscrepancy;
+                  return (
+                    <Link
+                      key={shift._id}
+                      href={`/owner/shifts/${shift._id}`}
+                      className="flex items-center justify-between gap-3 py-1.5 hover:opacity-70 transition-opacity"
+                    >
+                      <span className="text-sm text-gray-600">
+                        {format(new Date(shift.startedAt), 'd MMM, HH:mm')}
+                      </span>
+                      {shift.status === 'active' ? (
+                        <Badge color="green">Open</Badge>
+                      ) : discrepancy == null ? (
+                        <Badge color="gray">Not counted</Badge>
+                      ) : discrepancy === 0 ? (
+                        <Badge color="green">Balanced</Badge>
+                      ) : (
+                        <Badge color="yellow">
+                          {discrepancy > 0 ? 'Over' : 'Short'} {fmtKES(Math.abs(discrepancy))}
+                        </Badge>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Commission — only where the shop actually pays it */}
