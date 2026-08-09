@@ -30,28 +30,19 @@ export default function PlatformConfigVerificationModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [requested, setRequested] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Guards against firing the request twice: React 18 StrictMode (on by
   // default in Next.js dev) double-invokes effect setup on mount, and a
   // plain `let cancelled` closure per-invocation would discard the response
   // that belongs to the call that actually went out. `firedRef` survives
   // across that double-invoke; `generationRef` still protects against a
-  // stale response winning if the modal is closed and genuinely reopened
-  // (e.g. the token expired mid-session) before the first request settles.
+  // stale response winning if a resend (or a genuine reopen, e.g. the token
+  // expired mid-session) fires before an earlier request settles.
   const firedRef = useRef(false);
   const generationRef = useRef(0);
 
-  useEffect(() => {
-    if (!isOpen) {
-      firedRef.current = false;
-      setSessionId('');
-      setCode('');
-      setError('');
-      setRequested(false);
-      return;
-    }
-    if (firedRef.current) return;
-    firedRef.current = true;
+  const sendCode = () => {
     const generation = ++generationRef.current;
     setBusy(true);
     setError('');
@@ -60,16 +51,40 @@ export default function PlatformConfigVerificationModal({
         if (generationRef.current !== generation) return;
         setSessionId(session.sessionId);
         setRequested(true);
+        setCode('');
+        setResendCooldown(30);
       })
       .catch((err) => {
         if (generationRef.current !== generation) return;
-        firedRef.current = false; // let the admin retry
+        firedRef.current = false; // let the initial-load effect retry too
         setError(describe(err, 'Could not send the code. Try again.'));
       })
       .finally(() => {
         if (generationRef.current === generation) setBusy(false);
       });
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      firedRef.current = false;
+      setSessionId('');
+      setCode('');
+      setError('');
+      setRequested(false);
+      setResendCooldown(0);
+      return;
+    }
+    if (firedRef.current) return;
+    firedRef.current = true;
+    sendCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const describe = (err: unknown, fallback: string) => {
     const e = err as { response?: { status?: number; data?: { message?: string } } };
@@ -120,7 +135,15 @@ export default function PlatformConfigVerificationModal({
           onKeyDown={(e) => e.key === 'Enter' && submit()}
         />
 
-        <div className="flex justify-end pt-1">
+        <div className="flex justify-between items-center pt-1">
+          <button
+            type="button"
+            disabled={!requested || busy || resendCooldown > 0}
+            onClick={sendCode}
+            className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
+          >
+            {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
+          </button>
           <Button loading={busy} disabled={!requested || code.trim().length < 6} onClick={submit}>
             Continue
           </Button>
