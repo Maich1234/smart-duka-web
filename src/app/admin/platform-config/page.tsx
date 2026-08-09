@@ -9,6 +9,7 @@ import adminApi from '@/lib/adminApi';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
+import PlatformConfigVerificationModal from '@/components/admin/PlatformConfigVerificationModal';
 
 interface PlatformConfigData {
   mpesa: {
@@ -53,11 +54,26 @@ export default function PlatformConfigPage() {
   const [serverError, setServerError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const { data, isLoading } = useQuery({
+  // Held in state only — persisting it would defeat the point of
+  // re-verifying each session. Nothing here loads until it's set.
+  const [configToken, setConfigToken] = useState<string | null>(null);
+
+  const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['admin', 'platform-config'],
-    queryFn: async () => (await adminApi.get('/platform-config')).data as { data: PlatformConfigData },
+    queryFn: async () =>
+      (await adminApi.get('/platform-config', { headers: { 'X-Verification-Token': configToken } })).data as { data: PlatformConfigData },
+    enabled: !!configToken,
+    retry: false,
   });
   const config = data?.data;
+
+  // Short-lived by design (10 min). A 403 here means the token was rejected
+  // or has expired — drop it and send the admin back through the approval
+  // flow rather than showing a generic, un-actionable failure.
+  useEffect(() => {
+    const status = (loadError as { response?: { status?: number } } | null)?.response?.status;
+    if (status === 403) setConfigToken(null);
+  }, [loadError]);
 
   const { register, handleSubmit, reset } = useForm<FormValues>();
 
@@ -99,7 +115,7 @@ export default function PlatformConfigPage() {
       if (values.consumerSecret) body.consumerSecret = values.consumerSecret;
       if (values.passkey) body.passkey = values.passkey;
       if (values.paystackSecretKey) body.paystackSecretKey = values.paystackSecretKey;
-      return adminApi.patch('/platform-config', body);
+      return adminApi.patch('/platform-config', body, { headers: { 'X-Verification-Token': configToken } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'platform-config'] });
@@ -108,14 +124,15 @@ export default function PlatformConfigPage() {
       setTimeout(() => setSuccessMsg(''), 3000);
     },
     onError: (err: unknown) => {
-      const e = err as { response?: { data?: { message?: string; errors?: string[] } } };
+      const e = err as { response?: { status?: number; data?: { message?: string; errors?: string[] } } };
+      if (e.response?.status === 403) {
+        setConfigToken(null);
+        setServerError('Your verification session expired. Please verify again.');
+        return;
+      }
       setServerError(e.response?.data?.errors?.join(', ') || e.response?.data?.message || 'Failed to save');
     },
   });
-
-  if (isLoading || !config) {
-    return <div className="text-gray-400 text-sm">Loading…</div>;
-  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -124,6 +141,15 @@ export default function PlatformConfigPage() {
         <p className="text-gray-500 text-sm mt-1">Dukana&apos;s own M-Pesa collection credentials — used to charge subscription payments, never a shop&apos;s own Daraja account</p>
       </div>
 
+      <PlatformConfigVerificationModal
+        isOpen={!configToken}
+        onClose={() => {}}
+        onVerified={(token) => setConfigToken(token)}
+      />
+
+      {(!configToken || isLoading || !config) ? (
+        <div className="text-gray-400 text-sm">{configToken ? 'Loading…' : 'Waiting for verification…'}</div>
+      ) : (
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
         <div className="flex items-center gap-2">
           <KeyRound className="w-4 h-4" style={{ color: '#0F766E' }} />
@@ -232,6 +258,7 @@ export default function PlatformConfigPage() {
           </div>
         </form>
       </div>
+      )}
     </div>
   );
 }
