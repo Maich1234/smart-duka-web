@@ -56,7 +56,6 @@ export default function PlatformConfigVerificationModal({
       })
       .catch((err) => {
         if (generationRef.current !== generation) return;
-        firedRef.current = false; // let the initial-load effect retry too
         setError(describe(err, 'Could not send the code. Try again.'));
       })
       .finally(() => {
@@ -138,11 +137,13 @@ export default function PlatformConfigVerificationModal({
         <div className="flex justify-between items-center pt-1">
           <button
             type="button"
-            disabled={!requested || busy || resendCooldown > 0}
+            disabled={busy || resendCooldown > 0}
             onClick={sendCode}
             className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
           >
-            {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
+            {resendCooldown > 0
+              ? `Resend code (${resendCooldown}s)`
+              : requested ? 'Resend code' : 'Try again'}
           </button>
           <Button loading={busy} disabled={!requested || code.trim().length < 6} onClick={submit}>
             Continue
