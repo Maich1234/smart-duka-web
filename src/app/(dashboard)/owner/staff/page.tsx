@@ -62,6 +62,10 @@ export default function StaffPage() {
   const [localPart, setLocalPart] = useState('');
   const [localPartTouched, setLocalPartTouched] = useState(false);
   const [availability, setAvailability] = useState<Availability>('idle');
+  // Set only when the platform's "prompt for immediate payment" setting is on
+  // and this addition actually cost something — holds the success modal open
+  // with a "Pay now" choice instead of auto-closing.
+  const [payPrompt, setPayPrompt] = useState<{ amount: number } | null>(null);
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -103,6 +107,7 @@ export default function StaffPage() {
     queryClient.invalidateQueries({ queryKey: ['subscription'] });
     setAddOpen(false);
     setSuccessMessage('');
+    setPayPrompt(null);
     reset();
     resetEmailFields();
   };
@@ -116,13 +121,19 @@ export default function StaffPage() {
         emailMode === 'system'
           ? 'Staff added — they can sign in right away.'
           : 'Staff added — ask them to check their email to verify before signing in.';
-      // Seats are postpaid and prorated now: the account is active
-      // immediately and the server reports what it added to the next invoice.
-      // There is no payment step here any more.
-      const billed = (created as { billing?: { addedToNextInvoice?: number } } | undefined)?.billing
-        ?.addedToNextInvoice;
+      // Seats are postpaid and prorated: the account is active immediately
+      // and the server reports what it added to the next invoice. Staff
+      // creation is never blocked on payment either way — the only question
+      // is whether to nudge paying that amount off right now (platform
+      // setting) or let it silently ride to the next invoice as usual.
+      const billing = (created as { billing?: { addedToNextInvoice?: number; immediateChargeRecommended?: boolean } } | undefined)?.billing;
+      const billed = billing?.addedToNextInvoice;
       setSuccessMessage(billed ? `${base} ${fmt(billed, 'KES')} will be added to your next bill.` : base);
-      setTimeout(finishAndClose, 2500);
+      if (billing?.immediateChargeRecommended && billed) {
+        setPayPrompt({ amount: billed });
+      } else {
+        setTimeout(finishAndClose, 2500);
+      }
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
@@ -326,14 +337,34 @@ export default function StaffPage() {
       )}
 
       {/* Add Staff Modal */}
-      <Modal isOpen={addOpen} onClose={() => { setAddOpen(false); reset(); setServerError(''); setSuccessMessage(''); resetEmailFields(); }} title="Add Staff Member">
+      <Modal isOpen={addOpen} onClose={() => { setAddOpen(false); reset(); setServerError(''); setSuccessMessage(''); setPayPrompt(null); resetEmailFields(); }} title="Add Staff Member">
         {serverError && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{serverError}</div>
         )}
         {successMessage && (
-          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">{successMessage}</div>
+          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700 space-y-3">
+            <p>{successMessage}</p>
+            {payPrompt && (
+              <div className="flex gap-2">
+                <Link
+                  href="/owner/subscription?pay=1"
+                  className="flex-1 text-center py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: '#0F766E' }}
+                >
+                  Pay {fmt(payPrompt.amount, 'KES')} now
+                </Link>
+                <button
+                  type="button"
+                  onClick={finishAndClose}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold border border-green-300 text-green-700 hover:bg-green-100"
+                >
+                  I&apos;ll pay later
+                </button>
+              </div>
+            )}
+          </div>
         )}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {!payPrompt && <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Full Name *" placeholder="Jane Wanjiku" error={errors.name?.message} {...register('name')} />
 
           <div>
@@ -404,7 +435,7 @@ export default function StaffPage() {
               Add Staff
             </Button>
           </div>
-        </form>
+        </form>}
       </Modal>
 
       {/* Force Logout Confirm */}

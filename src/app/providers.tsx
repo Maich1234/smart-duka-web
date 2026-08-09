@@ -1,26 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AxiosError } from 'axios';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { REFRESH_TOKEN_KEY, TOKEN_KEY, USER_KEY, useAuthStore } from '@/store/authStore';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-      // Don't burn retries on an authorization problem. By the time a 401
-      // reaches here it has already been through the refresh-and-replay path
-      // in lib/api.ts, so retrying only fires a second doomed request — and a
-      // 403 won't change on its own either.
-      retry: (failureCount, error) => {
-        const status = (error as AxiosError)?.response?.status;
-        if (status === 401 || status === 403) return false;
-        return failureCount < 1;
-      },
-    },
-  },
-});
 
 function AuthHydrator({ children }: { children: React.ReactNode }) {
   const hydrate = useAuthStore((s) => s.hydrate);

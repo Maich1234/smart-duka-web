@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/config';
+import { queryClient } from '@/lib/queryClient';
 
 export interface Shop {
   _id: string;
@@ -121,6 +122,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       revokeRefreshToken(get().refreshToken);
       clearStoredSession();
     }
+    // React Query's cache otherwise survives logout untouched (it's an
+    // in-memory singleton, not tied to auth state) — on a shared device the
+    // next person to log in could see the previous owner/staff's cached shop
+    // config, sales, everything, until each query happens to go stale and
+    // refetch on its own. Clearing it here, in the one action every logout
+    // path (Sidebar, SessionExpiredHandler, ...) funnels through, means no
+    // call site can forget it.
+    queryClient.clear();
     set({ user: null, token: null, refreshToken: null, isAuthenticated: false, sessionExpiredReason: null });
   },
 

@@ -176,10 +176,25 @@ export async function validatePromo(code: string): Promise<{
   return res.data;
 }
 
+export type PaymentProvider = 'mpesa' | 'card' | 'bank';
+
 export async function initiateSubscriptionPayment(
-  params: { phoneNumber: string; billingCycle: BillingCycle; planSlug?: string; promoCode?: string },
+  params: { phoneNumber?: string; billingCycle: BillingCycle; planSlug?: string; promoCode?: string; provider?: PaymentProvider },
   idempotencyKey?: string
-): Promise<{ success: boolean; idempotent?: boolean; data: { paymentId: string; status: PaymentStatus; amount: number; currency: string }; message: string }> {
+): Promise<{
+  success: boolean;
+  idempotent?: boolean;
+  data: {
+    paymentId: string;
+    status: PaymentStatus;
+    amount: number;
+    currency: string;
+    /** Paystack only — the client opens its own popup with these. Null for M-Pesa. */
+    publicKey: string | null;
+    providerRef: string;
+  };
+  message: string;
+}> {
   const res = await api.post(
     '/subscriptions/pay',
     params,

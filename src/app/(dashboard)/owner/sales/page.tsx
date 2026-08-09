@@ -349,7 +349,7 @@ export default function SalesPage() {
   const { user } = useAuthStore();
   const shopName = user?.shop?.name ?? 'Dukana';
 
-  const { shop: shopData } = useShop();
+  const { shop: shopData, refetch: refetchShop } = useShop();
   const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
   const shopConfig = {
     phone: shopData?.phone,
@@ -450,6 +450,16 @@ export default function SalesPage() {
     }
   }, [saleMethods, paymentMethod]);
 
+  // Till buttons are owner-edited from another tab/device, and useShop()'s
+  // 5-minute staleTime means this page wouldn't otherwise notice a removal
+  // until the next window-focus refetch. Poll while actively selling so a
+  // removed method disappears from the till without needing a tab switch.
+  useEffect(() => {
+    if (tab !== 'new') return;
+    const id = setInterval(() => refetchShop(), 30_000);
+    return () => clearInterval(id);
+  }, [tab, refetchShop]);
+
   // Sale mutation
   const createSaleMutation = useMutation({
     mutationFn: async (data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string }) => {
@@ -464,6 +474,14 @@ export default function SalesPage() {
       queryClient.invalidateQueries({ queryKey: ['sales-stats'] });
       queryClient.invalidateQueries({ queryKey: ['sales-history'] });
       queryClient.invalidateQueries({ queryKey: ['owner-dashboard'] });
+    },
+    onError: (err: unknown) => {
+      // The sale was correctly rejected server-side — it can never land in
+      // the DB with a method the shop no longer accepts. Refetch right away
+      // so the button is gone from the till immediately, rather than waiting
+      // for the next 30s poll or a window-focus refetch.
+      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      if (code === 'PAYMENT_METHOD_UNAVAILABLE') refetchShop();
     },
   });
 

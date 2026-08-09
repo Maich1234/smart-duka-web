@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, CreditCard, Zap } from 'lucide-react';
 import adminApi from '@/lib/adminApi';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -21,6 +21,13 @@ interface PlatformConfigData {
     passkeyConfigured: boolean;
     configuredAt: string | null;
   };
+  paystack: {
+    enabled: boolean;
+    publicKey: string;
+    secretKeyConfigured: boolean;
+    configuredAt: string | null;
+  };
+  immediateSeatBilling: boolean;
   gracePeriodDays: number;
   reminderDaysBefore: number[];
 }
@@ -33,6 +40,10 @@ interface FormValues {
   consumerKey: string;
   consumerSecret: string;
   passkey: string;
+  paystackEnabled: boolean;
+  paystackPublicKey: string;
+  paystackSecretKey: string;
+  immediateSeatBilling: boolean;
   gracePeriodDays: number;
   reminderDaysBefore: string;
 }
@@ -60,6 +71,10 @@ export default function PlatformConfigPage() {
       consumerKey: '',
       consumerSecret: '',
       passkey: '',
+      paystackEnabled: config.paystack.enabled,
+      paystackPublicKey: config.paystack.publicKey,
+      paystackSecretKey: '',
+      immediateSeatBilling: config.immediateSeatBilling,
       gracePeriodDays: config.gracePeriodDays,
       reminderDaysBefore: config.reminderDaysBefore.join(', '),
     });
@@ -72,6 +87,9 @@ export default function PlatformConfigPage() {
         environment: values.environment,
         businessName: values.businessName,
         shortcode: values.shortcode,
+        paystackEnabled: values.paystackEnabled,
+        paystackPublicKey: values.paystackPublicKey,
+        immediateSeatBilling: values.immediateSeatBilling,
         gracePeriodDays: Number(values.gracePeriodDays),
         reminderDaysBefore: values.reminderDaysBefore.split(',').map((n) => Number(n.trim())).filter((n) => !Number.isNaN(n)),
       };
@@ -80,6 +98,7 @@ export default function PlatformConfigPage() {
       if (values.consumerKey) body.consumerKey = values.consumerKey;
       if (values.consumerSecret) body.consumerSecret = values.consumerSecret;
       if (values.passkey) body.passkey = values.passkey;
+      if (values.paystackSecretKey) body.paystackSecretKey = values.paystackSecretKey;
       return adminApi.patch('/platform-config', body);
     },
     onSuccess: () => {
@@ -162,6 +181,50 @@ export default function PlatformConfigPage() {
           <div className="pt-2 border-t border-gray-100 grid grid-cols-2 gap-4">
             <Input label="Grace Period (days)" type="number" {...register('gracePeriodDays')} />
             <Input label="Reminder Days Before (comma-separated)" placeholder="7, 3" {...register('reminderDaysBefore')} />
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 space-y-4">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4" style={{ color: '#0F766E' }} />
+              <h2 className="font-bold" style={{ color: '#0F172A' }}>Paystack (Card / Bank)</h2>
+              {config.paystack.configuredAt && (
+                <span className="text-xs text-gray-400 ml-auto">Last set {format(new Date(config.paystack.configuredAt), 'MMM d, yyyy HH:mm')}</span>
+              )}
+            </div>
+            <label className="flex items-center gap-2 text-sm" style={{ color: '#0F172A' }}>
+              <input type="checkbox" {...register('paystackEnabled')} className="rounded border-gray-300" />
+              Enabled (offers Card / Bank alongside M-Pesa on the owner subscription page)
+            </label>
+            <Input
+              label="Public Key"
+              placeholder="pk_live_… or pk_test_…"
+              {...register('paystackPublicKey')}
+            />
+            <p className="text-xs text-gray-400">Leave the secret key blank to keep its current value — it&apos;s never shown once set.</p>
+            <Input
+              label="Secret Key"
+              placeholder={config.paystack.secretKeyConfigured ? '•••••••• (configured)' : 'Not configured'}
+              {...register('paystackSecretKey')}
+            />
+            <Badge color={config.paystack.secretKeyConfigured ? 'green' : 'gray'}>Secret key {config.paystack.secretKeyConfigured ? 'set' : 'unset'}</Badge>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 space-y-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4" style={{ color: '#0F766E' }} />
+              <h2 className="font-bold" style={{ color: '#0F172A' }}>Billing Behavior</h2>
+            </div>
+            <label className="flex items-start gap-2 text-sm" style={{ color: '#0F172A' }}>
+              <input type="checkbox" {...register('immediateSeatBilling')} className="rounded border-gray-300 mt-0.5" />
+              <span>
+                Prompt for immediate payment when a seat is added (web only)
+                <span className="block text-xs text-gray-400 mt-0.5">
+                  Off: a new seat&apos;s prorated cost silently rides to the next invoice (today&apos;s behavior). On: the
+                  owner is shown a &quot;pay now&quot; prompt right after adding staff from the web app — never a hard
+                  gate, and never shown on mobile, which has no payment UI at all.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="flex justify-end pt-2">

@@ -300,7 +300,7 @@ export default function StaffSalesPage() {
   const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);
   const canVoid = hasPermission(user, 'void_sale');
 
-  const { shop: shopData } = useShop();
+  const { shop: shopData, refetch: refetchShop } = useShop();
   const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
   const shopConfig = {
     phone: shopData?.phone,
@@ -363,6 +363,16 @@ export default function StaffSalesPage() {
     }
   }, [saleMethods, paymentMethod]);
 
+  // Till buttons are owner-edited from another device, and useShop()'s
+  // 5-minute staleTime means this page wouldn't otherwise notice a removal
+  // until the next window-focus refetch. Poll while this screen (a cashier's
+  // whole shift) is mounted so a removed method disappears from the till
+  // without needing a tab switch.
+  useEffect(() => {
+    const id = setInterval(() => refetchShop(), 30_000);
+    return () => clearInterval(id);
+  }, [refetchShop]);
+
   const createSaleMutation = useMutation({
     mutationFn: async (data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string }) => {
       const res = await api.post('/sales', data);
@@ -372,6 +382,13 @@ export default function StaffSalesPage() {
       setCart([]); setCustomerPhone(''); setPhoneDigits(''); setCompletedSale(sale);
       queryClient.invalidateQueries({ queryKey: ['my-sales'] });
       queryClient.invalidateQueries({ queryKey: ['products-sale'] });
+    },
+    onError: (err: unknown) => {
+      // The sale was correctly rejected server-side — it can never land in
+      // the DB with a method the shop no longer accepts. Refetch right away
+      // so the button is gone from the till immediately.
+      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      if (code === 'PAYMENT_METHOD_UNAVAILABLE') refetchShop();
     },
   });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Gift, Sparkles, ShieldCheck, AlertCircle, Lock, Clock, Users, CreditCard, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
@@ -16,6 +17,7 @@ import {
 } from '@/services/subscription';
 import { useAuthStore } from '@/store/authStore';
 import SubscriptionPayModal from '@/components/subscription/SubscriptionPayModal';
+import PaystackPayModal from '@/components/subscription/PaystackPayModal';
 import PlanCards from '@/components/subscription/PlanCards';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -43,9 +45,11 @@ function InfoRow({ icon: Icon, label, value }: { icon: typeof Gift; label: strin
 
 export default function SubscriptionPage() {
   const user = useAuthStore((s) => s.user);
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { subscription, access, renewal, isLoading, refetch } = useSubscription();
   const invalidate = useInvalidateSubscription();
-  const [payOpen, setPayOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState<'mpesa' | 'bank' | null>(null);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [selectedCycle, setSelectedCycle] = useState<BillingCycle | null>(null);
@@ -55,6 +59,18 @@ export default function SubscriptionPage() {
 
   const plan = (subscription?.plan ?? null) as SubscriptionPlan | null;
   const state = access?.state ?? 'none';
+
+  // Arriving from "Pay {amount} now" on the staff page (see owner/staff's
+  // immediate-seat-billing prompt) — open the payment flow the moment the
+  // data needed to price it has loaded, then drop the query param so a
+  // refresh doesn't reopen it.
+  useEffect(() => {
+    if (searchParams.get('pay') !== '1') return;
+    const canPayNow = !!renewal && (state === 'trialing' || state === 'grace' || state === 'locked' || state === 'active');
+    if (!canPayNow) return;
+    setPayOpen('mpesa');
+    router.replace('/owner/subscription');
+  }, [searchParams, renewal, state, router]);
 
   // Default the picker to whatever the shop is on today, then let the owner
   // change it. The web app is the only place a plan can be switched at all now
@@ -67,9 +83,13 @@ export default function SubscriptionPage() {
   const { data: plansData } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: getPlans,
-    enabled: showPlanPicker,
+    // Always on, not just when the plan picker opens — the payment method
+    // row below needs `providers` to know whether to offer card/bank
+    // alongside M-Pesa. Small payload, already cached for 60s either way.
     staleTime: 60_000,
   });
+
+  const bankAvailable = plansData?.data.providers.some((p) => p.key === 'bank' && p.available) ?? false;
 
   const effectiveSlug = selectedSlug ?? renewal?.planSlug ?? null;
   const effectiveCycle = selectedCycle ?? renewal?.billingCycle ?? 'monthly';
@@ -230,11 +250,22 @@ export default function SubscriptionPage() {
 
         {canPay && (
           <>
-            <Button onClick={() => setPayOpen(true)} className="w-full">
-              {state === 'active'
-                ? `Extend now · ${fmt(payAmount, payCurrency)}`
-                : `Pay with M-Pesa · ${fmt(payAmount, payCurrency)}`}
-            </Button>
+            {bankAvailable ? (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={() => setPayOpen('mpesa')} className="flex-1">
+                  M-Pesa · {fmt(payAmount, payCurrency)}
+                </Button>
+                <Button onClick={() => setPayOpen('bank')} variant="outline" className="flex-1">
+                  Card / Bank
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => setPayOpen('mpesa')} className="w-full">
+                {state === 'active'
+                  ? `Extend now · ${fmt(payAmount, payCurrency)}`
+                  : `Pay with M-Pesa · ${fmt(payAmount, payCurrency)}`}
+              </Button>
+            )}
             <button
               onClick={() => setShowPlanPicker((v) => !v)}
               className="w-full mt-3 text-sm font-semibold hover:underline"
@@ -264,7 +295,7 @@ export default function SubscriptionPage() {
                 {switchPreview ? fmt(payAmount, payCurrency) : 'pricing…'}
               </p>
               <Button
-                onClick={() => setPayOpen(true)}
+                onClick={() => setPayOpen('mpesa')}
                 disabled={!switchPreview}
                 className="w-full sm:w-auto"
               >
@@ -282,15 +313,29 @@ export default function SubscriptionPage() {
       )}
 
       <SubscriptionPayModal
-        isOpen={payOpen}
+        isOpen={payOpen === 'mpesa'}
         amount={payAmount}
         currency={payCurrency}
         billingCycle={effectiveCycle}
         planSlug={effectiveSlug ?? undefined}
         defaultPhone={user?.shop?.phone}
-        onClose={() => setPayOpen(false)}
+        onClose={() => setPayOpen(null)}
         onSuccess={() => {
-          setPayOpen(false);
+          setPayOpen(null);
+          invalidate();
+          refetch();
+        }}
+      />
+
+      <PaystackPayModal
+        isOpen={payOpen === 'bank'}
+        amount={payAmount}
+        currency={payCurrency}
+        billingCycle={effectiveCycle}
+        planSlug={effectiveSlug ?? undefined}
+        onClose={() => setPayOpen(null)}
+        onSuccess={() => {
+          setPayOpen(null);
           invalidate();
           refetch();
         }}
