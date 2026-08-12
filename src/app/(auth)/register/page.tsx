@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,7 @@ const schema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   shopName: z.string().min(2, 'Shop name must be at least 2 characters'),
+  referralCode: z.string().max(40, 'Referral code is too long').optional(),
   acceptedTerms: z.literal(true, {
     errorMap: () => ({ message: 'Please accept the Terms and Privacy Policy to continue' }),
   }),
@@ -25,8 +26,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export default function RegisterPage() {
+// useSearchParams() opts a client component out of static rendering unless
+// it's wrapped in Suspense — split out so the page export below can provide
+// that boundary without affecting anything else on the page.
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPass, setShowPass] = useState(false);
   const [serverError, setServerError] = useState('');
 
@@ -34,7 +39,12 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    // A referral link (?ref=CODE) pre-fills the field but never locks it —
+    // someone can still type in a different code before submitting.
+    defaultValues: { referralCode: searchParams.get('ref')?.slice(0, 40) || '' },
+  });
 
   const onSubmit = async (data: FormData) => {
     setServerError('');
@@ -44,6 +54,7 @@ export default function RegisterPage() {
         email: data.email,
         password: data.password,
         shopName: data.shopName,
+        referralCode: data.referralCode || undefined,
         // The server re-checks this and refuses to create an account without
         // it, then records the version accepted against the user.
         acceptedTerms: data.acceptedTerms,
@@ -89,6 +100,20 @@ export default function RegisterPage() {
             style={{ borderColor: errors.shopName ? '#ef4444' : '#e2e8f0' }}
           />
           {errors.shopName && <p className="mt-1 text-xs text-red-500">{errors.shopName.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>
+            Referral code <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            {...register('referralCode')}
+            type="text"
+            placeholder="e.g. AGENT2024"
+            className="w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 bg-white uppercase placeholder:normal-case"
+            style={{ borderColor: errors.referralCode ? '#ef4444' : '#e2e8f0' }}
+          />
+          {errors.referralCode && <p className="mt-1 text-xs text-red-500">{errors.referralCode.message}</p>}
         </div>
 
         <div>
@@ -183,5 +208,13 @@ export default function RegisterPage() {
         <Link href="/login" className="font-semibold" style={{ color: '#0F766E' }}>Sign in</Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

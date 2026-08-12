@@ -24,6 +24,7 @@ import {
   CalendarDays,
   Coins,
   Scale,
+  Gift,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
@@ -63,6 +64,7 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
   { href: '/owner/payment-methods', icon: Wallet, label: 'Payment Methods' },
   { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
+  { href: '/owner/refer', icon: Gift, label: 'Refer & Earn' },
   { href: '/owner/notifications', icon: Bell, label: 'Notifications' },
   { href: '/owner/profile', icon: User, label: 'Profile' },
 ];
