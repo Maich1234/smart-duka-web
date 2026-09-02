@@ -67,7 +67,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
   });
 
   const fmt = (n?: number) =>
-    n == null ? '—' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    n == null ? '-' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
   const supplierId =
     purchase?.supplier && typeof purchase.supplier === 'object' ? purchase.supplier._id : undefined;
@@ -166,7 +166,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
                     </span>
                   </span>
                   <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color: '#0F172A' }}>
-                    {canSeePrices ? fmt(item.totalCost) : '—'}
+                    {canSeePrices ? fmt(item.totalCost) : '-'}
                   </span>
                 </div>
               ))}
@@ -177,7 +177,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
             <Card>
               <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Extra costs</h2>
               <p className="text-xs text-gray-500 mb-3">
-                {ALLOCATION_LABEL[purchase.allocationMethod] ?? ''} — as set when this purchase was recorded.
+                {ALLOCATION_LABEL[purchase.allocationMethod] ?? ''}, as set when this purchase was recorded.
               </p>
               <div className="divide-y divide-gray-50">
                 {purchase.additionalCosts.map((cost) => (
@@ -191,7 +191,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
                       )}
                     </span>
                     <span className="text-sm font-semibold tabular-nums shrink-0" style={{ color: '#0F172A' }}>
-                      {canSeePrices ? fmt(cost.amount) : '—'}
+                      {canSeePrices ? fmt(cost.amount) : '-'}
                     </span>
                   </div>
                 ))}
@@ -236,7 +236,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
 
       <Modal isOpen={confirmCancel} onClose={() => setConfirmCancel(false)} title="Cancel this purchase?" size="sm">
         <p className="text-sm text-gray-600">
-          Any stock it added is taken back out. The record stays in your books marked cancelled — it
+          Any stock it added is taken back out. The record stays in your books marked cancelled. It
           isn&apos;t deleted.
         </p>
         <div className="flex justify-end gap-3 mt-5">

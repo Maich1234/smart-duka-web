@@ -70,7 +70,7 @@ export function buildDailyBrief(
       id: 'trend',
       icon: 'sun',
       tone: 'neutral',
-      text: 'No sales yet today — your counter is ready.',
+      text: 'No sales yet today. Your counter is ready.',
     });
   }
 
@@ -93,7 +93,7 @@ export function buildDailyBrief(
       tone: heavy ? 'warning' : 'neutral',
       text: heavy
         ? `Expenses (${formatMoney(todayExpensesTotal)}) are over half of today's sales.`
-        : `Expenses remain low — ${formatMoney(todayExpensesTotal)} today.`,
+        : `Expenses remain low, at ${formatMoney(todayExpensesTotal)} today.`,
     });
   } else if (todayProfit != null && todayProfit > 0) {
     bullets.push({
@@ -115,7 +115,7 @@ export function buildDailyBrief(
       text:
         lowCount === 1
           ? `${worst.name} needs restocking (${worst.quantity} left).`
-          : `${lowCount} products need restocking — ${worst.name} is lowest.`,
+          : `${lowCount} products need restocking. ${worst.name} is lowest.`,
     });
   } else {
     bullets.push({ id: 'stock-ok', icon: 'check', tone: 'positive', text: 'Stock levels look healthy.' });

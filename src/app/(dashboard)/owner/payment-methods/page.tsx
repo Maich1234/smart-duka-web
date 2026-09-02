@@ -203,7 +203,7 @@ export default function PaymentMethodsPage() {
                     {isMpesa && (
                       <p className="text-xs text-gray-400 mt-0.5">
                         {mpesaConfigured
-                          ? 'Connected — sends an STK prompt to the customer'
+                          ? 'Connected: sends an STK prompt to the customer'
                           : 'Records the sale and prints. Connect M-Pesa Business for STK prompts.'}
                       </p>
                     )}
@@ -261,7 +261,7 @@ export default function PaymentMethodsPage() {
         <div className="flex items-start gap-2 mt-5 text-xs text-gray-500">
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400" />
           <p>
-            Buttons other than M-Pesa don&apos;t talk to any payment provider yet — they record how the
+            Buttons other than M-Pesa don&apos;t talk to any payment provider yet. They record how the
             customer paid so your reports and cashbook are right.
           </p>
         </div>

@@ -11,19 +11,24 @@
  * project later moves to a custom domain without anyone remembering to update
  * a constant.
  */
+import { isLocalUrl } from './isLocalUrl';
+
+// A localhost value here (e.g. NEXT_PUBLIC_SITE_URL left over from a local
+// .env copied into the wrong Vercel project) must never leak into canonical
+// tags, the sitemap, or robots.txt on a real deployment.
 function resolveSiteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return explicit.replace(/\/+$/, '');
+  if (explicit && !isLocalUrl(explicit)) return explicit.replace(/\/+$/, '');
 
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercel) return `https://${vercel}`;
 
-  return 'https://smart-duka-web-delta.vercel.app';
+  return 'https://duqana.app';
 }
 
 /** No trailing slash — callers append paths beginning with "/". */
 export const SITE_URL = resolveSiteUrl();
 
-export const SITE_NAME = 'Dukana';
-export const SUPPORT_EMAIL = 'info@dukana.app';
+export const SITE_NAME = 'DuQana';
+export const SUPPORT_EMAIL = 'info@duqana.app';
 export const SUPPORT_PHONE = '+254107596454';

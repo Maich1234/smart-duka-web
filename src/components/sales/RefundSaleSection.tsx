@@ -99,7 +99,7 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
         <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: '#15803D' }} />
         <p className="text-xs font-medium" style={{ color: '#15803D' }}>
           Refunded {sale.refund?.method === 'mpesa' ? 'via M-Pesa' : 'in cash'}
-          {sale.refund?.completedAt ? ` on ${new Date(sale.refund.completedAt).toLocaleDateString()}` : ''} — stock restored.
+          {sale.refund?.completedAt ? ` on ${new Date(sale.refund.completedAt).toLocaleDateString()}` : ''}. Stock restored.
         </p>
       </div>
     );

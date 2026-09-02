@@ -136,7 +136,7 @@ export function AiNarrativeCard({ insight, cachedNote }: { insight: AiInsight; c
   const tone = PRIORITY_STYLE[insight.priority];
   return (
     <div>
-      <SectionHeader icon={Sparkles} title="Dukana Says" />
+      <SectionHeader icon={Sparkles} title="DuQana Says" />
       <Card className="space-y-3">
         <span className="inline-flex self-start px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ color: tone.fg, backgroundColor: tone.bg }}>
           {tone.label}
@@ -240,7 +240,7 @@ export function UpsellCard() {
         </div>
         <h2 className="text-lg font-bold mb-1.5" style={{ color: '#0F172A' }}>Unlock AI Insights</h2>
         <p className="text-sm text-gray-500 max-w-sm mb-4">
-          Get a daily business health score and a plain-language explanation of what changed and what to do next — included with any active subscription.
+          Get a daily business health score and a plain-language explanation of what changed and what to do next, included with any active subscription.
         </p>
         <span className="inline-flex px-4 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
           Activate Subscription
@@ -252,7 +252,7 @@ export function UpsellCard() {
 
 // ─── AiDisabledCard ─────────────────────────────────────────────────────────
 
-/** Shown when the shop is subscribed but has switched Dukana AI off in Profile — distinct from UpsellCard, which is for shops that aren't subscribed at all. */
+/** Shown when the shop is subscribed but has switched DuQana AI off in Profile — distinct from UpsellCard, which is for shops that aren't subscribed at all. */
 export function AiDisabledCard() {
   return (
     <Link href="/owner/profile" className="block">
@@ -260,9 +260,9 @@ export function AiDisabledCard() {
         <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: '#FEF3C7' }}>
           <Sparkles className="w-6 h-6" style={{ color: '#B45309' }} />
         </div>
-        <h2 className="text-lg font-bold mb-1.5" style={{ color: '#0F172A' }}>Dukana AI is off</h2>
+        <h2 className="text-lg font-bold mb-1.5" style={{ color: '#0F172A' }}>DuQana AI is off</h2>
         <p className="text-sm text-gray-500 max-w-sm mb-4">
-          You&apos;ve turned this off for your shop. Turn it back on from Profile → Dukana AI to use it again.
+          You&apos;ve turned this off for your shop. Turn it back on from Profile → DuQana AI to use it again.
         </p>
         <span className="inline-flex px-4 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
           Go to Profile

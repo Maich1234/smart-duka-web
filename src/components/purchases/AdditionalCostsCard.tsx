@@ -9,7 +9,7 @@ import type { CreatePurchaseCostData, PurchaseAllocationMethod } from '@/service
 const ALLOCATION_NOTE: Record<PurchaseAllocationMethod, string> = {
   quantity: 'These are spread evenly across every unit bought, raising each product’s average cost.',
   value: 'These are spread by value, so costlier products absorb a larger share of them.',
-  none: 'These are recorded for reporting only — they won’t change any product’s average cost.',
+  none: 'These are recorded for reporting only. They won’t change any product’s average cost.',
 };
 
 /**

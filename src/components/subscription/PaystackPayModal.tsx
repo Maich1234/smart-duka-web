@@ -293,7 +293,7 @@ export default function PaystackPayModal({
               className="mt-3 text-sm font-semibold hover:underline disabled:opacity-50"
               style={{ color: '#0F766E' }}
             >
-              {rechecking ? 'Checking…' : 'I already paid — check again'}
+              {rechecking ? 'Checking…' : 'I already paid: check again'}
             </button>
           )}
           <button onClick={handleClose} className="mt-2 text-sm text-gray-500 hover:text-gray-700">Close</button>

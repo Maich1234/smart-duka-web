@@ -1,7 +1,7 @@
 import api from '@/lib/api';
 
 /**
- * Dukana AI chat — the business consultant thread.
+ * DuQana AI chat — the business consultant thread.
  *
  * Owner-only on the backend (the whole /ai router is `ownerOnly`), and gated
  * behind an active subscription, the plan's ai_insights feature, and the
@@ -59,7 +59,7 @@ export async function sendChatMessage(params: {
     return res.data;
   } catch (err: unknown) {
     if ((err as { code?: string })?.code === 'ECONNABORTED') {
-      throw new Error('Dukana AI is taking longer than usual. Please try again.');
+      throw new Error('DuQana AI is taking longer than usual. Please try again.');
     }
     throw err;
   }
@@ -111,7 +111,7 @@ export function describeChatError(err: unknown): string {
   }
 
   if (e.response?.status === 429) {
-    return "That's a lot of questions at once — wait a minute and try again.";
+    return "That's a lot of questions at once. Wait a minute and try again.";
   }
 
   return e.response?.data?.message || e.message || 'Could not send your message. Please try again.';

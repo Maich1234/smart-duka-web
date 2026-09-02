@@ -5,7 +5,7 @@ const team = [
   {
     name: 'David Kamau',
     role: 'Co-Founder & CEO',
-    bio: 'Former retail entrepreneur who experienced first-hand the chaos of manual bookkeeping. Built Dukana to solve the problems he lived.',
+    bio: 'Former retail entrepreneur who experienced first-hand the chaos of manual bookkeeping. Built DuQana to solve the problems he lived.',
     initial: 'D',
   },
   {
@@ -23,7 +23,7 @@ const team = [
   {
     name: 'Grace Njeri',
     role: 'Lead Designer',
-    bio: 'Designed the Dukana interface with the kiosk owner in mind — clean, fast, and usable even for first-time smartphone users.',
+    bio: 'Designed the DuQana interface with the kiosk owner in mind: clean, fast, and usable even for first-time smartphone users.',
     initial: 'G',
   },
 ];
@@ -32,17 +32,17 @@ const values = [
   {
     icon: Target,
     title: 'Built for Kenya',
-    description: 'Everything we build is designed specifically for Kenyan retail realities — M-Pesa, KES currency, local inventory types, and offline-first for areas with patchy internet.',
+    description: 'Everything we build is designed specifically for Kenyan retail realities: M-Pesa, KES currency, local inventory types, and offline-first for areas with patchy internet.',
   },
   {
     icon: Heart,
     title: 'Simplicity First',
-    description: 'We believe great software should feel invisible. Dukana is designed so any shop owner can start selling within minutes, no training needed.',
+    description: 'We believe great software should feel invisible. DuQana is designed so any shop owner can start selling within minutes, no training needed.',
   },
   {
     icon: Shield,
     title: 'Honesty & Trust',
-    description: 'We help owners see exactly what is happening in their shop. Transparent data means no surprises — for you or for us.',
+    description: 'We help owners see exactly what is happening in their shop. Transparent data means no surprises, for you or for us.',
   },
   {
     icon: TrendingUp,
@@ -52,7 +52,7 @@ const values = [
 ];
 
 const milestones = [
-  { year: '2022', event: 'Dukana founded in Nairobi after a frustrating experience running a hardware shop.' },
+  { year: '2022', event: 'DuQana founded in Nairobi after a frustrating experience running a hardware shop.' },
   { year: '2023', event: 'Launched beta with 50 shops in Nairobi. Added M-Pesa STK Push integration.' },
   { year: '2024', event: 'Expanded to Mombasa, Kisumu, and Nakuru. Crossed 1,000 active shops.' },
   { year: '2025', event: 'Launched web platform, staff management, and advanced analytics. 5,000+ active shops.' },
@@ -69,7 +69,7 @@ export default function AboutPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
                 <ShoppingCart className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Dukana</span>
+              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
               <Link href="/" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Home</Link>
@@ -97,7 +97,7 @@ export default function AboutPage() {
             We Built the Tool We Wished We Had
           </h1>
           <p className="text-xl text-white/80 leading-relaxed max-w-3xl mx-auto">
-            Dukana was born out of real frustration — managing a shop with paper receipts, guessing stock levels,
+            DuQana was born out of real frustration: managing a shop with paper receipts, guessing stock levels,
             and counting cash at midnight. We built the solution we desperately needed.
           </p>
         </div>
@@ -112,11 +112,11 @@ export default function AboutPage() {
                 Our Mission
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed mb-6">
-                Kenya has over 3 million small retail businesses — dukas, superettes, pharmacies, electronics shops — that are the backbone of the economy.
+                Kenya has over 3 million small retail businesses (dukas, superettes, pharmacies, electronics shops) that are the backbone of the economy.
                 Most of them are still running on paper, guesswork, and trust.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed mb-6">
-                Dukana exists to give every Kenyan shop owner the same powerful tools that large supermarkets use — at a price anyone can afford,
+                DuQana exists to give every Kenyan shop owner the same powerful tools that large supermarkets use, at a price anyone can afford,
                 on a device they already own, with payments they already use.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed">
@@ -192,8 +192,8 @@ export default function AboutPage() {
       <section className="py-20" style={{ backgroundColor: '#F8FAFC' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-extrabold mb-4" style={{ color: '#0F172A' }}>The Team Behind Dukana</h2>
-            <p className="text-lg text-gray-600">A small team with a big mission — all Kenya-based.</p>
+            <h2 className="text-3xl lg:text-4xl font-extrabold mb-4" style={{ color: '#0F172A' }}>The Team Behind DuQana</h2>
+            <p className="text-lg text-gray-600">A small team with a big mission, all Kenya-based.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {team.map((member) => (
@@ -213,7 +213,7 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="py-20" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #115E59 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-extrabold text-white mb-4">Join the Dukana Family</h2>
+          <h2 className="text-3xl font-extrabold text-white mb-4">Join the DuQana Family</h2>
           <p className="text-white/80 text-lg mb-8">Start managing your shop smarter today. Free to get started.</p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link href="/register" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white shadow-lg" style={{ backgroundColor: '#C8932A' }}>
@@ -233,9 +233,9 @@ export default function AboutPage() {
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <ShoppingCart className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-gray-300 font-semibold">Dukana</span>
+            <span className="text-gray-300 font-semibold">DuQana</span>
           </div>
-          <p>© 2025 Dukana. Built with ❤️ for Kenyan businesses.</p>
+          <p>© 2025 DuQana. Built with ❤️ for Kenyan businesses.</p>
           <div className="flex gap-4 mt-3 md:mt-0">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <Link href="/about" className="hover:text-white transition-colors">About</Link>

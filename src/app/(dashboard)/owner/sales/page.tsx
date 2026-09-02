@@ -109,7 +109,7 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
               {product.variants.map((v) => (
                 <button key={v._id} onClick={() => setVariantId(v._id)}
                   className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${variantId === v._id ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-600'}`}>
-                  {v.name} — {fmt(v.sellingPrice)}
+                  {v.name} ({fmt(v.sellingPrice)})
                   {v.quantity === 0 && <span className="ml-1 text-red-400 text-xs">(out)</span>}
                 </button>
               ))}
@@ -210,7 +210,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
             {[
               { label: 'Date', value: format(new Date(sale.createdAt), 'dd MMM yyyy') },
               { label: 'Time', value: format(new Date(sale.createdAt), 'HH:mm') },
-              { label: 'Cashier', value: sale.staff?.name ?? '—' },
+              { label: 'Cashier', value: sale.staff?.name ?? '-' },
             ].map((m) => (
               <div key={m.label} className="bg-gray-50 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-400 mb-0.5">{m.label}</p>
@@ -347,7 +347,7 @@ export default function SalesPage() {
   const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const shopName = user?.shop?.name ?? 'Dukana';
+  const shopName = user?.shop?.name ?? 'DuQana';
 
   const { shop: shopData, refetch: refetchShop } = useShop();
   const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
@@ -607,8 +607,8 @@ export default function SalesPage() {
           </div>
           <div className="grid grid-cols-4 gap-3 mt-5">
             {[
-              { label: 'Cash', value: fmt(stats.cashTotal), pct: stats.totalSales > 0 ? `${Math.round((stats.cashTotal / stats.totalSales) * 100)}%` : '—' },
-              { label: 'M-Pesa', value: fmt(stats.mpesaTotal), pct: stats.totalSales > 0 ? `${Math.round((stats.mpesaTotal / stats.totalSales) * 100)}%` : '—' },
+              { label: 'Cash', value: fmt(stats.cashTotal), pct: stats.totalSales > 0 ? `${Math.round((stats.cashTotal / stats.totalSales) * 100)}%` : '-' },
+              { label: 'M-Pesa', value: fmt(stats.mpesaTotal), pct: stats.totalSales > 0 ? `${Math.round((stats.mpesaTotal / stats.totalSales) * 100)}%` : '-' },
               { label: 'Avg. Sale', value: fmt(stats.avgSale), pct: undefined },
               { label: 'Cash Tx', value: stats.cashCount.toString(), pct: undefined },
             ].map((s) => (
@@ -792,8 +792,8 @@ export default function SalesPage() {
                     {createSaleMutation.isPending
                       ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
                       : paymentMethod === MPESA_METHOD_KEY && mpesaEnabled
-                      ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request — {fmt(totalAmount)}</>
-                      : <><CheckCircle className="w-4 h-4" /> Complete Sale — {fmt(totalAmount)}</>}
+                      ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request ({fmt(totalAmount)})</>
+                      : <><CheckCircle className="w-4 h-4" /> Complete Sale ({fmt(totalAmount)})</>}
                   </button>
 
                   <button onClick={() => setCart([])} className="w-full text-xs text-gray-400 hover:text-red-400 transition-colors py-1">
@@ -896,7 +896,7 @@ export default function SalesPage() {
                           <p className="text-xs text-gray-400">{format(new Date(sale.createdAt), 'HH:mm')}</p>
                         </td>
                         <td className="px-4 py-3.5 text-gray-600 max-w-36">
-                          <p className="truncate">{sale.items[0]?.name ?? sale.items[0]?.productName ?? '—'}</p>
+                          <p className="truncate">{sale.items[0]?.name ?? sale.items[0]?.productName ?? '-'}</p>
                           {sale.items.length > 1 && <p className="text-xs text-gray-400">+{sale.items.length - 1} more</p>}
                         </td>
                         <td className="px-4 py-3.5 font-bold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</td>
@@ -906,7 +906,7 @@ export default function SalesPage() {
                             {saleMethodLabel(sale)}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-gray-600">{sale.staff?.name ?? '—'}</td>
+                        <td className="px-4 py-3.5 text-gray-600">{sale.staff?.name ?? '-'}</td>
                         <td className="px-4 py-3.5">
                           <ArrowRight className="w-4 h-4 text-gray-300" />
                         </td>

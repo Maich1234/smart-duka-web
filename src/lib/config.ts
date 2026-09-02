@@ -6,6 +6,13 @@
 //
 // NEXT_PUBLIC_* is inlined by Next at build time, not read at runtime — a
 // change requires a rebuild, which is why the fallback still points at
-// production rather than throwing.
+// production rather than throwing. The same guard also rejects a localhost
+// value (e.g. a local .env copied into the wrong Vercel project) so a
+// misconfigured deployment can't send real users' requests to a dev machine.
+import { isLocalUrl } from './isLocalUrl';
+
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'https://smart-duka-backend-iota.vercel.app/api/v1';
+  configuredApiBaseUrl && !isLocalUrl(configuredApiBaseUrl)
+    ? configuredApiBaseUrl
+    : 'https://smart-duka-backend-iota.vercel.app/api/v1';

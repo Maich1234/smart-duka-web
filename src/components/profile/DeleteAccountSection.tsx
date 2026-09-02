@@ -131,7 +131,7 @@ export default function DeleteAccountSection() {
               You asked to close your account
               {preview?.deletionRequestedAt ? ` on ${formatDay(preview.deletionRequestedAt)}` : ''}.
               Your shop owner has to approve it first. Nothing changes until they do, and you can
-              keep using Dukana normally.
+              keep using DuQana normally.
             </p>
             {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
             <Button
@@ -187,7 +187,7 @@ export default function DeleteAccountSection() {
               <div className="flex items-start gap-2 p-3 rounded-xl" style={{ backgroundColor: '#F1F5F9' }}>
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-gray-500" />
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  Your sales and shift records stay with the shop either way — they&apos;re the
+                  Your sales and shift records stay with the shop either way: they&apos;re the
                   owner&apos;s books, not part of your personal profile.
                 </p>
               </div>

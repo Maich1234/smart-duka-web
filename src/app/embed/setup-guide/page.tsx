@@ -108,7 +108,7 @@ function SetupGuideContent() {
     <div style={{ padding: '20px 16px 40px', maxWidth: 480, margin: '0 auto' }}>
       <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>Get your shop running</h1>
       <p style={{ fontSize: 13, color: '#64748B', marginBottom: 20 }}>
-        {allDone ? 'Every step is done — your shop is fully set up.' : `${doneCount} of ${STEPS.length} done`}
+        {allDone ? 'Every step is done. Your shop is fully set up.' : `${doneCount} of ${STEPS.length} done`}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -119,8 +119,8 @@ export default function StaffPage() {
       queryClient.invalidateQueries({ queryKey: ['subscription'] });
       const base =
         emailMode === 'system'
-          ? 'Staff added — they can sign in right away.'
-          : 'Staff added — ask them to check their email to verify before signing in.';
+          ? 'Staff added. They can sign in right away.'
+          : 'Staff added. Ask them to check their email to verify before signing in.';
       // Seats are postpaid and prorated: the account is active immediately
       // and the server reports what it added to the next invoice. Staff
       // creation is never blocked on payment either way — the only question
@@ -190,7 +190,7 @@ export default function StaffPage() {
   const onSubmit = (data: FormData) => {
     setServerError('');
     if (emailMode === 'system' && availability === 'taken') {
-      setServerError('That email is already taken — try another');
+      setServerError('That email is already taken. Try another');
       return;
     }
     addMutation.mutate(data);
@@ -416,10 +416,10 @@ export default function StaffPage() {
                   <p className="flex items-center gap-1.5 text-xs text-green-600 mt-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Available</p>
                 )}
                 {availability === 'taken' && (
-                  <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5"><XCircle className="w-3.5 h-3.5" /> This email is taken — try another</p>
+                  <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5"><XCircle className="w-3.5 h-3.5" /> This email is taken. Try another</p>
                 )}
                 {availability === 'idle' && (
-                  <p className="text-xs text-gray-400 mt-1.5">Auto-verified — ready to use immediately, no email needed.</p>
+                  <p className="text-xs text-gray-400 mt-1.5">Auto-verified: ready to use immediately, no email needed.</p>
                 )}
                 {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
               </>

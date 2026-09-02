@@ -69,7 +69,7 @@ function RegisterForm() {
   return (
     <div>
       <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0F172A' }}>Create your account</h1>
-      <p className="text-gray-500 text-sm mb-8">Start managing your shop today — it&apos;s free</p>
+      <p className="text-gray-500 text-sm mb-8">Start managing your shop today. It&apos;s free</p>
 
       {serverError && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">

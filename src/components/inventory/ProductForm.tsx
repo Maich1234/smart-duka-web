@@ -462,8 +462,8 @@ export default function ProductForm({
         {composite && (
           <p className="mt-3 text-xs text-gray-500">
             {form.productType === 'bundle'
-              ? "Stock isn't tracked on a bundle — availability comes from the products inside it."
-              : "Stock isn't tracked on the parent — each variant carries its own."}
+              ? "Stock isn't tracked on a bundle. Availability comes from the products inside it."
+              : "Stock isn't tracked on the parent. Each variant carries its own."}
           </p>
         )}
 
@@ -520,7 +520,7 @@ export default function ProductForm({
 
           {bundleOptions.length === 0 ? (
             <p className="text-sm text-gray-500">
-              Create a standard product first — a bundle has to be made of something.
+              Create a standard product first. A bundle has to be made of something.
             </p>
           ) : form.bundleItems.length === 0 ? (
             <p className="text-sm text-gray-500">No items yet.</p>

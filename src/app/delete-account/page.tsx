@@ -5,9 +5,9 @@ import { SiteNav } from '@/components/marketing/SiteNav';
 import { SUPPORT_EMAIL } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Delete your Dukana account',
+  title: 'Delete your DuQana account',
   description:
-    'How to permanently close your Dukana account and what happens to your data, including the 14-day cancellation window.',
+    'How to permanently close your DuQana account and what happens to your data, including the 14-day cancellation window.',
   alternates: { canonical: '/delete-account' },
 };
 
@@ -31,7 +31,7 @@ export default function DeleteAccountPage() {
 
       <main className="max-w-3xl mx-auto px-4 py-12 lg:py-16">
         <h1 className="text-3xl lg:text-4xl font-extrabold mb-4" style={{ color: '#0F172A' }}>
-          Delete your Dukana account
+          Delete your DuQana account
         </h1>
         <p className="text-lg leading-relaxed mb-10" style={{ color: '#475569' }}>
           You can close your account and have your personal data deleted at any time. Here&apos;s exactly
@@ -49,7 +49,7 @@ export default function DeleteAccountPage() {
             </p>
             <p className="text-sm leading-relaxed" style={{ color: '#7F1D1D' }}>
               Deleting an owner account also deletes the shop and every staff account in it. Everyone loses
-              access. If you only want to stop paying, cancel your subscription instead — your data stays.
+              access. If you only want to stop paying, cancel your subscription instead. Your data stays.
             </p>
           </div>
         </div>
@@ -57,13 +57,13 @@ export default function DeleteAccountPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:p-8 space-y-8">
           <section>
             <h2 className="text-lg font-bold mb-4" style={{ color: '#0F172A' }}>
-              Option 1 — from your account (fastest)
+              Option 1: from your account (fastest)
             </h2>
             <div className="flex gap-4 mb-4">
               <Smartphone className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#0F766E' }} />
               <ol className="space-y-2 leading-relaxed" style={{ color: '#334155' }}>
                 <li>
-                  1. Sign in — on the Dukana app, or{' '}
+                  1. Sign in: on the DuQana app, or{' '}
                   <Link href="/login" className="font-semibold underline" style={{ color: '#0F766E' }}>
                     here on the web
                   </Link>
@@ -89,7 +89,7 @@ export default function DeleteAccountPage() {
                   Staff accounts are issued by a shop, so the request goes to the shop owner before the
                   14-day countdown starts. Your account keeps working normally while it waits, and you can
                   withdraw the request at any time. If the owner doesn&apos;t respond within 14 days it
-                  goes ahead without them — an unanswered request can&apos;t block you indefinitely. Your
+                  goes ahead without them. An unanswered request can&apos;t block you indefinitely. Your
                   sales and shift records stay with the shop as its bookkeeping either way.
                 </p>
               </div>
@@ -98,13 +98,13 @@ export default function DeleteAccountPage() {
 
           <section>
             <h2 className="text-lg font-bold mb-4" style={{ color: '#0F172A' }}>
-              Option 2 — by email
+              Option 2: by email
             </h2>
             <div className="flex gap-4">
               <Mail className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#0F766E' }} />
               <div className="space-y-3 leading-relaxed" style={{ color: '#334155' }}>
                 <p>
-                  If you can&apos;t sign in — lost phone, forgotten password — email{' '}
+                  If you can&apos;t sign in (lost phone, forgotten password), email{' '}
                   <a href={`mailto:${SUPPORT_EMAIL}`} className="underline font-medium" style={{ color: '#0F766E' }}>
                     {SUPPORT_EMAIL}
                   </a>{' '}
@@ -112,7 +112,7 @@ export default function DeleteAccountPage() {
                   <strong>&quot;Delete my account&quot;</strong>.
                 </p>
                 <p className="text-sm" style={{ color: '#64748B' }}>
-                  We&apos;ll verify you own the account before doing anything, and respond within 30 days —
+                  We&apos;ll verify you own the account before doing anything, and respond within 30 days,
                   usually within two business days. We will never ask for your password by email.
                 </p>
               </div>

@@ -32,7 +32,7 @@ export default function PurchasingHomePage() {
   });
 
   const fmt = (n?: number) =>
-    n == null ? '—' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    n == null ? '-' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   if (!shopLoading && !purchasingEnabled) {
     return (
@@ -76,7 +76,7 @@ export default function PurchasingHomePage() {
             <Card padding="sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total spend</p>
               <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: '#0F172A' }}>
-                {canSeePrices ? fmt(stats?.totalSpend) : '—'}
+                {canSeePrices ? fmt(stats?.totalSpend) : '-'}
               </p>
             </Card>
             <Card padding="sm">
@@ -133,7 +133,7 @@ export default function PurchasingHomePage() {
                       {purchase.status === 'pending_approval' && <Badge color="yellow">Awaiting approval</Badge>}
                       {purchase.status === 'cancelled' && <Badge color="gray">Cancelled</Badge>}
                       <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>
-                        {canSeePrices ? fmt(purchase.grandTotal) : '—'}
+                        {canSeePrices ? fmt(purchase.grandTotal) : '-'}
                       </span>
                     </span>
                   </Link>

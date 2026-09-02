@@ -158,7 +158,7 @@ export default function SubscriptionPage() {
     <div className="space-y-6 max-w-xl">
       <div>
         <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Subscription</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage your Dukana plan and billing</p>
+        <p className="text-gray-500 text-sm mt-1">Manage your DuQana plan and billing</p>
       </div>
 
       {toast && (
@@ -172,7 +172,7 @@ export default function SubscriptionPage() {
           <Lock className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-red-600">Your shop is paused</p>
-            <p className="text-sm text-red-800 mt-0.5">Your subscription and grace period have ended. Pay below to pick up right where you left off — all your data is safe.</p>
+            <p className="text-sm text-red-800 mt-0.5">Your subscription and grace period have ended. Pay below to pick up right where you left off. All your data is safe.</p>
           </div>
         </div>
       )}
@@ -183,10 +183,10 @@ export default function SubscriptionPage() {
             <StateIcon className="w-3.5 h-3.5" style={{ color: meta.fg }} />
             <span className="text-xs font-bold" style={{ color: meta.fg }}>{meta.label}</span>
           </div>
-          {access?.cancelled && <span className="text-xs text-gray-400">Cancelled — active until period end</span>}
+          {access?.cancelled && <span className="text-xs text-gray-400">Cancelled: active until period end</span>}
         </div>
 
-        <h2 className="text-xl font-extrabold" style={{ color: '#0F172A' }}>{plan?.name ? `${plan.name} plan` : 'Dukana'}</h2>
+        <h2 className="text-xl font-extrabold" style={{ color: '#0F172A' }}>{plan?.name ? `${plan.name} plan` : 'DuQana'}</h2>
         {!!plan?.tagline && <p className="text-sm text-gray-500 mt-0.5">{plan.tagline}</p>}
 
         <div className="h-px bg-gray-100 my-4" />
@@ -195,7 +195,7 @@ export default function SubscriptionPage() {
           <InfoRow icon={Clock} label="Trial ends" value={`${expiresAt} · ${access?.daysLeft} day${access?.daysLeft === 1 ? '' : 's'} left`} />
         )}
         {state === 'active' && (
-          <InfoRow icon={RefreshCw} label={access?.cancelled ? 'Access until' : 'Renews'} value={expiresAt ?? '—'} />
+          <InfoRow icon={RefreshCw} label={access?.cancelled ? 'Access until' : 'Renews'} value={expiresAt ?? '-'} />
         )}
         {state === 'grace' && (
           <InfoRow icon={AlertCircle} label="Grace period" value={`${access?.graceDaysLeft} day${access?.graceDaysLeft === 1 ? '' : 's'} left to pay`} />
@@ -243,7 +243,7 @@ export default function SubscriptionPage() {
 
         {state === 'none' && (
           <>
-            <p className="text-sm text-gray-500 mb-4">Your free trial is waiting. Activate it now — no payment needed to start.</p>
+            <p className="text-sm text-gray-500 mb-4">Your free trial is waiting. Activate it now. No payment needed to start.</p>
             <Button onClick={startTrial} loading={working} className="w-full">Activate free trial</Button>
           </>
         )}
@@ -291,7 +291,7 @@ export default function SubscriptionPage() {
           {isSwitching && (
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
               <p className="flex-1 text-sm text-gray-500">
-                Switching to <strong style={{ color: '#0F172A' }}>{effectiveSlug}</strong> ({effectiveCycle}) —{' '}
+                Switching to <strong style={{ color: '#0F172A' }}>{effectiveSlug}</strong> ({effectiveCycle}):{' '}
                 {switchPreview ? fmt(payAmount, payCurrency) : 'pricing…'}
               </p>
               <Button

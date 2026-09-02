@@ -292,7 +292,7 @@ export default function SubscriptionPayModal({
             className="mt-3 text-sm font-semibold hover:underline"
             style={{ color: '#0F766E' }}
           >
-            I already paid — verify my payment
+            I already paid: verify my payment
           </button>
           <button onClick={handleClose} className="mt-2 text-sm text-gray-500 hover:text-gray-700">Close</button>
         </div>

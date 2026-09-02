@@ -30,7 +30,7 @@ export default function TrialBanner() {
 
   if (access.state === 'none') {
     Icon = Gift;
-    text = 'Your free trial is waiting — activate Dukana.';
+    text = 'Your free trial is waiting. Activate DuQana.';
     tone = 'info';
     cta = 'Activate';
   } else if (access.state === 'trialing' && access.daysLeft <= 7 && !access.cancelled) {
@@ -40,7 +40,7 @@ export default function TrialBanner() {
     cta = 'View';
   } else if (access.state === 'grace') {
     Icon = AlertCircle;
-    text = `Subscription expired — ${access.graceDaysLeft} day${access.graceDaysLeft === 1 ? '' : 's'} left before your shop pauses.`;
+    text = `Subscription expired: ${access.graceDaysLeft} day${access.graceDaysLeft === 1 ? '' : 's'} left before your shop pauses.`;
     tone = 'urgent';
     cta = 'Pay now';
   } else if (access.state === 'locked') {

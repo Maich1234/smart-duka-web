@@ -46,7 +46,7 @@ export default function OnboardingActivatePage() {
     onSuccess: finish,
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e?.response?.data?.message || 'Could not start the trial — you can start it from your dashboard.');
+      setError(e?.response?.data?.message || 'Could not start the trial. You can start it from your dashboard.');
     },
   });
 

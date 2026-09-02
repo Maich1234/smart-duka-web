@@ -46,7 +46,7 @@ export default function ReferPage() {
         <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0F172A' }}>Refer &amp; Earn</h1>
         <Card className="mt-6 text-center py-12">
           <Gift className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500 text-sm">The referral program isn&apos;t live yet — check back soon.</p>
+          <p className="text-gray-500 text-sm">The referral program isn&apos;t live yet. Check back soon.</p>
         </Card>
       </div>
     );
@@ -56,7 +56,7 @@ export default function ReferPage() {
     <div>
       <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0F172A' }}>Refer &amp; Earn</h1>
       <p className="text-gray-500 text-sm mb-6">
-        Invite other shop owners to Dukana. When someone you invite becomes a paying customer, you get{' '}
+        Invite other shop owners to DuQana. When someone you invite becomes a paying customer, you get{' '}
         {data.perReferralPercent}% off your next subscription payment.
       </p>
 
@@ -92,7 +92,7 @@ export default function ReferPage() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">People you&apos;ve referred</p>
         </div>
         {data.referrals.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">No referrals yet — share your code to get started.</p>
+          <p className="text-sm text-gray-400 py-4 text-center">No referrals yet. Share your code to get started.</p>
         ) : (
           <div className="space-y-2">
             {data.referrals.map((r, i) => (

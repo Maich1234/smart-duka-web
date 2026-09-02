@@ -88,7 +88,7 @@ export default function EndShiftModal({
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
             Count the cash in the drawer and enter the total. Leave it blank if you&apos;d rather not
-            reconcile — the shift still closes.
+            reconcile. The shift still closes.
           </p>
 
           <Input

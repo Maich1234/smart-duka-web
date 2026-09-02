@@ -293,7 +293,7 @@ export default function StaffDetailPage() {
                 </p>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#78350F' }}>
-                {staff.name} has asked to close their account. Nothing has changed yet — approving starts a{' '}
+                {staff.name} has asked to close their account. Nothing has changed yet. Approving starts a{' '}
                 {graceDays}-day cooling-off period, and your shop&apos;s sales and shift records stay in the
                 books either way.
                 {pendingClosure
@@ -317,7 +317,7 @@ export default function StaffDetailPage() {
         <div className="rounded-2xl p-5 flex items-start gap-3" style={{ backgroundColor: '#FEE2E2' }}>
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
           <p className="text-sm leading-relaxed font-medium" style={{ color: '#991B1B' }}>
-            Closure approved — this account closes on{' '}
+            Closure approved: this account closes on{' '}
             {format(new Date(staff.deletionScheduledAt), 'MMM d, yyyy')}. {staff.name} can still cancel
             before then.
           </p>

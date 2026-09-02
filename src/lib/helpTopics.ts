@@ -7,7 +7,7 @@
  * is a server-rendered, indexable page.
  *
  * Originally written for the in-app Help & Learning Center. Plain-language explanations
- * of Dukana's real features only — nothing here should describe a
+ * of DuQana's real features only — nothing here should describe a
  * feature that doesn't exist yet in the app.
  */
 
@@ -35,20 +35,20 @@ export const HELP_CATEGORIES = [
   'Staff & Permissions',
   'Reports & Settings',
   'Receipts & Customers',
-  'Dukana AI',
+  'DuQana AI',
 ] as const;
 
 export const HELP_TOPICS: HelpTopic[] = [
   {
     slug: 'getting-started',
-    title: 'Getting Started with Dukana',
+    title: 'Getting Started with DuQana',
     category: 'Getting Started',
-    summary: 'What Dukana does, and the difference between an owner and a staff account.',
+    summary: 'What DuQana does, and the difference between an owner and a staff account.',
     keywords: ['intro', 'overview', 'owner', 'staff', 'role', 'account'],
     sections: [
       {
         paragraphs: [
-          'Dukana helps you run a shop from your phone: add products, record sales, track stock, manage staff, and see reports — all in one place.',
+          'DuQana helps you run a shop from your phone: add products, record sales, track stock, manage staff, and see reports, all in one place.',
         ],
       },
       {
@@ -66,12 +66,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Where to find things',
         bullets: [
-          'Dashboard — a quick snapshot of how the shop is doing today',
-          'Inventory/Stock — your product list and stock levels',
-          'Sales — record a sale or view sales history',
-          'Staff — add staff and set what they can do (owner only)',
-          'Reports — sales totals, top products, ratings (owner only)',
-          'Profile — your shop details, password, and this Help Center',
+          'Dashboard: a quick snapshot of how the shop is doing today',
+          'Inventory/Stock: your product list and stock levels',
+          'Sales: record a sale or view sales history',
+          'Staff: add staff and set what they can do (owner only)',
+          'Reports: sales totals, top products, ratings (owner only)',
+          'Profile: your shop details, password, and this Help Center',
         ],
       },
     ],
@@ -92,12 +92,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Standard',
         paragraphs: ['A normal product with one fixed selling price and a quantity you track in whole units.'],
-        example: 'A 500ml bottle of soda — KES 60 each, you count bottles.',
+        example: 'A 500ml bottle of soda: KES 60 each, you count bottles.',
       },
       {
         heading: 'Variable Price',
         paragraphs: [
-          'The price can change a little at checkout, between a minimum and maximum you set — useful for items you sometimes haggle or discount on.',
+          'The price can change a little at checkout, between a minimum and maximum you set, useful for items you sometimes haggle or discount on.',
         ],
         example: 'A second-hand item you sell between KES 200–300 depending on the customer.',
       },
@@ -118,21 +118,21 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Service',
         paragraphs: [
-          'No stock to track — you\'re selling work, not a physical item. You can optionally allow staff to override the price at checkout.',
+          'No stock to track. You\'re selling work, not a physical item. You can optionally allow staff to override the price at checkout.',
         ],
         example: 'A haircut, a phone-charging slot, or a delivery fee.',
       },
       {
         heading: 'Bundle',
         paragraphs: [
-          'A product made of other products bundled together at one price. A bundle does not hold its own stock — selling it reduces the stock of each item inside it instead. See "Bundle Products" for the full explanation.',
+          'A product made of other products bundled together at one price. A bundle does not hold its own stock. Selling it reduces the stock of each item inside it instead. See "Bundle Products" for the full explanation.',
         ],
         example: 'A "Back to School Kit" made of one pen + one book + one ruler, sold as a single item.',
       },
       {
         heading: 'Variants (Configurable)',
         paragraphs: [
-          'One product with several versions underneath it — each version (variant) has its own price and stock. The customer picks a variant at checkout.',
+          'One product with several versions underneath it. Each version (variant) has its own price and stock. The customer picks a variant at checkout.',
         ],
         example: 'A T-shirt sold in Small, Medium, and Large, each tracked and priced separately.',
       },
@@ -152,27 +152,27 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Basic details',
         bullets: [
-          'Name and Category — how the product appears in your list and on the sales screen',
-          'Product Type — pick from the types explained in "Understanding Product Types"',
-          'Cost Price — what you paid to get the item (used to work out profit)',
-          'Selling Price — what the customer pays (not used for Bundles or Variants, which price their parts/variants instead)',
+          'Name and Category: how the product appears in your list and on the sales screen',
+          'Product Type: pick from the types explained in "Understanding Product Types"',
+          'Cost Price: what you paid to get the item (used to work out profit)',
+          'Selling Price: what the customer pays (not used for Bundles or Variants, which price their parts/variants instead)',
         ],
       },
       {
         heading: 'Stock tracking',
         bullets: [
-          'Quantity — how many you currently have in stock',
-          'Track Inventory — turn this off for items you don\'t want stock warnings for (it\'s switched off automatically for Bundles and Variant products, since their stock comes from their parts)',
-          'Low Stock Alert — the quantity at which Dukana warns you to restock',
+          'Quantity: how many you currently have in stock',
+          'Track Inventory: turn this off for items you don\'t want stock warnings for (it\'s switched off automatically for Bundles and Variant products, since their stock comes from their parts)',
+          'Low Stock Alert: the quantity at which DuQana warns you to restock',
         ],
       },
       {
         heading: 'Type-specific fields',
         bullets: [
-          'Unit of Measure (kg, g, l, ml) — only for Weighted and Refillable products',
-          'Min/Max Price — only for Variable Price products',
-          'Bundle Items — only for Bundles, pick the products and quantities that make up the bundle',
-          'Variants — only for Variant products, add each version with its own price and stock',
+          'Unit of Measure (kg, g, l, ml): only for Weighted and Refillable products',
+          'Min/Max Price: only for Variable Price products',
+          'Bundle Items: only for Bundles, pick the products and quantities that make up the bundle',
+          'Variants: only for Variant products, add each version with its own price and stock',
         ],
       },
     ],
@@ -193,19 +193,19 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Important: this sets the total, not an addition',
         paragraphs: [
-          'When you update stock, you enter the new total quantity on hand — not how many you\'re adding. If you have 10 bags of rice and just received 5 more, enter 15, not 5.',
+          'When you update stock, you enter the new total quantity on hand, not how many you\'re adding. If you have 10 bags of rice and just received 5 more, enter 15, not 5.',
         ],
       },
       {
         heading: 'Low Stock Alert',
         paragraphs: [
-          'Each product has a Low Stock Alert number. When the quantity on hand drops to or below that number, Dukana flags it as low stock and can send you a notification, so you know to restock before you run out.',
+          'Each product has a Low Stock Alert number. When the quantity on hand drops to or below that number, DuQana flags it as low stock and can send you a notification, so you know to restock before you run out.',
         ],
       },
       {
         heading: 'Stock movement on the Reports screen',
         paragraphs: [
-          'Reports shows which products are selling Fast, Medium, Slow, or Dead based on recent sales, plus a forecast of how many days of stock you have left for fast-moving items — useful for deciding what to restock first.',
+          'Reports shows which products are selling Fast, Medium, Slow, or Dead based on recent sales, plus a forecast of how many days of stock you have left for fast-moving items, useful for deciding what to restock first.',
         ],
       },
     ],
@@ -220,7 +220,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     sections: [
       {
         paragraphs: [
-          'If you sell a combination of products together as one item — a combo meal, a cleaning kit, a gift set — set it up as a Bundle. A Bundle is Dukana\'s version of a "recipe" or bill of materials: instead of tracking its own stock, it\'s made of a list of other products and quantities.',
+          'If you sell a combination of products together as one item (a combo meal, a cleaning kit, a gift set), set it up as a Bundle. A Bundle is DuQana\'s version of a "recipe" or bill of materials: instead of tracking its own stock, it\'s made of a list of other products and quantities.',
         ],
       },
       {
@@ -228,7 +228,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         bullets: [
           'Create the Bundle product and give it its own selling price (usually less than buying the parts separately)',
           'Add each component product and how many of it the bundle uses',
-          'When a Bundle is sold, Dukana automatically reduces the stock of each component — you never adjust the bundle\'s own stock',
+          'When a Bundle is sold, DuQana automatically reduces the stock of each component, and you never adjust the bundle\'s own stock',
           'The bundle is only available to sell if all of its components are in stock',
         ],
       },
@@ -247,7 +247,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     sections: [
       {
         paragraphs: [
-          'Dukana\'s discounts are "Buy X Get Y Free" promotions set up on individual products — there\'s no separate percentage-off or coupon-code discount, and cashiers never type in a discount at checkout.',
+          'DuQana\'s discounts are "Buy X Get Y Free" promotions set up on individual products. There\'s no separate percentage-off or coupon-code discount, and cashiers never type in a discount at checkout.',
         ],
       },
       {
@@ -255,12 +255,12 @@ export const HELP_TOPICS: HelpTopic[] = [
         paragraphs: [
           'On a product\'s form (any type except Bundle or Variants), switch on "Enable promotions / discounts" and add one or more rows: a label, a Buy Qty, and a Free Qty.',
         ],
-        example: 'Label "Buy 4 Get 1 Free", Buy Qty 4, Free Qty 1 — every 5th item in a qualifying purchase is free.',
+        example: 'Label "Buy 4 Get 1 Free", Buy Qty 4, Free Qty 1: every 5th item in a qualifying purchase is free.',
       },
       {
         heading: 'How it applies at checkout',
         paragraphs: [
-          'There\'s nothing for staff to turn on — the moment a customer buys enough of a product to qualify, Dukana applies the best available promotion for that product automatically and reduces the total. If a product has more than one promotion, only the one that saves the customer the most is used; they don\'t stack.',
+          'There\'s nothing for staff to turn on: the moment a customer buys enough of a product to qualify, DuQana applies the best available promotion for that product automatically and reduces the total. If a product has more than one promotion, only the one that saves the customer the most is used; they don\'t stack.',
         ],
       },
       {
@@ -272,7 +272,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Not the same as Variable Price',
         paragraphs: [
-          'Variable Price products let staff type a different price within a min/max range at checkout (see "Understanding Product Types") — that\'s a per-sale price choice. Promotions are a fixed, automatic rule tied to quantity bought, and apply the same way every time.',
+          'Variable Price products let staff type a different price within a min/max range at checkout (see "Understanding Product Types"): that\'s a per-sale price choice. Promotions are a fixed, automatic rule tied to quantity bought, and apply the same way every time.',
         ],
       },
     ],
@@ -287,7 +287,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     sections: [
       {
         paragraphs: [
-          'Every staff account starts with no access. As the owner, you switch on individual permissions for each staff member — only what they need for their job.',
+          'Every staff account starts with no access. As the owner, you switch on individual permissions for each staff member, only what they need for their job.',
         ],
       },
       {
@@ -327,15 +327,15 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Special add-to-cart steps',
         bullets: [
-          'Variant products (e.g. sizes) — you\'ll be asked to pick which variant before it\'s added',
-          'Variable Price / Service products with price override allowed — you can type the exact price for this sale',
-          'Weighted / Refillable products — enter the quantity in the product\'s unit (kg, g, l, ml)',
+          'Variant products (e.g. sizes): you\'ll be asked to pick which variant before it\'s added',
+          'Variable Price / Service products with price override allowed: you can type the exact price for this sale',
+          'Weighted / Refillable products: enter the quantity in the product\'s unit (kg, g, l, ml)',
         ],
       },
       {
         heading: 'Checkout',
         paragraphs: [
-          'Once everything is in the cart, choose the payment method — Cash or M-Pesa — and confirm. A digital receipt appears immediately, which you can print if a printer is connected.',
+          'Once everything is in the cart, choose the payment method (Cash or M-Pesa) and confirm. A digital receipt appears immediately, which you can print if a printer is connected.',
         ],
       },
     ],
@@ -351,10 +351,10 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Sales totals',
         bullets: [
-          'Total Revenue — all money taken in the selected period',
-          'Total Transactions — number of sales made',
-          'Cash / M-Pesa split — how much came from each payment method',
-          'Average Sale — total revenue divided by number of transactions',
+          'Total Revenue: all money taken in the selected period',
+          'Total Transactions: number of sales made',
+          'Cash / M-Pesa split: how much came from each payment method',
+          'Average Sale: total revenue divided by number of transactions',
         ],
       },
       {
@@ -364,8 +364,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Stock movement',
         bullets: [
-          'Fast / Medium / Slow / Dead movers — how quickly each product is selling, based on recent daily sales',
-          'Days until stock-out — for fast movers, a forecast of how many days of stock remain at the current sales pace',
+          'Fast / Medium / Slow / Dead movers: how quickly each product is selling, based on recent daily sales',
+          'Days until stock-out: for fast movers, a forecast of how many days of stock remain at the current sales pace',
         ],
       },
       {
@@ -390,7 +390,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'The QR code',
         paragraphs: [
-          'Each receipt includes a unique QR code. Scanning it opens a page inside Dukana showing "Verified Authentic Receipt" with the receipt details — this proves the receipt is genuine and wasn\'t altered.',
+          'Each receipt includes a unique QR code. Scanning it opens a page inside DuQana showing "Verified Authentic Receipt" with the receipt details, which proves the receipt is genuine and wasn\'t altered.',
         ],
       },
       {
@@ -421,10 +421,10 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Fields',
         bullets: [
-          'Shop Name, Address, Phone, Email — your shop\'s contact details, shown on receipts and in your account',
-          'Tax Rate (%) — applied where tax calculations are shown',
-          'Currency Code — e.g. KES — used to format every price in the app',
-          'Receipt Thank-You Note — a custom message printed at the bottom of every receipt, e.g. "Karibu tena!" or "Thank you for shopping with us!"',
+          'Shop Name, Address, Phone, Email: your shop\'s contact details, shown on receipts and in your account',
+          'Tax Rate (%): applied where tax calculations are shown',
+          'Currency Code: e.g. KES, used to format every price in the app',
+          'Receipt Thank-You Note: a custom message printed at the bottom of every receipt, e.g. "Karibu tena!" or "Thank you for shopping with us!"',
         ],
       },
       {
@@ -436,39 +436,39 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     slug: 'smart-duka-ai',
-    title: 'Dukana AI',
-    category: 'Dukana AI',
-    summary: 'What Dukana AI does, how to turn it on, and what data it uses.',
-    keywords: ['ai', 'gemini', 'dukana ai', 'insights', 'chat', 'business consultant', 'privacy', 'toggle'],
+    title: 'DuQana AI',
+    category: 'DuQana AI',
+    summary: 'What DuQana AI does, how to turn it on, and what data it uses.',
+    keywords: ['ai', 'gemini', 'duqana ai', 'insights', 'chat', 'business consultant', 'privacy', 'toggle'],
     sections: [
       {
         paragraphs: [
-          'Dukana AI is an optional, subscription-included feature that reads a summary of your shop\'s real numbers and explains them in plain language — it doesn\'t generate its own figures or make decisions for you. It powers the Daily Insight and the "Ask Dukana" business chat.',
+          'DuQana AI is an optional, subscription-included feature that reads a summary of your shop\'s real numbers and explains them in plain language. It doesn\'t generate its own figures or make decisions for you. It powers the Daily Insight and the "Ask DuQana" business chat.',
         ],
       },
       {
         heading: 'Turning it on or off',
         paragraphs: [
-          'Go to Profile → Dukana AI. If you\'re on an active subscription, you\'ll see a switch — turn it on to start using Daily Insight and chat. Turning it off immediately stops any data being sent to Gemini; your shop keeps working as normal, just without the AI features.',
+          'Go to Profile → DuQana AI. If you\'re on an active subscription, you\'ll see a switch: turn it on to start using Daily Insight and chat. Turning it off immediately stops any data being sent to Gemini; your shop keeps working as normal, just without the AI features.',
         ],
       },
       {
         heading: 'What it can do',
         bullets: [
-          'Daily Insight — a health score and a short explanation of what changed in your business today',
-          'Ask Dukana — a chat where you can ask questions about your sales, stock, staff, and expenses',
+          'Daily Insight: a health score and a short explanation of what changed in your business today',
+          'Ask DuQana: a chat where you can ask questions about your sales, stock, staff, and expenses',
         ],
       },
       {
         heading: 'What data it sees',
         paragraphs: [
-          'Only a summary of your shop\'s sales, inventory, expenses, and aggregated staff performance — never customer personal data. You can review the full details any time from the "What data does Gemini see?" link next to the switch.',
+          'Only a summary of your shop\'s sales, inventory, expenses, and aggregated staff performance, never customer personal data. You can review the full details any time from the "What data does Gemini see?" link next to the switch.',
         ],
       },
       {
         heading: 'Subscription required',
         paragraphs: [
-          'Dukana AI is included with any active subscription (trial, paid, or grace period). If your subscription isn\'t active, Profile shows what the feature offers and the current status of your subscription.',
+          'DuQana AI is included with any active subscription (trial, paid, or grace period). If your subscription isn\'t active, Profile shows what the feature offers and the current status of your subscription.',
         ],
       },
     ],
@@ -482,13 +482,13 @@ export const HELP_TOPICS: HelpTopic[] = [
     keywords: ['faq', 'frequently asked questions', 'free', 'offline', 'mpesa', 'staff', 'security', 'data'],
     sections: [
       {
-        heading: 'Is Dukana free to use?',
+        heading: 'Is DuQana free to use?',
         paragraphs: [
           'Yes. The Free plan lets you get started with up to 50 products and 1 staff account at no cost. Upgrade when you need more.',
         ],
       },
       {
-        heading: 'Does Dukana work offline?',
+        heading: 'Does DuQana work offline?',
         paragraphs: [
           'Yes. The mobile app queues sales offline and syncs automatically when you reconnect. The web app requires an internet connection.',
         ],
@@ -500,7 +500,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
-        heading: 'Can multiple staff use Dukana at the same time?',
+        heading: 'Can multiple staff use DuQana at the same time?',
         paragraphs: [
           'Yes. Each staff member gets their own login with customisable permissions, and the owner sees all activity in real time.',
         ],

@@ -49,7 +49,7 @@ export default function PurchaseHistoryPage() {
   const purchases = data?.data ?? [];
   const pages = data?.pagination?.pages ?? 1;
   const fmt = (n?: number) =>
-    n == null ? '—' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    n == null ? '-' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   return (
     <div className="space-y-6">
@@ -130,7 +130,7 @@ export default function PurchaseHistoryPage() {
                   {purchase.status === 'pending_approval' && <Badge color="yellow">Awaiting approval</Badge>}
                   {purchase.status === 'cancelled' && <Badge color="gray">Cancelled</Badge>}
                   <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>
-                    {canSeePrices ? fmt(purchase.grandTotal) : '—'}
+                    {canSeePrices ? fmt(purchase.grandTotal) : '-'}
                   </span>
                 </div>
               </Card>

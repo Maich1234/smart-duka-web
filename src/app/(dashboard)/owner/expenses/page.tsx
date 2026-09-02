@@ -152,7 +152,7 @@ export default function ExpensesPage() {
                       <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>
                       {e.paymentMethod && e.paymentMethod !== 'cash' && (
                         <p className={`text-xs mt-0.5 ${e.paymentMethod === 'credit' ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
-                          {e.paymentMethod === 'credit' ? 'On credit — not paid yet' : MONEY_OUT_METHOD_LABELS[e.paymentMethod]}
+                          {e.paymentMethod === 'credit' ? 'On credit, not paid yet' : MONEY_OUT_METHOD_LABELS[e.paymentMethod]}
                         </p>
                       )}
                     </td>

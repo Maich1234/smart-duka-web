@@ -107,7 +107,7 @@ function CashiersTab() {
             { key: 'actual', header: 'Actual Cash', render: (c) => fmt(c.actualCashTotal) },
             {
               key: 'discrepancy', header: 'Discrepancy', render: (c) => {
-                if (c.shiftsCount === 0) return <span className="text-gray-400">—</span>;
+                if (c.shiftsCount === 0) return <span className="text-gray-400">-</span>;
                 if (c.cashDiscrepancyTotal === 0) return <Badge color="green">Balanced</Badge>;
                 return (
                   <Badge color="yellow">

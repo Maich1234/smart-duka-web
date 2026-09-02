@@ -210,7 +210,7 @@ function RevenueTab({ data }: { data: ReportData | undefined }) {
 
   return (
     <div className="space-y-6">
-      <SectionCard title="Revenue Trend — Cash vs M-Pesa">
+      <SectionCard title="Revenue Trend: Cash vs M-Pesa">
         {series.length === 0 ? <EmptyChart message="No data for selected period" /> : (
           <ResponsiveContainer width="100%" height={290}>
             <AreaChart data={series}>

@@ -151,7 +151,7 @@ export default function MpesaConfigForm({
           </div>
           {form.environment === 'sandbox' && (
             <p className="mt-1.5 text-xs text-amber-600">
-              Sandbox takes test payments only — no real money moves.
+              Sandbox takes test payments only. No real money moves.
             </p>
           )}
         </div>
@@ -179,7 +179,7 @@ export default function MpesaConfigForm({
               type="password"
               autoComplete="off"
               placeholder={config?.consumerKeyMasked ?? 'Paste from Daraja'}
-              hint={config?.consumerKeySet ? 'Already set — leave blank to keep it' : undefined}
+              hint={config?.consumerKeySet ? 'Already set: leave blank to keep it' : undefined}
               value={form.consumerKey ?? ''}
               onChange={(e) => update({ consumerKey: e.target.value })}
             />
@@ -188,7 +188,7 @@ export default function MpesaConfigForm({
               type="password"
               autoComplete="off"
               placeholder={config?.consumerSecretMasked ?? 'Paste from Daraja'}
-              hint={config?.consumerSecretSet ? 'Already set — leave blank to keep it' : undefined}
+              hint={config?.consumerSecretSet ? 'Already set: leave blank to keep it' : undefined}
               value={form.consumerSecret ?? ''}
               onChange={(e) => update({ consumerSecret: e.target.value })}
             />
@@ -197,7 +197,7 @@ export default function MpesaConfigForm({
               type="password"
               autoComplete="off"
               placeholder={config?.passkeyMasked ?? 'Paste from Daraja'}
-              hint={config?.passkeySet ? 'Already set — leave blank to keep it' : undefined}
+              hint={config?.passkeySet ? 'Already set: leave blank to keep it' : undefined}
               value={form.passkey ?? ''}
               onChange={(e) => update({ passkey: e.target.value })}
             />
@@ -222,7 +222,7 @@ export default function MpesaConfigForm({
               type="password"
               autoComplete="off"
               placeholder={config?.securityCredentialMasked ?? 'Generated on the Daraja portal'}
-              hint={config?.securityCredentialSet ? 'Already set — leave blank to keep it' : undefined}
+              hint={config?.securityCredentialSet ? 'Already set: leave blank to keep it' : undefined}
               value={form.securityCredential ?? ''}
               onChange={(e) => update({ securityCredential: e.target.value })}
             />

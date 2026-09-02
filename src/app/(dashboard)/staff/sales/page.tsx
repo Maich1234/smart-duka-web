@@ -87,7 +87,7 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
               {product.variants.map((v) => (
                 <button key={v._id} onClick={() => setVariantId(v._id)}
                   className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${variantId === v._id ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-600'}`}>
-                  {v.name} — {fmt(v.sellingPrice)}
+                  {v.name} ({fmt(v.sellingPrice)})
                 </button>
               ))}
             </div>
@@ -294,7 +294,7 @@ export default function StaffSalesPage() {
   const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const shopName = user?.shop?.name ?? 'Dukana';
+  const shopName = user?.shop?.name ?? 'DuQana';
   // Owner-granted refund permissions ('refund_all_sales' covers own sales too;
   // this page only ever lists the viewer's own sales)
   const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);
@@ -589,8 +589,8 @@ export default function StaffSalesPage() {
                   {createSaleMutation.isPending
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
                     : paymentMethod === MPESA_METHOD_KEY && mpesaEnabled
-                    ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request — {fmt(totalAmount)}</>
-                    : <><CheckCircle className="w-4 h-4" /> Complete Sale — {fmt(totalAmount)}</>}
+                    ? <><Smartphone className="w-4 h-4" /> Send M-Pesa Request ({fmt(totalAmount)})</>
+                    : <><CheckCircle className="w-4 h-4" /> Complete Sale ({fmt(totalAmount)})</>}
                 </button>
                 <button onClick={() => setCart([])} className="w-full text-xs text-gray-400 hover:text-red-400 transition-colors py-1">Clear cart</button>
               </div>

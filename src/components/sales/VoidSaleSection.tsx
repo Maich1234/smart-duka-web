@@ -75,7 +75,7 @@ export default function VoidSaleSection({
         <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
         <p className="text-xs font-medium text-gray-600">
           Voided
-          {sale.voidedAt ? ` on ${new Date(sale.voidedAt).toLocaleDateString()}` : ''} — stock restored.
+          {sale.voidedAt ? ` on ${new Date(sale.voidedAt).toLocaleDateString()}` : ''}. Stock restored.
           {sale.voidReason ? ` ${sale.voidReason}` : ''}
         </p>
       </div>

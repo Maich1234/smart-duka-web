@@ -4,9 +4,9 @@ import { SiteNav } from '@/components/marketing/SiteNav';
 import { SUPPORT_EMAIL } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy – Dukana',
+  title: 'Privacy Policy – DuQana',
   description:
-    'How Dukana collects, uses, shares, and retains your data — including business data sent to Google Gemini for AI insights, and what happens when you close your account.',
+    'How DuQana collects, uses, shares, and retains your data, including business data sent to Google Gemini for AI insights, and what happens when you close your account.',
   alternates: { canonical: '/privacy' },
 };
 
@@ -49,8 +49,8 @@ export default function PrivacyPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 lg:p-8 space-y-8">
           <Section title="Who we are">
             <P>
-              Dukana is a point-of-sale and shop-management service for retail businesses in Kenya and
-              East Africa. This policy covers the Dukana mobile app, the Dukana web app, and this
+              DuQana is a point-of-sale and shop-management service for retail businesses in Kenya and
+              East Africa. This policy covers the DuQana mobile app, the DuQana web app, and this
               website.
             </P>
             <P>
@@ -66,17 +66,17 @@ export default function PrivacyPage() {
             <P>We collect only what the service needs to work:</P>
             <Bullets
               items={[
-                'Account details — your name, email address, phone number, and password (stored only as a salted hash, never in readable form).',
-                'Shop details — business name, address, county and sub-county, currency, tax rate, and logo.',
-                'Business records you enter — products, stock levels, sales, purchases, suppliers, expenses, and staff accounts.',
-                'Financial transaction data — M-Pesa receipt numbers, amounts, payer phone numbers, and payment status for sales and subscription payments.',
-                'Device information — a device identifier, platform, and push-notification token, used to deliver alerts and to enforce one-device-per-staff sign-in.',
-                'Diagnostic information — error reports and basic usage timings, used to fix crashes.',
+                'Account details: your name, email address, phone number, and password (stored only as a salted hash, never in readable form).',
+                'Shop details: business name, address, county and sub-county, currency, tax rate, and logo.',
+                'Business records you enter: products, stock levels, sales, purchases, suppliers, expenses, and staff accounts.',
+                'Financial transaction data: M-Pesa receipt numbers, amounts, payer phone numbers, and payment status for sales and subscription payments.',
+                'Device information: a device identifier, platform, and push-notification token, used to deliver alerts and to enforce one-device-per-staff sign-in.',
+                'Diagnostic information: error reports and basic usage timings, used to fix crashes.',
               ]}
             />
             <P>
               We do <strong>not</strong> collect your customers&apos; names, ID numbers, or addresses. We do
-              not track your location in the background, and we do not read your SMS messages — where an
+              not track your location in the background, and we do not read your SMS messages. Where an
               M-Pesa confirmation is used to recover a payment, you paste the message yourself.
             </P>
           </Section>
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
               items={[
                 'To run your shop: recording sales, tracking stock, producing reports and receipts.',
                 'To take payment for your subscription, and to bill for staff seats.',
-                'To send you alerts you asked for — low stock, daily summaries, shift reconciliation, renewal reminders.',
+                'To send you alerts you asked for: low stock, daily summaries, shift reconciliation, renewal reminders.',
                 'To keep accounts secure: rate-limiting sign-ins, detecting reused refresh tokens, and enforcing one active device per staff account.',
                 'To support you when you contact us.',
               ]}
@@ -98,18 +98,18 @@ export default function PrivacyPage() {
             <P>Only the providers needed to deliver the service:</P>
             <Bullets
               items={[
-                'Safaricom (M-Pesa / Daraja) — to request and confirm payments. They receive the payer phone number and amount.',
-                'Google Gemini — to generate AI business insights and answer your questions in Ask Dukana. See below.',
-                'Google Firebase — to deliver push notifications.',
-                'Vercel and MongoDB Atlas — hosting and database infrastructure.',
-                'Cloudinary — to store shop logos you upload.',
+                'Safaricom (M-Pesa / Daraja): to request and confirm payments. They receive the payer phone number and amount.',
+                'Google Gemini: to generate AI business insights and answer your questions in Ask DuQana. See below.',
+                'Google Firebase: to deliver push notifications.',
+                'Vercel and MongoDB Atlas: hosting and database infrastructure.',
+                'Cloudinary: to store shop logos you upload.',
               ]}
             />
           </Section>
 
           <Section title="AI features and Google Gemini">
             <P>
-              Dukana&apos;s AI insights and the Ask Dukana assistant work by sending a{' '}
+              DuQana&apos;s AI insights and the Ask DuQana assistant work by sending a{' '}
               <strong>summary of your business data</strong> to Google Gemini: aggregated sales totals,
               stock levels, expenses, and staff performance figures. This is a transfer of your business
               data to a third party, so we want to be exact about it:
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
             <Bullets
               items={[
                 'No customer personal data is ever included.',
-                'AI features are off unless your shop has an active subscription, and an owner can switch Dukana AI off entirely from Profile at any time.',
+                'AI features are off unless your shop has an active subscription, and an owner can switch DuQana AI off entirely from Profile at any time.',
                 'When it is off, nothing is sent to Gemini at all.',
               ]}
             />
@@ -139,7 +139,7 @@ export default function PrivacyPage() {
             <P>
               After 14 days we permanently delete your user record, your password hash, and all sign-in
               sessions. If you are a shop owner, we also delete the shop, its subscription, and every staff
-              account belonging to it — so please make sure that is what you intend.
+              account belonging to it, so please make sure that is what you intend.
             </P>
             <P>
               <strong>What we keep:</strong> completed sales, purchases, expenses, and payment records are
@@ -152,7 +152,7 @@ export default function PrivacyPage() {
 
           <Section title="Offline data on your device">
             <P>
-              So the app keeps working without a signal, Dukana stores a copy of your recent products
+              So the app keeps working without a signal, DuQana stores a copy of your recent products
               and any sales waiting to sync in a private database on your device. It is removed when you
               sign out or uninstall the app.
             </P>
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
 
           <Section title="Children">
             <P>
-              Dukana is a business tool and is not directed at children. We do not knowingly collect
+              DuQana is a business tool and is not directed at children. We do not knowingly collect
               data from anyone under 18.
             </P>
           </Section>

@@ -85,7 +85,7 @@ export default function LoginPage() {
   return (
     <div>
       <h1 className="text-2xl font-extrabold mb-1" style={{ color: '#0F172A' }}>Welcome back</h1>
-      <p className="text-gray-500 text-sm mb-8">Sign in to your Dukana account</p>
+      <p className="text-gray-500 text-sm mb-8">Sign in to your DuQana account</p>
 
       {expiryNotice && !serverError && (
         <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
@@ -174,7 +174,7 @@ export default function LoginPage() {
           because discovering it as a surprise logout on the shop phone
           mid-shift is a much worse way to learn it. */}
       <p className="mt-4 text-xs text-gray-400 text-center">
-        Staff accounts can only be signed in on one device at a time — signing in here will
+        Staff accounts can only be signed in on one device at a time. Signing in here will
         end the session on your phone.
       </p>
 

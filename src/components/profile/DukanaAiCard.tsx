@@ -16,7 +16,7 @@ import { updateShopConfig } from '@/services/shop';
 const HELP_URL = '/help/smart-duka-ai';
 
 /**
- * Profile's "Dukana AI" card — its own section, separate from the plain
+ * Profile's "DuQana AI" card — its own section, separate from the plain
  * Shop Details form, since this one combines subscription-gated upsell with
  * an owner opt-in/out once subscribed (see hooks/useAiAccess.ts).
  */
@@ -41,13 +41,13 @@ export function DukanaAiCard() {
         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FEF3C7' }}>
           <Sparkles className="w-5 h-5" style={{ color: '#B45309' }} />
         </div>
-        <h2 className="font-bold" style={{ color: '#0F172A' }}>Dukana AI</h2>
+        <h2 className="font-bold" style={{ color: '#0F172A' }}>DuQana AI</h2>
       </div>
 
       {!isSubscribed ? (
         <Link href="/owner/subscription" className="flex items-center justify-between gap-3 group">
           <p className="text-sm text-gray-500 max-w-sm">
-            Daily insights and a business chat assistant — included with any active subscription.
+            Daily insights and a business chat assistant, included with any active subscription.
           </p>
           <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" />
         </Link>
@@ -55,7 +55,7 @@ export function DukanaAiCard() {
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium" style={{ color: '#0F172A' }}>Enable Dukana AI</p>
+              <p className="text-sm font-medium" style={{ color: '#0F172A' }}>Enable DuQana AI</p>
               <p className="text-xs text-gray-500 mt-0.5">Daily insights and a business chat assistant, powered by Gemini</p>
             </div>
             <button
@@ -106,16 +106,16 @@ export function DukanaAiCard() {
             <HelpCircle className="w-4 h-4" style={{ color: '#0F766E' }} />
           </div>
           <div>
-            <p className="text-sm font-medium" style={{ color: '#0F172A' }}>Help with Dukana AI</p>
+            <p className="text-sm font-medium" style={{ color: '#0F172A' }}>Help with DuQana AI</p>
             <p className="text-xs text-gray-500 mt-0.5">How it works, what it can do, and how to turn it on</p>
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" />
       </Link>
 
-      <Modal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} title="Dukana AI & your data" size="sm">
+      <Modal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} title="DuQana AI & your data" size="sm">
         <p className="text-sm text-gray-600 leading-relaxed">
-          Dukana AI (powered by Google Gemini) reads a summary of your shop&apos;s sales, inventory, expenses, and aggregated staff performance to answer questions and generate insights. It never sees customer personal data.
+          DuQana AI (powered by Google Gemini) reads a summary of your shop&apos;s sales, inventory, expenses, and aggregated staff performance to answer questions and generate insights. It never sees customer personal data.
         </p>
         <p className="text-sm text-gray-600 leading-relaxed mt-3">
           Conversations are stored securely and linked to your shop so you can revisit them later.

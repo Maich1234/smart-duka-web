@@ -31,7 +31,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
   });
 
   const fmt = (n?: number) =>
-    n == null ? '—' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    n == null ? '-' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -93,13 +93,13 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
             <Card padding="sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total spend</p>
               <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: '#0F172A' }}>
-                {canSeePrices ? fmt(supplier.stats.totalSpend) : '—'}
+                {canSeePrices ? fmt(supplier.stats.totalSpend) : '-'}
               </p>
             </Card>
             <Card padding="sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Average</p>
               <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: '#0F172A' }}>
-                {canSeePrices ? fmt(supplier.stats.averagePurchaseCost) : '—'}
+                {canSeePrices ? fmt(supplier.stats.averagePurchaseCost) : '-'}
               </p>
             </Card>
             <Card padding="sm">
@@ -132,7 +132,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
                         <Badge color="yellow">{purchase.status.replace(/_/g, ' ')}</Badge>
                       )}
                       <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>
-                        {canSeePrices ? fmt(purchase.grandTotal) : '—'}
+                        {canSeePrices ? fmt(purchase.grandTotal) : '-'}
                       </span>
                     </span>
                   </Link>
