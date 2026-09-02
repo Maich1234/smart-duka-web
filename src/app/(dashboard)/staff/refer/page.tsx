@@ -74,7 +74,7 @@ export default function StaffReferPage() {
       <Card className="mb-6">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Your referral code</p>
         <div className="flex items-center gap-2 mb-4">
-          <div className="flex-1 px-4 py-3 rounded-xl border text-lg font-bold tracking-widest text-center" style={{ borderColor: '#e2e8f0', color: '#0F172A' }}>
+          <div className="flex-1 px-4 py-3 rounded-control border text-lg font-bold tracking-widest text-center" style={{ borderColor: '#e2e8f0', color: '#0F172A' }}>
             {data.code}
           </div>
           <Button variant="outline" onClick={() => copy(data.code, 'code')} aria-label="Copy code">
@@ -83,7 +83,7 @@ export default function StaffReferPage() {
         </div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Or share your link</p>
         <div className="flex items-center gap-2">
-          <div className="flex-1 px-4 py-2.5 rounded-xl border text-sm truncate bg-gray-50" style={{ borderColor: '#e2e8f0', color: '#0F172A' }}>
+          <div className="flex-1 px-4 py-2 rounded-control border text-sm truncate bg-gray-50" style={{ borderColor: '#e2e8f0', color: '#0F172A' }}>
             {data.shareUrl}
           </div>
           <Button variant="outline" onClick={() => copy(data.shareUrl, 'link')} aria-label="Copy link">
@@ -94,7 +94,7 @@ export default function StaffReferPage() {
 
       <Card className="mb-6">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Pending</p>
-        <p className="text-3xl font-extrabold" style={{ color: '#0F766E' }}>KES {data.totalPending.toLocaleString()}</p>
+        <p className="text-display tabular-nums" style={{ color: '#0F766E' }}>KES {data.totalPending.toLocaleString()}</p>
         <p className="text-xs text-gray-400 mt-1">Paid out {data.totalPaid.toLocaleString()} so far</p>
       </Card>
 

@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-interface Column<T> {
+export interface Column<T> {
   key: string;
   header: string;
   render?: (row: T) => React.ReactNode;
@@ -13,6 +13,7 @@ interface TableProps<T> {
   keyExtractor: (row: T) => string;
   loading?: boolean;
   emptyMessage?: string;
+  onRowClick?: (row: T) => void;
 }
 
 export default function Table<T>({
@@ -21,6 +22,7 @@ export default function Table<T>({
   keyExtractor,
   loading,
   emptyMessage = 'No data found',
+  onRowClick,
 }: TableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-100">
@@ -57,7 +59,11 @@ export default function Table<T>({
             </tr>
           ) : (
             data.map((row) => (
-              <tr key={keyExtractor(row)} className="hover:bg-gray-50 transition-colors">
+              <tr
+                key={keyExtractor(row)}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={clsx('hover:bg-gray-50 transition-colors', onRowClick && 'cursor-pointer')}
+              >
                 {columns.map((col) => (
                   <td key={col.key} className={clsx('px-4 py-3 text-gray-700', col.className)}>
                     {col.render

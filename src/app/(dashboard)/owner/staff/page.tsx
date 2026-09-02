@@ -11,6 +11,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
@@ -214,7 +215,7 @@ export default function StaffPage() {
           their own after the approval window, so they can't be tucked away
           behind the "Past 2 days" filter or a search term. */}
       {deletionRequests.length > 0 && (
-        <div className="rounded-2xl p-5 border space-y-3" style={{ backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }}>
+        <div className="rounded-card p-5 border space-y-3" style={{ backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }}>
           <div className="flex items-center gap-2">
             <UserMinus className="w-4 h-4" style={{ color: '#B45309' }} />
             <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>
@@ -227,7 +228,7 @@ export default function StaffPage() {
             <Link
               key={request._id}
               href={`/owner/staff/${request._id}`}
-              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-3 bg-white rounded-control px-4 py-3 hover:bg-gray-50 transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: '#0F172A' }}>{request.name}</p>
@@ -243,13 +244,16 @@ export default function StaffPage() {
 
       {/* Search + date filter */}
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by name or email…"
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all" />
+        <div className="flex-1">
+          <Input
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search by name or email…"
+            icon={<Search className="w-4 h-4" />}
+          />
         </div>
         <button onClick={() => { setShowAll((v) => !v); setPage(1); }}
-          className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${showAll ? 'border-gray-200 bg-white text-gray-600' : 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]'}`}>
+          className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-control border text-sm font-semibold transition-all ${showAll ? 'border-gray-200 bg-white text-gray-600' : 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]'}`}>
           <span>{showAll ? 'All time' : '⏱ Past 2 days'}</span>
         </button>
       </div>
@@ -257,14 +261,14 @@ export default function StaffPage() {
       {isLoading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : (staff || []).length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center">
+        <Card className="py-16 text-center">
           <Users className="w-12 h-12 text-gray-200 mx-auto mb-3" />
           <p className="text-gray-400">No staff members yet. Add your first team member!</p>
-        </div>
+        </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {(staff || []).map((s) => (
-            <div key={s._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 group">
+            <Card key={s._id} padding="none" hoverable className="p-5 group">
               <div className="flex items-start justify-between mb-4">
                 <Link href={`/owner/staff/${s._id}`} className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: '#0F766E' }}>
@@ -277,20 +281,24 @@ export default function StaffPage() {
                 </Link>
                 <div className="flex items-center gap-0.5 shrink-0 ml-2">
                   {s.activeSession && (
-                    <button
-                      onClick={() => setForceLogoutTarget(s)}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-300 hover:text-amber-500 hover:bg-amber-50"
                       title="Force logout"
-                      className="p-1.5 rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                      onClick={() => setForceLogoutTarget(s)}
                     >
                       <LogOut className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-gray-300 hover:text-red-400 hover:bg-red-50"
                     onClick={() => setDeleteId(s._id)}
-                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
               <Link href={`/owner/staff/${s._id}`} className="block">
@@ -322,7 +330,7 @@ export default function StaffPage() {
                   </div>
                 </div>
               </Link>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -330,9 +338,9 @@ export default function StaffPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>← Previous</Button>
           <span className="text-xs font-semibold text-gray-500">Page {page} of {totalPages}</span>
-          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next →</Button>
         </div>
       )}
 
@@ -368,7 +376,7 @@ export default function StaffPage() {
           <Input label="Full Name *" placeholder="Jane Wanjiku" error={errors.name?.message} {...register('name')} />
 
           <div>
-            <div className="flex rounded-xl border border-gray-200 p-1 gap-1 mb-2">
+            <div className="flex rounded-control border border-gray-200 p-1 gap-1 mb-2">
               <button
                 type="button"
                 onClick={() => { if (emailMode === 'system') setValue('email', ''); setEmailMode('real'); }}
@@ -403,9 +411,9 @@ export default function StaffPage() {
                     }}
                     onBlur={checkAvailability}
                     placeholder="jane.otieno"
-                    className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 transition-all"
+                    className="flex-1 min-w-0 px-4 py-2.5 rounded-control border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 transition-all"
                   />
-                  <div className="flex items-center px-3 rounded-xl border border-gray-200 bg-gray-50 shrink-0 max-w-[45%]">
+                  <div className="flex items-center px-3 rounded-control border border-gray-200 bg-gray-50 shrink-0 max-w-[45%]">
                     <span className="text-sm text-gray-600 truncate">@{domain}</span>
                   </div>
                 </div>

@@ -121,12 +121,12 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
       {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}
+        style={{ backgroundColor: 'rgba(15,23,42,0.6)' }}
         onClick={isTerminal || status === 'success' ? onCancel : undefined}
       />
 
       {/* Dialog */}
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="relative bg-white rounded-modal shadow-elevation-3 w-full max-w-sm overflow-hidden">
         {/* Close button — only when not mid-payment */}
         {(isTerminal || status === 'success') && (
           <button onClick={onCancel} className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors z-10">
@@ -177,7 +177,7 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
                 <strong style={{ color: '#0F172A' }}>{maskedPhone}</strong><br />
                 Ask the customer to enter their M-Pesa PIN.
               </p>
-              <div className="px-8 py-4 rounded-xl border mb-5 w-full" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
+              <div className="px-8 py-4 rounded-control border mb-5 w-full" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
                 <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#0F766E' }}>Amount</p>
                 <p className="text-2xl font-bold" style={{ color: '#0F766E' }}>{formatCurrency(amount, currency)}</p>
               </div>
@@ -204,14 +204,14 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
               <p className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>Payment Successful</p>
               <p className="text-sm text-gray-500 mb-4">{formatCurrency(amount, currency)} received from {maskedPhone}</p>
               {receiptNumber && (
-                <div className="w-full px-5 py-4 rounded-xl border mb-5 text-center" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
+                <div className="w-full px-5 py-4 rounded-control border mb-5 text-center" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
                   <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#15803D' }}>M-Pesa Reference</p>
                   <p className="text-xl font-bold tracking-widest" style={{ color: '#15803D' }}>{receiptNumber}</p>
                 </div>
               )}
               <button
                 onClick={() => onSuccess(transactionId!, receiptNumber!)}
-                className="w-full py-3.5 rounded-xl font-semibold text-white transition-all"
+                className="w-full py-3.5 rounded-control font-semibold text-white transition-all"
                 style={{ backgroundColor: '#0F766E' }}
               >
                 Complete Sale
@@ -248,14 +248,14 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
                     Try Again replay the stored failure instead. */}
                 <button
                   onClick={start}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-control font-semibold text-white transition-all"
                   style={{ backgroundColor: '#0F766E' }}
                 >
                   <RefreshCw className="w-4 h-4" /> Try Again
                 </button>
                 <button
                   onClick={onCancel}
-                  className="flex-1 py-3 rounded-xl font-semibold border-2 transition-all"
+                  className="flex-1 py-3 rounded-control font-semibold border-2 transition-all"
                   style={{ color: '#0F766E', borderColor: '#0F766E' }}
                 >
                   Cancel
@@ -273,7 +273,7 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
               </button>
 
               {showVerifyInput && (
-                <div className="w-full rounded-2xl p-4 border" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
+                <div className="w-full rounded-card p-4 border" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
                   <p className="text-sm font-semibold mb-1 text-left" style={{ color: '#0F172A' }}>Enter M-Pesa Transaction Code</p>
                   <p className="text-xs text-gray-500 mb-3 text-left leading-relaxed">
                     Ask the customer for their M-Pesa confirmation SMS code (e.g. QGR12345XY)
@@ -285,14 +285,14 @@ export default function MpesaPaymentModal({ open, phoneNumber, amount, accountRe
                       onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
                       placeholder="e.g. QGR12345XY"
                       maxLength={20}
-                      className="flex-1 px-3 py-2.5 rounded-xl border text-sm font-mono tracking-widest outline-none focus:ring-2 focus:ring-teal-200"
+                      className="flex-1 px-3 py-2.5 rounded-control border text-sm font-mono tracking-widest outline-none focus:ring-2 focus:ring-teal-200"
                       style={{ borderColor: '#e2e8f0', backgroundColor: 'white' }}
                       onKeyDown={(e) => e.key === 'Enter' && handleVerifyReceipt()}
                     />
                     <button
                       onClick={handleVerifyReceipt}
                       disabled={verifyCode.trim().length < 6 || verifying}
-                      className="px-4 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-60 transition-all"
+                      className="px-4 py-2.5 rounded-control font-semibold text-sm text-white disabled:opacity-60 transition-all"
                       style={{ backgroundColor: '#0F766E' }}
                     >
                       {verifying ? '...' : 'Verify'}

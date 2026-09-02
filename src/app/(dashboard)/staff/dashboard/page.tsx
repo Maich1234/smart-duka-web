@@ -78,7 +78,7 @@ export default function StaffDashboardPage() {
               { href: '/staff/inventory', icon: Package, label: 'View Products', color: '#C8932A', bg: '#FEF3C7' },
             ].map((a) => (
               <Link key={a.href} href={a.href}>
-                <div className="p-4 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow cursor-pointer">
+                <div className="p-4 rounded-card border border-gray-100 hover:shadow-elevation-2 transition-shadow cursor-pointer">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: a.bg }}>
                     <a.icon className="w-5 h-5" style={{ color: a.color }} />
                   </div>
@@ -102,7 +102,7 @@ export default function StaffDashboardPage() {
           ) : (
             <div className="space-y-3">
               {(stats?.recentSales || []).map((sale) => (
-                <div key={sale._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                <div key={sale._id} className="flex items-center justify-between p-3 rounded-control bg-gray-50">
                   <div>
                     <p className="text-sm font-medium" style={{ color: '#0F172A' }}>
                       {sale.items?.[0]?.productName || 'Sale'}
@@ -111,7 +111,7 @@ export default function StaffDashboardPage() {
                     <p className="text-xs text-gray-400">{format(new Date(sale.createdAt), 'HH:mm')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</p>
+                    <p className="text-sm font-bold tabular-nums" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</p>
                     <Badge color={sale.paymentMethod === 'mpesa' ? 'teal' : 'gray'} className="text-xs">
                       {sale.paymentMethod || 'cash'}
                     </Badge>

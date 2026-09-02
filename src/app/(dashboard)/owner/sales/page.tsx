@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, History, Banknote, Smartphone,
-  Trash2, Plus, Minus, X, TrendingUp, TrendingDown,
+  Trash2, Plus, Minus, TrendingUp, TrendingDown,
   Receipt, Package, CheckCircle, ArrowRight,
   Filter, ChevronDown, ExternalLink, Printer,
 } from 'lucide-react';
@@ -19,7 +19,10 @@ import { usePreloadedLogo } from '@/hooks/useLogoPreload';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import VoidSaleSection from '@/components/sales/VoidSaleSection';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
+import Table, { type Column } from '@/components/ui/Table';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 import { useMoney } from '@/lib/money';
 import { availableToAdd, clampQty, stepFor } from '@/lib/stock';
@@ -93,12 +96,8 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
   const canOverridePrice = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-          <X className="w-5 h-5" />
-        </button>
+    <Modal isOpen onClose={onClose} size="sm">
+      <>
         <h3 className="font-bold text-lg mb-4" style={{ color: '#0F172A' }}>Add to Cart</h3>
         <p className="text-sm font-medium text-gray-600 mb-4">{product.name}</p>
 
@@ -123,7 +122,7 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
               Price {product.minPrice ? `(min ${fmt(product.minPrice)})` : ''} {product.maxPrice ? `(max ${fmt(product.maxPrice)})` : ''}
             </label>
             <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} min={product.minPrice ?? 0}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
+              className="w-full px-3 py-2.5 rounded-control border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
           </div>
         )}
 
@@ -133,15 +132,15 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
           </label>
           <div className="flex items-center gap-3">
             <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || step) - step, step, max)))}
-              className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
               <Minus className="w-4 h-4 text-gray-600" />
             </button>
             <input type="number" value={qtyText} onChange={(e) => setQtyText(e.target.value)}
               step={step} min={step} max={Number.isFinite(max) ? max : undefined}
-              className="flex-1 text-center text-xl font-bold py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" style={{ color: '#0F172A' }} />
+              className="flex-1 text-center text-xl font-bold py-2.5 rounded-control border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" style={{ color: '#0F172A' }} />
             <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || 0) + step, step, max)))}
               disabled={Number.isFinite(max) && qty >= max}
-              className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-40">
+              className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-40">
               <Plus className="w-4 h-4 text-gray-600" />
             </button>
           </div>
@@ -154,18 +153,18 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between mb-4 p-3 rounded-xl" style={{ backgroundColor: '#F0FDFA' }}>
+        <div className="flex items-center justify-between mb-4 p-3 rounded-control" style={{ backgroundColor: '#F0FDFA' }}>
           <span className="text-sm font-medium text-gray-600">Subtotal</span>
           <span className="text-lg font-bold" style={{ color: '#0F766E' }}>{fmt(effectivePrice * (Number.isFinite(qty) ? qty : 0))}</span>
         </div>
 
         <button onClick={() => onConfirm(qty, effectivePrice, variantId || undefined, selectedVariant?.name)}
           disabled={!!qtyProblem}
-          className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all" style={{ backgroundColor: '#0F766E' }}>
+          className="w-full py-3 rounded-control font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all" style={{ backgroundColor: '#0F766E' }}>
           Add to Cart
         </button>
-      </div>
-    </div>
+      </>
+    </Modal>
   );
 }
 
@@ -190,18 +189,14 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <Modal isOpen onClose={onClose} size="md">
+      {/* -m-6 cancels Modal's own padding so the header can stick above the
+          scrolling body exactly as it did in the hand-rolled version. */}
+      <div className="-m-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-          <div>
-            <h3 className="font-bold text-base" style={{ color: '#0F172A' }}>Sale Details</h3>
-            <p className="text-xs text-gray-500 mt-0.5">#{sale.invoiceNumber}</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400">
-            <X className="w-4 h-4" />
-          </button>
+        <div className="p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <h3 className="font-bold text-base" style={{ color: '#0F172A' }}>Sale Details</h3>
+          <p className="text-xs text-gray-500 mt-0.5">#{sale.invoiceNumber}</p>
         </div>
 
         <div className="p-5 space-y-4">
@@ -212,7 +207,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
               { label: 'Time', value: format(new Date(sale.createdAt), 'HH:mm') },
               { label: 'Cashier', value: sale.staff?.name ?? '-' },
             ].map((m) => (
-              <div key={m.label} className="bg-gray-50 rounded-xl p-3 text-center">
+              <div key={m.label} className="bg-gray-50 rounded-control p-3 text-center">
                 <p className="text-xs text-gray-400 mb-0.5">{m.label}</p>
                 <p className="text-xs font-semibold" style={{ color: '#0F172A' }}>{m.value}</p>
               </div>
@@ -242,7 +237,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
           </div>
 
           {/* Total + Payment */}
-          <div className="rounded-xl border p-4" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
+          <div className="rounded-control border p-4" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
             <div className="flex justify-between items-center mb-2">
               <span className="font-semibold text-gray-700">Total</span>
               <span className="text-2xl font-extrabold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</span>
@@ -259,13 +254,13 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
 
           <div className="flex gap-2">
             <button onClick={handlePrint} disabled={printing}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 transition-all disabled:opacity-60"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-control font-semibold text-sm border-2 transition-all disabled:opacity-60"
               style={{ color: '#0F766E', borderColor: '#0F766E' }}>
               <Printer className="w-4 h-4" /> {printing ? 'Opening…' : 'Print Receipt'}
             </button>
             {receiptUrl && (
               <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm border-2 transition-all"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-control font-semibold text-sm border-2 transition-all"
                 style={{ color: '#64748B', borderColor: '#E2E8F0' }}>
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -277,7 +272,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, onClose }: {
           <VoidSaleSection sale={sale} canVoid />
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -302,9 +297,8 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 text-center">
+    <Modal isOpen onClose={onClose} size="sm">
+      <div className="text-center">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg" style={{ background: 'linear-gradient(135deg, #15803D, #16A34A)' }}>
           <CheckCircle className="w-9 h-9 text-white" />
         </div>
@@ -313,32 +307,32 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
           #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {saleMethodLabel(sale)}
         </p>
         {sale.mpesaReceiptNumber && (
-          <div className="mb-5 px-5 py-3 rounded-xl border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
+          <div className="mb-5 px-5 py-3 rounded-control border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
             <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#15803D' }}>M-Pesa Reference</p>
             <p className="text-lg font-bold tracking-widest" style={{ color: '#15803D' }}>{sale.mpesaReceiptNumber}</p>
           </div>
         )}
         <div className="space-y-3">
           <button onClick={handlePrint} disabled={printing}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 disabled:opacity-60 transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-control font-semibold text-sm border-2 disabled:opacity-60 transition-all"
             style={{ color: '#0F766E', borderColor: '#0F766E' }}>
             <Printer className="w-4 h-4" /> {printing ? 'Opening…' : 'Print Receipt'}
           </button>
           {receiptUrl && (
             <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-semibold text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-control font-semibold text-sm text-gray-500 hover:bg-gray-50 transition-colors">
               <Receipt className="w-4 h-4" /> View Digital Receipt <ExternalLink className="w-3 h-3" />
             </a>
           )}
-          <button onClick={onNewSale} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
+          <button onClick={onNewSale} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
             <ShoppingCart className="w-4 h-4" /> New Sale <ArrowRight className="w-4 h-4" />
           </button>
-          <button onClick={onClose} className="w-full py-2 rounded-xl font-semibold text-gray-400 hover:bg-gray-50 transition-colors text-sm">
+          <button onClick={onClose} className="w-full py-2 rounded-control font-semibold text-gray-400 hover:bg-gray-50 transition-colors text-sm">
             Close
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -575,6 +569,62 @@ export default function SalesPage() {
   const stats = statsData;
   const pctChange = stats?.percentageChange ?? 0;
 
+  const salesColumns: Column<Sale>[] = [
+    {
+      key: 'invoiceNumber',
+      header: 'Invoice',
+      render: (sale) => (
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-gray-500">#{sale.invoiceNumber}</span>
+          <SaleStatusBadge status={sale.status} />
+        </div>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Date & Time',
+      render: (sale) => (
+        <>
+          <p className="text-gray-700">{format(new Date(sale.createdAt), 'dd MMM yyyy')}</p>
+          <p className="text-xs text-gray-400">{format(new Date(sale.createdAt), 'HH:mm')}</p>
+        </>
+      ),
+    },
+    {
+      key: 'items',
+      header: 'Items',
+      className: 'text-gray-600 max-w-36',
+      render: (sale) => (
+        <>
+          <p className="truncate">{sale.items[0]?.name ?? sale.items[0]?.productName ?? '-'}</p>
+          {sale.items.length > 1 && <p className="text-xs text-gray-400">+{sale.items.length - 1} more</p>}
+        </>
+      ),
+    },
+    {
+      key: 'totalAmount',
+      header: 'Amount',
+      className: 'font-bold tabular-nums',
+      render: (sale) => <span style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</span>,
+    },
+    {
+      key: 'paymentMethod',
+      header: 'Payment',
+      render: (sale) => (
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-600'}`}>
+          {sale.paymentMethod === 'mpesa' ? <Smartphone className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
+          {saleMethodLabel(sale)}
+        </span>
+      ),
+    },
+    { key: 'staff', header: 'Staff', className: 'text-gray-600', render: (sale) => sale.staff?.name ?? '-' },
+    {
+      key: 'chevron',
+      header: '',
+      render: () => <ArrowRight className="w-4 h-4 text-gray-300" />,
+    },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Page header */}
@@ -585,7 +635,7 @@ export default function SalesPage() {
 
       {/* Stats hero card */}
       {stats && (
-        <div className="rounded-2xl p-5 text-white relative overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #0A2318, #0D4A38, #0F766E)' }}>
+        <div className="rounded-card p-5 text-white relative overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #0A2318, #0D4A38, #0F766E)' }}>
           <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #14B8A6, transparent)', transform: 'translate(30%, -30%)' }} />
           <div className="flex items-start justify-between relative z-10">
             <div>
@@ -623,7 +673,7 @@ export default function SalesPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-gray-100 rounded-control p-1 w-fit">
         {([['new', 'New Sale', ShoppingCart], ['history', 'Sales History', History]] as const).map(([t, label, Icon]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -641,7 +691,7 @@ export default function SalesPage() {
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all" />
+                className="w-full pl-10 pr-4 py-3 rounded-control border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all" />
             </div>
 
             {productsLoading ? (
@@ -660,7 +710,7 @@ export default function SalesPage() {
                     const lowStock = p.trackInventory && !outOfStock && p.quantity <= p.lowStockAlert;
                     return (
                       <button key={p._id} onClick={() => !outOfStock && addToCart(p)} disabled={outOfStock}
-                        className={`bg-white rounded-xl border text-left p-4 transition-all ${outOfStock ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
+                        className={`bg-white rounded-control border text-left p-4 transition-all ${outOfStock ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
                           <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
                         </div>
@@ -688,7 +738,7 @@ export default function SalesPage() {
 
           {/* Cart — desktop */}
           <div className="xl:col-span-2">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4">
+            <div className="bg-white rounded-card border border-gray-200 shadow-elevation-1 sticky top-4">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="w-4 h-4" style={{ color: '#0F766E' }} />
@@ -753,7 +803,7 @@ export default function SalesPage() {
                       const Icon = methodIcon(method);
                       return (
                         <button key={method.key} onClick={() => setPaymentMethod(method.key)}
-                          className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                          className={`flex items-center justify-center gap-2 py-2.5 rounded-control border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
                           <Icon className="w-4 h-4" /> {method.label}
                         </button>
                       );
@@ -765,7 +815,7 @@ export default function SalesPage() {
                   {paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Customer Phone Number</label>
-                      <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
+                      <div className="flex rounded-control border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
                         <div className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-50 border-r border-gray-200 text-sm font-semibold text-gray-700 flex-shrink-0">
                           🇰🇪 +254
                         </div>
@@ -780,14 +830,14 @@ export default function SalesPage() {
                   )}
 
                   {createSaleMutation.error && (
-                    <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+                    <div className="p-3 rounded-control bg-red-50 border border-red-200 text-xs text-red-700">
                       {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
                     </div>
                   )}
 
                   <button onClick={handleCheckout}
                     disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white transition-all disabled:opacity-60"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white transition-all disabled:opacity-60"
                     style={{ backgroundColor: '#0F766E' }}>
                     {createSaleMutation.isPending
                       ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
@@ -815,32 +865,32 @@ export default function SalesPage() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={historySearch} onChange={(e) => setHistorySearch(e.target.value)}
                 placeholder="Search invoice # or cashier…"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200" />
+                className="w-full pl-10 pr-4 py-2.5 rounded-control border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200" />
             </div>
             <button onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:border-[#0F766E] transition-colors">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-control border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:border-[#0F766E] transition-colors">
               <Filter className="w-4 h-4" /> Filters
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
-            <button onClick={() => refetchSales()} className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-[#0F766E] transition-colors">
+            <button onClick={() => refetchSales()} className="p-2.5 rounded-control border border-gray-200 bg-white text-gray-500 hover:text-[#0F766E] transition-colors">
               <Search className="w-4 h-4" />
             </button>
           </div>
 
           {/* Expanded filters */}
           {showFilters && (
-            <div className="bg-white rounded-xl border border-gray-100 p-4 grid sm:grid-cols-2 gap-4">
+            <div className="bg-white rounded-control border border-gray-100 p-4 grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block uppercase tracking-wide">From Date</label>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                   min={shopCreatedDate} max={todayDate}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
+                  className="w-full px-3 py-2.5 rounded-control border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block uppercase tracking-wide">To Date</label>
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
                   min={shopCreatedDate} max={todayDate}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
+                  className="w-full px-3 py-2.5 rounded-control border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
               </div>
               {(startDate || endDate) && (
                 <button onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs text-red-400 hover:text-red-600 sm:col-span-2 text-left">Clear dates</button>
@@ -863,64 +913,20 @@ export default function SalesPage() {
           </div>
 
           {/* Sales table */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {salesLoading ? (
-              <div className="flex justify-center py-12"><Spinner /></div>
-            ) : filteredSales.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <Receipt className="w-10 h-10 mx-auto mb-3 text-gray-200" />
-                <p className="font-medium">No sales found</p>
-                <p className="text-sm mt-1">Adjust your filters or date range</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100" style={{ backgroundColor: '#F8FAFC' }}>
-                      {['Invoice', 'Date & Time', 'Items', 'Amount', 'Payment', 'Staff', ''].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {filteredSales.map((sale) => (
-                      <tr key={sale._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedSale(sale)}>
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-gray-500">#{sale.invoiceNumber}</span>
-                            <SaleStatusBadge status={sale.status} />
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <p className="text-gray-700">{format(new Date(sale.createdAt), 'dd MMM yyyy')}</p>
-                          <p className="text-xs text-gray-400">{format(new Date(sale.createdAt), 'HH:mm')}</p>
-                        </td>
-                        <td className="px-4 py-3.5 text-gray-600 max-w-36">
-                          <p className="truncate">{sale.items[0]?.name ?? sale.items[0]?.productName ?? '-'}</p>
-                          {sale.items.length > 1 && <p className="text-xs text-gray-400">+{sale.items.length - 1} more</p>}
-                        </td>
-                        <td className="px-4 py-3.5 font-bold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</td>
-                        <td className="px-4 py-3.5">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-600'}`}>
-                            {sale.paymentMethod === 'mpesa' ? <Smartphone className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
-                            {saleMethodLabel(sale)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 text-gray-600">{sale.staff?.name ?? '-'}</td>
-                        <td className="px-4 py-3.5">
-                          <ArrowRight className="w-4 h-4 text-gray-300" />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <div className="bg-white rounded-card border border-gray-100 shadow-elevation-1 overflow-hidden">
+            <Table<Sale>
+              columns={salesColumns}
+              data={filteredSales}
+              keyExtractor={(sale) => sale._id}
+              loading={salesLoading}
+              onRowClick={setSelectedSale}
+              emptyMessage="No sales found. Adjust your filters or date range."
+            />
             {salesTotalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50">
-                <button onClick={() => setSalesPage((p) => Math.max(1, p - 1))} disabled={salesPage <= 1} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+                <Button variant="outline" size="sm" disabled={salesPage <= 1} onClick={() => setSalesPage((p) => Math.max(1, p - 1))}>← Previous</Button>
                 <span className="text-xs font-semibold text-gray-500">Page {salesPage} of {salesTotalPages}</span>
-                <button onClick={() => setSalesPage((p) => Math.min(salesTotalPages, p + 1))} disabled={salesPage >= salesTotalPages} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
+                <Button variant="outline" size="sm" disabled={salesPage >= salesTotalPages} onClick={() => setSalesPage((p) => Math.min(salesTotalPages, p + 1))}>Next →</Button>
               </div>
             )}
           </div>

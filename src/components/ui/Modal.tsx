@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -19,7 +19,26 @@ const sizeMap = {
   xl: 'max-w-4xl',
 };
 
+// Keep in sync with the duration-150 transition classes below.
+const TRANSITION_MS = 150;
+
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  // Mounted stays true through the exit transition; visible drives the
+  // opacity/scale so open and close both animate instead of snapping.
+  const [mounted, setMounted] = useState(isOpen);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true);
+      const raf = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setVisible(false);
+    const timeout = setTimeout(() => setMounted(false), TRANSITION_MS);
+    return () => clearTimeout(timeout);
+  }, [isOpen]);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -34,17 +53,21 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className={clsx(
+          'absolute inset-0 bg-black/50 transition-opacity duration-150',
+          visible ? 'opacity-100' : 'opacity-0'
+        )}
         onClick={onClose}
       />
       <div
         className={clsx(
-          'relative w-full bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]',
+          'relative w-full bg-white rounded-modal shadow-elevation-3 flex flex-col max-h-[90vh] transition-[opacity,transform] duration-150 ease-out',
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.98]',
           sizeMap[size]
         )}
       >

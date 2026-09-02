@@ -48,64 +48,117 @@ interface NavLink {
   requiresFlag?: 'purchasingEnabled' | 'shiftManagementEnabled' | 'showStaffCommission';
 }
 
-const ownerLinks: NavLink[] = [
-  { href: '/owner/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/owner/inventory', icon: Package, label: 'Inventory' },
-  { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
-  { href: '/owner/staff', icon: Users, label: 'Staff' },
-  { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
-  { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
-  { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
-  { href: '/owner/reconciliation', icon: Scale, label: 'Reconciliation' },
-  { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
-  { href: '/owner/chat', icon: MessageSquare, label: 'Ask DuQana' },
-  { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
-  { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
-  { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
-  { href: '/owner/payment-methods', icon: Wallet, label: 'Payment Methods' },
-  { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
-  { href: '/owner/refer', icon: Gift, label: 'Refer & Earn' },
-  { href: '/owner/notifications', icon: Bell, label: 'Notifications' },
-  { href: '/owner/profile', icon: User, label: 'Profile' },
+interface NavGroup {
+  /** null renders with no section header — used for the top-level Dashboard link. */
+  label: string | null;
+  links: NavLink[];
+}
+
+const ownerGroups: NavGroup[] = [
+  {
+    label: null,
+    links: [{ href: '/owner/dashboard', icon: LayoutDashboard, label: 'Dashboard' }],
+  },
+  {
+    label: 'Sales & Inventory',
+    links: [
+      { href: '/owner/inventory', icon: Package, label: 'Inventory' },
+      { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
+      { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
+    ],
+  },
+  {
+    label: 'Team',
+    links: [
+      { href: '/owner/staff', icon: Users, label: 'Staff' },
+      { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
+      { href: '/owner/reconciliation', icon: Scale, label: 'Reconciliation' },
+    ],
+  },
+  {
+    label: 'Insights',
+    links: [
+      { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
+      { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
+      { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
+      { href: '/owner/chat', icon: MessageSquare, label: 'Ask DuQana' },
+    ],
+  },
+  {
+    label: 'Finance',
+    links: [
+      { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
+      { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
+      { href: '/owner/payment-methods', icon: Wallet, label: 'Payment Methods' },
+      { href: '/owner/subscription', icon: Wallet, label: 'Billing' },
+    ],
+  },
+  {
+    label: 'Account',
+    links: [
+      { href: '/owner/refer', icon: Gift, label: 'Refer & Earn' },
+      { href: '/owner/notifications', icon: Bell, label: 'Notifications' },
+      { href: '/owner/profile', icon: User, label: 'Profile' },
+    ],
+  },
 ];
 
-const staffLinks: NavLink[] = [
-  { href: '/staff/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/staff/inventory', icon: Package, label: 'Products', permissions: ['view_products'] },
-  { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
-  { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
-  { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
-  { href: '/staff/reconciliation', icon: Scale, label: 'My Reconciliation', permissions: ['view_reconciliation'] },
-  { href: '/staff/refer', icon: Gift, label: 'Refer & Earn' },
-  // Purchasing lives under /owner for both roles — one route tree rather than
-  // a mirrored one. The dashboard layout lets permitted staff through.
+const staffGroups: NavGroup[] = [
   {
-    href: '/owner/purchases',
-    icon: ShoppingBag,
-    label: 'Purchasing',
-    requiresFlag: 'purchasingEnabled',
-    permissions: ['view_purchases'],
+    label: null,
+    links: [{ href: '/staff/dashboard', icon: LayoutDashboard, label: 'Dashboard' }],
   },
-  { href: '/staff/notifications', icon: Bell, label: 'Notifications' },
-  { href: '/staff/profile', icon: User, label: 'Profile' },
+  {
+    label: 'Work',
+    links: [
+      { href: '/staff/inventory', icon: Package, label: 'Products', permissions: ['view_products'] },
+      { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
+      { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
+      { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
+      { href: '/staff/reconciliation', icon: Scale, label: 'My Reconciliation', permissions: ['view_reconciliation'] },
+      // Purchasing lives under /owner for both roles — one route tree rather
+      // than a mirrored one. The dashboard layout lets permitted staff through.
+      {
+        href: '/owner/purchases',
+        icon: ShoppingBag,
+        label: 'Purchasing',
+        requiresFlag: 'purchasingEnabled',
+        permissions: ['view_purchases'],
+      },
+    ],
+  },
+  {
+    label: 'Account',
+    links: [
+      { href: '/staff/refer', icon: Gift, label: 'Refer & Earn' },
+      { href: '/staff/notifications', icon: Bell, label: 'Notifications' },
+      { href: '/staff/profile', icon: User, label: 'Profile' },
+    ],
+  },
 ];
 
 /**
  * Drop links the user can't use — either because they lack the permission or
- * because the shop hasn't switched the module on. The routes themselves are
- * guarded too (see the dashboard layout); this half just avoids offering
- * someone a door that won't open.
+ * because the shop hasn't switched the module on — then drop any group left
+ * empty by that filtering. The routes themselves are guarded too (see the
+ * dashboard layout); this half just avoids offering someone a door that won't
+ * open.
  */
-function visibleLinks(
-  links: NavLink[],
+function visibleGroups(
+  groups: NavGroup[],
   user: PermissionUser,
   flags: Record<string, boolean>
-): NavLink[] {
-  return links.filter((link) => {
-    if (link.requiresFlag && !flags[link.requiresFlag]) return false;
-    if (link.permissions && !hasAnyPermission(user, link.permissions)) return false;
-    return true;
-  });
+): NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      links: group.links.filter((link) => {
+        if (link.requiresFlag && !flags[link.requiresFlag]) return false;
+        if (link.permissions && !hasAnyPermission(user, link.permissions)) return false;
+        return true;
+      }),
+    }))
+    .filter((group) => group.links.length > 0);
 }
 
 function SidebarContent({
@@ -125,7 +178,7 @@ function SidebarContent({
   const { user, logout } = useAuthStore();
   const { purchasingEnabled, shiftManagementEnabled, showStaffCommission } = useShop();
 
-  const links = visibleLinks(user?.role === 'owner' ? ownerLinks : staffLinks, user, {
+  const groups = visibleGroups(user?.role === 'owner' ? ownerGroups : staffGroups, user, {
     purchasingEnabled,
     shiftManagementEnabled,
     showStaffCommission,
@@ -150,28 +203,40 @@ function SidebarContent({
 
       {/* Nav links */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {links.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href || pathname.startsWith(href + '/');
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={onLinkClick}
-              className={clsx(
-                'flex items-center gap-3 rounded-xl transition-all duration-150',
-                collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5',
-                active
-                  ? 'text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              )}
-              style={active ? { backgroundColor: '#0F766E' } : {}}
-              title={collapsed ? label : undefined}
-            >
-              <Icon className={clsx('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-4 h-4')} />
-              {!collapsed && <span className="text-sm font-medium">{label}</span>}
-            </Link>
-          );
-        })}
+        {groups.map((group, i) => (
+          <div key={group.label ?? `top-${i}`}>
+            {group.label && !collapsed && (
+              <p className="px-3 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                {group.label}
+              </p>
+            )}
+            {group.label && collapsed && <div className="border-t border-gray-100 my-2 mx-2" />}
+            <div className="space-y-1">
+              {group.links.map(({ href, icon: Icon, label }) => {
+                const active = pathname === href || pathname.startsWith(href + '/');
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onLinkClick}
+                    className={clsx(
+                      'flex items-center gap-3 rounded-control transition-all duration-150',
+                      collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5',
+                      active
+                        ? 'text-white shadow-elevation-1'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    )}
+                    style={active ? { backgroundColor: '#0F766E' } : {}}
+                    title={collapsed ? label : undefined}
+                  >
+                    <Icon className={clsx('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-4 h-4')} />
+                    {!collapsed && <span className="text-sm font-medium">{label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* User + logout */}
@@ -185,7 +250,7 @@ function SidebarContent({
         <button
           onClick={logout}
           className={clsx(
-            'w-full flex items-center gap-3 rounded-xl text-red-500 hover:bg-red-50 transition-all duration-150',
+            'w-full flex items-center gap-3 rounded-control text-red-500 hover:bg-red-50 transition-all duration-150',
             collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'
           )}
           title={collapsed ? 'Sign Out' : undefined}

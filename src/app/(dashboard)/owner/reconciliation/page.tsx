@@ -39,10 +39,10 @@ const ttStyle = { borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px r
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <Card>
       <h2 className="text-base font-bold mb-5" style={{ color: '#0F172A' }}>{title}</h2>
       {children}
-    </div>
+    </Card>
   );
 }
 
@@ -75,7 +75,7 @@ function CashiersTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: '#F1F5F9' }}>
+      <div className="flex gap-1 p-1 rounded-control w-fit" style={{ backgroundColor: '#F1F5F9' }}>
         {(Object.keys(PERIOD_LABELS) as ReconciliationPeriod[]).map((p) => (
           <button
             key={p}
@@ -241,7 +241,7 @@ export default function ReconciliationPage() {
         <p className="text-gray-500 text-sm mt-1">Match sales to cashiers, and the month&apos;s books to what actually moved</p>
       </div>
 
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-gray-100 rounded-control p-1 w-fit">
         {([
           { id: 'cashiers' as const, label: 'Cashiers', icon: Users },
           { id: 'monthly' as const, label: 'Month Financials', icon: ScrollText },

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import clsx from 'clsx';
+import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
 import {
@@ -103,7 +104,7 @@ export default function NotificationsInbox() {
       </div>
 
       {items.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center gap-3">
+        <div className="bg-white rounded-card border border-gray-100 py-16 flex flex-col items-center gap-3">
           <Bell className="w-8 h-8 text-gray-300" />
           <p className="text-sm text-gray-500">No notifications yet</p>
           <p className="text-xs text-gray-400">Alerts and updates will show up here.</p>
@@ -117,7 +118,7 @@ export default function NotificationsInbox() {
                 key={item._id}
                 onClick={() => open(item)}
                 className={clsx(
-                  'w-full text-left flex gap-3 p-4 rounded-2xl border transition-colors',
+                  'w-full text-left flex gap-3 p-4 rounded-card border transition-colors',
                   item.read
                     ? 'bg-white border-gray-100 hover:bg-gray-50'
                     : 'border-teal-100 hover:bg-teal-100/40'
@@ -158,23 +159,15 @@ export default function NotificationsInbox() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
-          >
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
             Previous
-          </button>
+          </Button>
           <span className="text-xs text-gray-400">
             Page {page} of {totalPages}
           </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
-          >
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
             Next
-          </button>
+          </Button>
         </div>
       )}
 

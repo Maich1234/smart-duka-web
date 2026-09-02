@@ -99,12 +99,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          {canAccessRoute(user, pathname) ? (
-            children
-          ) : (
-            <NoAccessPanel homeHref={user?.role === 'owner' ? '/owner/dashboard' : '/staff/dashboard'} />
-          )}
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto w-full max-w-[1600px] p-4 lg:p-6 xl:p-8">
+            {canAccessRoute(user, pathname) ? (
+              children
+            ) : (
+              <NoAccessPanel homeHref={user?.role === 'owner' ? '/owner/dashboard' : '/staff/dashboard'} />
+            )}
+          </div>
         </main>
       </div>
     </div>

@@ -10,9 +10,10 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
-import Spinner from '@/components/ui/Spinner';
+import Table, { type Column } from '@/components/ui/Table';
 import { useMoney } from '@/lib/money';
 import { useShop } from '@/hooks/useShop';
 
@@ -65,6 +66,17 @@ export default function StaffExpensesPage() {
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({ resolver: zodResolver(schema) });
 
+  const columns: Column<Expense>[] = [
+    {
+      key: 'description',
+      header: 'Description',
+      render: (e) => <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>,
+    },
+    { key: 'category', header: 'Category', render: (e) => <Badge color="gray">{e.category}</Badge> },
+    { key: 'amount', header: 'Amount', className: 'font-semibold text-red-600 tabular-nums', render: (e) => fmt(e.amount) },
+    { key: 'date', header: 'Date', className: 'text-gray-500', render: (e) => format(new Date(e.date || e.createdAt), 'dd MMM yyyy') },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -78,41 +90,15 @@ export default function StaffExpensesPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="flex justify-center py-12"><Spinner /></div>
-        ) : (expenses || []).length === 0 ? (
-          <div className="py-16 text-center">
-            <Receipt className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400">No expenses recorded yet.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100" style={{ backgroundColor: '#F8FAFC' }}>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {(expenses || []).map((e) => (
-                  <tr key={e._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>
-                    </td>
-                    <td className="px-4 py-3"><Badge color="gray">{e.category}</Badge></td>
-                    <td className="px-4 py-3 font-semibold text-red-600">{fmt(e.amount)}</td>
-                    <td className="px-4 py-3 text-gray-500">{format(new Date(e.date || e.createdAt), 'dd MMM yyyy')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <Card padding="none" className="overflow-hidden">
+        <Table<Expense>
+          columns={columns}
+          data={expenses || []}
+          keyExtractor={(e) => e._id}
+          loading={isLoading}
+          emptyMessage="No expenses recorded yet."
+        />
+      </Card>
 
       <Modal isOpen={addOpen} onClose={() => { setAddOpen(false); reset(); setServerError(''); }} title="Add Expense">
         {serverError && (
@@ -123,7 +109,7 @@ export default function StaffExpensesPage() {
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Category *</label>
             <select
               {...register('category')}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white capitalize"
+              className="w-full px-4 py-2.5 rounded-control border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white capitalize"
             >
               <option value="">Select…</option>
               {CATEGORIES.map((c) => <option key={c} value={c} className="capitalize">{c}</option>)}
@@ -134,7 +120,7 @@ export default function StaffExpensesPage() {
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Description</label>
             <textarea {...register('description')} rows={2} placeholder="Optional notes…"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white resize-none" />
+              className="w-full px-4 py-2.5 rounded-control border border-gray-200 text-sm focus:outline-none bg-white resize-none" />
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" type="button" onClick={() => setAddOpen(false)}>Cancel</Button>

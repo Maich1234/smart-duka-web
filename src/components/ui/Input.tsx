@@ -6,10 +6,17 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   icon?: React.ReactNode;
   hint?: string;
+  /** 'sm' for dense filter-bar inputs. Defaults to 'md'. Not the native `size` attribute. */
+  uiSize?: 'sm' | 'md';
 }
 
+const uiSizeStyles = {
+  sm: 'py-1.5 text-sm',
+  md: 'py-2 text-sm',
+};
+
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, hint, className, ...props }, ref) => {
+  ({ label, error, icon, hint, uiSize = 'md', className, ...props }, ref) => {
     return (
       <div className="space-y-1.5">
         {label && (
@@ -26,7 +33,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             className={clsx(
-              'w-full py-2.5 rounded-xl border text-sm transition-colors bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30',
+              'w-full rounded-control border transition-colors bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30',
+              uiSizeStyles[uiSize],
               icon ? 'pl-10 pr-4' : 'px-4',
               error ? 'border-red-400' : 'border-gray-200 focus:border-[#0F766E]',
               className

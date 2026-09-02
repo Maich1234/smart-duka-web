@@ -10,9 +10,10 @@ import { format } from 'date-fns';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
-import Spinner from '@/components/ui/Spinner';
+import Table, { type Column } from '@/components/ui/Table';
 import { useMoney } from '@/lib/money';
 import { useShop } from '@/hooks/useShop';
 import {
@@ -98,6 +99,35 @@ export default function ExpensesPage() {
 
   const totalExpenses = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
+  const columns: Column<Expense>[] = [
+    {
+      key: 'description',
+      header: 'Description',
+      render: (e) => (
+        <>
+          <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>
+          {e.paymentMethod && e.paymentMethod !== 'cash' && (
+            <p className={`text-xs mt-0.5 ${e.paymentMethod === 'credit' ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+              {e.paymentMethod === 'credit' ? 'On credit, not paid yet' : MONEY_OUT_METHOD_LABELS[e.paymentMethod]}
+            </p>
+          )}
+        </>
+      ),
+    },
+    { key: 'category', header: 'Category', render: (e) => <Badge color={categoryColors[e.category] || 'gray'}>{e.category}</Badge> },
+    { key: 'amount', header: 'Amount', className: 'font-semibold text-red-600 tabular-nums', render: (e) => `-${fmt(e.amount)}` },
+    { key: 'date', header: 'Date', className: 'text-gray-500', render: (e) => format(new Date(e.date || e.createdAt), 'dd MMM yyyy') },
+    {
+      key: 'actions',
+      header: '',
+      render: (e) => (
+        <Button variant="ghost" size="icon" className="hover:bg-red-50" aria-label="Delete expense" onClick={() => deleteMutation.mutate(e._id)}>
+          <Trash2 className="w-4 h-4 text-red-400" />
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -112,77 +142,35 @@ export default function ExpensesPage() {
       </div>
 
       {/* Summary */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <Card padding="md">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FEF3C7' }}>
             <Receipt className="w-5 h-5 text-amber-600" />
           </div>
           <div>
             <p className="text-sm text-gray-500">Page {page} Subtotal</p>
-            <p className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>{fmt(totalExpenses)}</p>
+            <p className="text-2xl font-extrabold tabular-nums" style={{ color: '#0F172A' }}>{fmt(totalExpenses)}</p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Expenses List */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="flex justify-center py-12"><Spinner /></div>
-        ) : (expenses || []).length === 0 ? (
-          <div className="py-16 text-center">
-            <Receipt className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400">No expenses recorded yet.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100" style={{ backgroundColor: '#F8FAFC' }}>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {(expenses || []).map((e) => (
-                  <tr key={e._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium capitalize" style={{ color: '#0F172A' }}>{e.description || e.category}</p>
-                      {e.paymentMethod && e.paymentMethod !== 'cash' && (
-                        <p className={`text-xs mt-0.5 ${e.paymentMethod === 'credit' ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
-                          {e.paymentMethod === 'credit' ? 'On credit, not paid yet' : MONEY_OUT_METHOD_LABELS[e.paymentMethod]}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge color={categoryColors[e.category] || 'gray'}>{e.category}</Badge>
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-red-600">-{fmt(e.amount)}</td>
-                    <td className="px-4 py-3 text-gray-500">{format(new Date(e.date || e.createdAt), 'dd MMM yyyy')}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => deleteMutation.mutate(e._id)}
-                        className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <Card padding="none" className="overflow-hidden">
+        <Table<Expense>
+          columns={columns}
+          data={expenses || []}
+          keyExtractor={(e) => e._id}
+          loading={isLoading}
+          emptyMessage="No expenses recorded yet."
+        />
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>← Previous</Button>
             <span className="text-xs font-semibold text-gray-500">Page {page} of {totalPages}</span>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next →</Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Add Expense Modal */}
       <Modal isOpen={addOpen} onClose={() => { setAddOpen(false); reset(); setServerError(''); }} title="Add Expense">
@@ -194,7 +182,7 @@ export default function ExpensesPage() {
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#0F172A' }}>Category *</label>
             <select
               {...register('category')}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white capitalize"
+              className="w-full px-4 py-2.5 rounded-control border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30 bg-white capitalize"
             >
               <option value="">Select category…</option>
               {CATEGORIES.map((c) => <option key={c} value={c} className="capitalize">{c}</option>)}
@@ -214,7 +202,7 @@ export default function ExpensesPage() {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setValue('paymentMethod', method, { shouldDirty: true })}
-                    className={`px-3.5 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                    className={`px-3.5 py-2 rounded-control border text-sm font-semibold transition-all ${
                       active
                         ? 'border-[#0F766E] bg-[#0F766E] text-white'
                         : 'border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E]'
@@ -239,7 +227,7 @@ export default function ExpensesPage() {
               {...register('description')}
               rows={2}
               placeholder="Optional notes…"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white resize-none"
+              className="w-full px-4 py-2.5 rounded-control border border-gray-200 text-sm focus:outline-none bg-white resize-none"
             />
           </div>
           <div className="flex gap-3 justify-end">

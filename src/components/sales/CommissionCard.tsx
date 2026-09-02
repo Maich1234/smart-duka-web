@@ -42,7 +42,7 @@ export default function CommissionCard({
 
   return (
     <Card>
-      <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ backgroundColor: '#F1F5F9' }}>
+      <div className="flex gap-1 p-1 rounded-control mb-5" style={{ backgroundColor: '#F1F5F9' }}>
         {PERIODS.map((option) => (
           <button
             key={option.value}
@@ -69,7 +69,7 @@ export default function CommissionCard({
         <>
           <div className="text-center py-2 mb-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">You earned</p>
-            <p className="text-3xl font-extrabold mt-1 tabular-nums" style={{ color: '#0F766E' }}>
+            <p className="text-display mt-1 tabular-nums" style={{ color: '#0F766E' }}>
               {fmt(data.totalCommission)}
             </p>
             <p className="text-xs text-gray-500 mt-1">

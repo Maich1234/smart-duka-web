@@ -26,7 +26,7 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
   const inboxHref = user?.role === 'staff' ? '/staff/notifications' : '/owner/notifications';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6">
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 xl:px-8">
       <div className="flex items-center gap-3">
         {/* Hamburger — mobile only */}
         <button

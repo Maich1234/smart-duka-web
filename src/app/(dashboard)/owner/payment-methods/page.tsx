@@ -13,6 +13,7 @@ import MpesaConfigForm from '@/components/payments/MpesaConfigForm';
 import VerificationModal from '@/components/payments/VerificationModal';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Toggle from '@/components/ui/Toggle';
 import {
   CASH_METHOD_KEY,
   DEFAULT_SALE_METHODS,
@@ -210,11 +211,13 @@ export default function PaymentMethodsPage() {
                     {isCash && <p className="text-xs text-gray-400 mt-0.5">Counted as till cash when reconciling shifts</p>}
                   </div>
 
-                  <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                    <input type="checkbox" className="sr-only peer" checked={method.enabled !== false}
-                      onChange={(e) => update(method.key, { enabled: e.target.checked })} />
-                    <div className="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-[#0F766E] transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
-                  </label>
+                  <div className="flex-shrink-0">
+                    <Toggle
+                      checked={method.enabled !== false}
+                      onChange={(next) => update(method.key, { enabled: next })}
+                      label={`${method.enabled !== false ? 'Disable' : 'Enable'} ${method.label}`}
+                    />
+                  </div>
 
                   {/* Cash and M-Pesa are switched off rather than deleted — they
                       carry behaviour the rest of the app looks for. */}
@@ -254,7 +257,7 @@ export default function PaymentMethodsPage() {
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') addCustom(); }}
             placeholder="e.g. Sacco, Equity Bank, Deni"
-            className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
+            className="flex-1 px-3 py-2 rounded-control border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
           <Button variant="secondary" onClick={addCustom}>Add</Button>
         </div>
 

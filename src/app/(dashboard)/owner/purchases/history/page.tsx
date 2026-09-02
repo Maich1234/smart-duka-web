@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Search } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Spinner from '@/components/ui/Spinner';
-import { getPurchases, type PurchaseStatus } from '@/services/purchases';
+import Input from '@/components/ui/Input';
+import Table, { type Column } from '@/components/ui/Table';
+import { getPurchases, type Purchase, type PurchaseStatus } from '@/services/purchases';
 import { useShop } from '@/hooks/useShop';
 import { useAuthStore } from '@/store/authStore';
 import { hasPermission } from '@/lib/permissions';
@@ -25,6 +27,7 @@ const STATUS_FILTERS: { value: 'all' | PurchaseStatus; label: string }[] = [
 ];
 
 export default function PurchaseHistoryPage() {
+  const router = useRouter();
   const { currency } = useShop();
   const user = useAuthStore((s) => s.user);
   const canSeePrices = hasPermission(user, 'view_purchase_prices');
@@ -51,6 +54,44 @@ export default function PurchaseHistoryPage() {
   const fmt = (n?: number) =>
     n == null ? '-' : `${currency} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
+  const columns: Column<Purchase>[] = [
+    {
+      key: 'supplierName',
+      header: 'Supplier',
+      render: (purchase) => (
+        <>
+          <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>{purchase.supplierName || 'No supplier'}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {format(new Date(purchase.purchaseDate), 'd MMM yyyy')} · {purchase.items.length} item{purchase.items.length === 1 ? '' : 's'}
+            {purchase.paymentMethod ? ` · ${MONEY_OUT_METHOD_LABELS[purchase.paymentMethod]}` : ''}
+          </p>
+        </>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (purchase) =>
+        purchase.status === 'pending_approval' ? (
+          <Badge color="yellow">Awaiting approval</Badge>
+        ) : purchase.status === 'cancelled' ? (
+          <Badge color="gray">Cancelled</Badge>
+        ) : (
+          <Badge color="green">Completed</Badge>
+        ),
+    },
+    {
+      key: 'grandTotal',
+      header: 'Total',
+      className: 'text-right',
+      render: (purchase) => (
+        <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>
+          {canSeePrices ? fmt(purchase.grandTotal) : '-'}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -66,21 +107,20 @@ export default function PurchaseHistoryPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[14rem]">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+        <div className="flex-1 min-w-[14rem]">
+          <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search supplier or product…"
             aria-label="Search purchases"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200"
+            icon={<Search className="w-4 h-4" />}
           />
         </div>
         <select
           value={sort}
           onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }}
           aria-label="Sort purchases"
-          className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200"
+          className="px-3 py-2 rounded-control border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200"
         >
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
@@ -107,37 +147,16 @@ export default function PurchaseHistoryPage() {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-      ) : purchases.length === 0 ? (
-        <Card><p className="text-sm text-gray-500 py-6 text-center">No purchases match that.</p></Card>
-      ) : (
-        <div className="space-y-2">
-          {purchases.map((purchase) => (
-            <Link key={purchase._id} href={`/owner/purchases/${purchase._id}`}>
-              <Card padding="sm" className="hover:border-teal-200 transition-colors">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <span className="flex-1 min-w-[10rem]">
-                    <span className="block text-sm font-semibold truncate" style={{ color: '#0F172A' }}>
-                      {purchase.supplierName || 'No supplier'}
-                    </span>
-                    <span className="block text-xs text-gray-400">
-                      {format(new Date(purchase.purchaseDate), 'd MMM yyyy')} ·{' '}
-                      {purchase.items.length} item{purchase.items.length === 1 ? '' : 's'}
-                      {purchase.paymentMethod ? ` · ${MONEY_OUT_METHOD_LABELS[purchase.paymentMethod]}` : ''}
-                    </span>
-                  </span>
-                  {purchase.status === 'pending_approval' && <Badge color="yellow">Awaiting approval</Badge>}
-                  {purchase.status === 'cancelled' && <Badge color="gray">Cancelled</Badge>}
-                  <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>
-                    {canSeePrices ? fmt(purchase.grandTotal) : '-'}
-                  </span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+      <Card padding="none" className="overflow-hidden">
+        <Table<Purchase>
+          columns={columns}
+          data={purchases}
+          keyExtractor={(purchase) => purchase._id}
+          loading={isLoading}
+          onRowClick={(purchase) => router.push(`/owner/purchases/${purchase._id}`)}
+          emptyMessage="No purchases match that."
+        />
+      </Card>
 
       {pages > 1 && (
         <div className="flex items-center justify-between">

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus, X,
+  Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus,
   Package, CheckCircle, ArrowRight, Receipt, ExternalLink, Printer,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -19,7 +19,10 @@ import {
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import VoidSaleSection from '@/components/sales/VoidSaleSection';
 import ShiftGate from '@/components/shifts/ShiftGate';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
+import Table, { type Column } from '@/components/ui/Table';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 import { useMoney } from '@/lib/money';
 import { availableToAdd, clampQty, stepFor } from '@/lib/stock';
@@ -74,10 +77,8 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
       : '';
   const canOverride = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+    <Modal isOpen onClose={onClose} size="sm">
+      <>
         <h3 className="font-bold text-lg mb-1" style={{ color: '#0F172A' }}>Add to Cart</h3>
         <p className="text-sm text-gray-500 mb-4">{product.name}</p>
         {product.productType === 'configurable' && product.variants && (
@@ -97,21 +98,21 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
           <div className="mb-4">
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Price</label>
             <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} min={product.minPrice ?? 0}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
+              className="w-full px-3 py-2.5 rounded-control border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200" />
           </div>
         )}
         <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Quantity{isWeighted ? ` (${product.unitOfMeasure})` : ''}</label>
           <div className="flex items-center gap-3">
             <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || step) - step, step, max)))}
-              className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+              className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50">
               <Minus className="w-4 h-4 text-gray-600" />
             </button>
             <input type="number" value={qtyText} onChange={(e) => setQtyText(e.target.value)}
               step={step} min={step} max={Number.isFinite(max) ? max : undefined}
-              className="flex-1 text-center text-xl font-bold py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" />
+              className="flex-1 text-center text-xl font-bold py-2.5 rounded-control border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" />
             <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || 0) + step, step, max)))}
-              disabled={Number.isFinite(max) && qty >= max} className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
+              disabled={Number.isFinite(max) && qty >= max} className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
               <Plus className="w-4 h-4 text-gray-600" />
             </button>
           </div>
@@ -123,17 +124,17 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
             </p>
           ) : null}
         </div>
-        <div className="flex items-center justify-between mb-4 p-3 rounded-xl" style={{ backgroundColor: '#F0FDFA' }}>
+        <div className="flex items-center justify-between mb-4 p-3 rounded-control" style={{ backgroundColor: '#F0FDFA' }}>
           <span className="text-sm font-medium text-gray-600">Subtotal</span>
           <span className="text-lg font-bold" style={{ color: '#0F766E' }}>{fmt(effectivePrice * (Number.isFinite(qty) ? qty : 0))}</span>
         </div>
         <button onClick={() => onConfirm(qty, effectivePrice, variantId || undefined, selectedVariant?.name)}
           disabled={!!qtyProblem}
-          className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: '#0F766E' }}>
+          className="w-full py-3 rounded-control font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: '#0F766E' }}>
           Add to Cart
         </button>
-      </div>
-    </div>
+      </>
+    </Modal>
   );
 }
 
@@ -158,9 +159,8 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 text-center">
+    <Modal isOpen onClose={onClose} size="sm">
+      <div className="text-center">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg" style={{ background: 'linear-gradient(135deg, #15803D, #16A34A)' }}>
           <CheckCircle className="w-9 h-9 text-white" />
         </div>
@@ -169,30 +169,30 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
           #{sale.invoiceNumber} · {fmt(sale.totalAmount)} · {saleMethodLabel(sale)}
         </p>
         {sale.mpesaReceiptNumber && (
-          <div className="mb-5 px-5 py-3 rounded-xl border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
+          <div className="mb-5 px-5 py-3 rounded-control border" style={{ backgroundColor: '#DCFCE7', borderColor: 'rgba(21,128,61,0.2)' }}>
             <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#15803D' }}>M-Pesa Reference</p>
             <p className="text-lg font-bold tracking-widest" style={{ color: '#15803D' }}>{sale.mpesaReceiptNumber}</p>
           </div>
         )}
         <div className="space-y-3">
           <button onClick={handlePrint} disabled={printing}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 disabled:opacity-60 transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-control font-semibold text-sm border-2 disabled:opacity-60 transition-all"
             style={{ color: '#0F766E', borderColor: '#0F766E' }}>
             <Printer className="w-4 h-4" /> {printing ? 'Opening…' : 'Print Receipt'}
           </button>
           {receiptUrl && (
             <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-control text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
               <Receipt className="w-4 h-4" /> View Digital Receipt <ExternalLink className="w-3 h-3" />
             </a>
           )}
-          <button onClick={onNewSale} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
+          <button onClick={onNewSale} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
             <ShoppingCart className="w-4 h-4" /> New Sale <ArrowRight className="w-4 h-4" />
           </button>
           <button onClick={onClose} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">Close</button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -219,15 +219,13 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-          <div>
-            <h3 className="font-bold" style={{ color: '#0F172A' }}>Sale Details</h3>
-            <p className="text-xs text-gray-500">#{sale.invoiceNumber}</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
+    <Modal isOpen onClose={onClose} size="md">
+      {/* -m-6 cancels Modal's own padding so the header can stick above the
+          scrolling body exactly as it did in the hand-rolled version. */}
+      <div className="-m-6 max-h-[90vh] overflow-y-auto">
+        <div className="p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <h3 className="font-bold" style={{ color: '#0F172A' }}>Sale Details</h3>
+          <p className="text-xs text-gray-500">#{sale.invoiceNumber}</p>
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -235,7 +233,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClo
               { label: 'Date', value: format(new Date(sale.createdAt), 'dd MMM yyyy') },
               { label: 'Time', value: format(new Date(sale.createdAt), 'HH:mm') },
             ].map((m) => (
-              <div key={m.label} className="bg-gray-50 rounded-xl p-3 text-center">
+              <div key={m.label} className="bg-gray-50 rounded-control p-3 text-center">
                 <p className="text-xs text-gray-400 mb-0.5">{m.label}</p>
                 <p className="text-xs font-semibold" style={{ color: '#0F172A' }}>{m.value}</p>
               </div>
@@ -255,7 +253,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClo
               ))}
             </div>
           </div>
-          <div className="rounded-xl border p-4" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
+          <div className="rounded-control border p-4" style={{ backgroundColor: '#F0FDFA', borderColor: 'rgba(15,118,110,0.2)' }}>
             <div className="flex justify-between items-center">
               <span className="font-semibold text-gray-700">Total</span>
               <span className="text-2xl font-extrabold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</span>
@@ -268,13 +266,13 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClo
           </div>
           <div className="flex gap-2">
             <button onClick={handlePrint} disabled={printing}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 disabled:opacity-60 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-control font-semibold text-sm border-2 disabled:opacity-60 transition-all"
               style={{ color: '#0F766E', borderColor: '#0F766E' }}>
               <Printer className="w-4 h-4" /> {printing ? 'Opening…' : 'Print Receipt'}
             </button>
             {receiptUrl && (
               <a href={receiptUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm border-2 transition-all"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-control text-sm border-2 transition-all"
                 style={{ color: '#64748B', borderColor: '#E2E8F0' }}>
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -285,7 +283,7 @@ function SaleDetailModal({ sale, shopName, shopConfig, canRefund, canVoid, onClo
           <VoidSaleSection sale={sale} canVoid={canVoid} />
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -454,6 +452,40 @@ export default function StaffSalesPage() {
     createSaleMutation.mutate({ items: buildItems(), paymentMethod });
   };
 
+  const salesColumns: Column<Sale>[] = [
+    {
+      key: 'invoiceNumber',
+      header: 'Invoice',
+      render: (sale) => (
+        <div className="flex items-center gap-2">
+          <span className="font-semibold" style={{ color: '#0F172A' }}>#{sale.invoiceNumber}</span>
+          <SaleStatusBadge status={sale.status} />
+        </div>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Date',
+      className: 'text-gray-500',
+      render: (sale) => `${format(new Date(sale.createdAt), 'dd MMM, HH:mm')} · ${sale.items.length} item${sale.items.length !== 1 ? 's' : ''}`,
+    },
+    {
+      key: 'paymentMethod',
+      header: 'Payment',
+      render: (sale) => (
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-500'}`}>
+          {saleMethodLabel(sale)}
+        </span>
+      ),
+    },
+    {
+      key: 'totalAmount',
+      header: 'Amount',
+      className: 'text-right font-bold tabular-nums',
+      render: (sale) => <span style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</span>,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -468,7 +500,7 @@ export default function StaffSalesPage() {
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200" />
+              className="w-full pl-10 pr-4 py-3 rounded-control border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200" />
           </div>
           {productsLoading ? (
             <div className="flex justify-center py-16"><Spinner size="lg" /></div>
@@ -480,7 +512,7 @@ export default function StaffSalesPage() {
                   const low = p.trackInventory && !out && p.quantity <= p.lowStockAlert;
                   return (
                     <button key={p._id} onClick={() => !out && addToCart(p)} disabled={out}
-                      className={`bg-white rounded-xl border text-left p-4 transition-all ${out ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
+                      className={`bg-white rounded-control border text-left p-4 transition-all ${out ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
                         <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
                       </div>
@@ -508,7 +540,7 @@ export default function StaffSalesPage() {
 
         {/* Cart + checkout */}
         <div className="xl:col-span-2">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4">
+          <div className="bg-white rounded-card border border-gray-200 shadow-elevation-1 sticky top-4">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4" style={{ color: '#0F766E' }} />
@@ -560,7 +592,7 @@ export default function StaffSalesPage() {
                     const Icon = methodIcon(method);
                     return (
                       <button key={method.key} onClick={() => setPaymentMethod(method.key)}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500'}`}>
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-control border-2 text-sm font-semibold transition-all ${paymentMethod === method.key ? 'border-[#0F766E] bg-[#F0FDFA] text-[#0F766E]' : 'border-gray-200 text-gray-500'}`}>
                         <Icon className="w-4 h-4" /> {method.label}
                       </button>
                     );
@@ -571,7 +603,7 @@ export default function StaffSalesPage() {
                 {paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && (
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Customer Phone</label>
-                    <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
+                    <div className="flex rounded-control border overflow-hidden" style={{ borderColor: phoneDigits && !isValidPhone ? '#ef4444' : '#e2e8f0' }}>
                       <div className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-50 border-r border-gray-200 text-sm font-semibold text-gray-700 flex-shrink-0">🇰🇪 +254</div>
                       <input type="tel" value={phoneDigits} onChange={(e) => handlePhoneDigits(e.target.value)} placeholder="712 345 678" maxLength={9}
                         className="flex-1 px-3 py-2.5 text-sm bg-white outline-none tracking-widest" />
@@ -580,12 +612,12 @@ export default function StaffSalesPage() {
                   </div>
                 )}
                 {createSaleMutation.error && (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+                  <div className="p-3 rounded-control bg-red-50 border border-red-200 text-xs text-red-700">
                     {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
                   </div>
                 )}
                 <button onClick={handleCheckout} disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white disabled:opacity-60" style={{ backgroundColor: '#0F766E' }}>
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white disabled:opacity-60" style={{ backgroundColor: '#0F766E' }}>
                   {createSaleMutation.isPending
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
                     : paymentMethod === MPESA_METHOD_KEY && mpesaEnabled
@@ -604,30 +636,19 @@ export default function StaffSalesPage() {
       {mySalesData.length > 0 && (
         <div>
           <h2 className="text-base font-bold mb-3" style={{ color: '#0F172A' }}>My Sales History</h2>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-            {mySalesData.map((sale) => (
-              <button key={sale._id} onClick={() => setSelectedSale(sale)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left">
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>#{sale.invoiceNumber}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{format(new Date(sale.createdAt), 'dd MMM, HH:mm')} · {sale.items.length} item{sale.items.length !== 1 ? 's' : ''}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold" style={{ color: '#0F766E' }}>{fmt(sale.totalAmount)}</p>
-                  <div className="flex items-center justify-end gap-1.5">
-                    <SaleStatusBadge status={sale.status} />
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sale.paymentMethod === 'mpesa' ? 'bg-[#F0FDFA] text-[#0F766E]' : 'bg-gray-100 text-gray-500'}`}>
-                      {saleMethodLabel(sale)}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
+          <div className="bg-white rounded-card border border-gray-100 shadow-elevation-1 overflow-hidden">
+            <Table<Sale>
+              columns={salesColumns}
+              data={mySalesData}
+              keyExtractor={(sale) => sale._id}
+              onRowClick={setSelectedSale}
+            />
           </div>
           {salesTotalPages > 1 && (
             <div className="flex items-center justify-between mt-3">
-              <button onClick={() => setSalesPage((p) => Math.max(1, p - 1))} disabled={salesPage <= 1} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+              <Button variant="outline" size="sm" disabled={salesPage <= 1} onClick={() => setSalesPage((p) => Math.max(1, p - 1))}>← Previous</Button>
               <span className="text-xs font-semibold text-gray-500">Page {salesPage} of {salesTotalPages}</span>
-              <button onClick={() => setSalesPage((p) => Math.min(salesTotalPages, p + 1))} disabled={salesPage >= salesTotalPages} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
+              <Button variant="outline" size="sm" disabled={salesPage >= salesTotalPages} onClick={() => setSalesPage((p) => Math.min(salesTotalPages, p + 1))}>Next →</Button>
             </div>
           )}
         </div>

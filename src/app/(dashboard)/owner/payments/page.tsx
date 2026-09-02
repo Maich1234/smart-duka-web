@@ -2,10 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Smartphone, X, RefreshCw } from 'lucide-react';
+import { Search, Smartphone, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
-import Spinner from '@/components/ui/Spinner';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
+import Table, { type Column } from '@/components/ui/Table';
 import { useMoney } from '@/lib/money';
 
 type TxStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
@@ -74,24 +77,18 @@ function TxDetailModal({ tx, onClose }: { tx: MpesaTransaction; onClose: () => v
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.dot }} />
-            <span className="font-semibold text-sm" style={{ color: '#0F172A' }}>{cfg.label} Transaction</span>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400">
-            <X className="w-4 h-4" />
-          </button>
+    <Modal isOpen onClose={onClose} size="sm">
+      {/* -m-6 cancels Modal's own padding so these sections can run edge-to-edge */}
+      <div className="-m-6">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.dot }} />
+          <span className="font-semibold text-sm" style={{ color: '#0F172A' }}>{cfg.label} Transaction</span>
         </div>
 
         {/* Amount hero */}
         <div className="text-center py-5 px-6" style={{ backgroundColor: '#F8FAFC' }}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Amount</p>
-          <p className="text-3xl font-extrabold tracking-tight" style={{ color: '#0F172A' }}>{fmt(tx.amount)}</p>
+          <p className="text-display tabular-nums" style={{ color: '#0F172A' }}>{fmt(tx.amount)}</p>
         </div>
 
         {/* Detail rows */}
@@ -110,12 +107,10 @@ function TxDetailModal({ tx, onClose }: { tx: MpesaTransaction; onClose: () => v
         </div>
 
         <div className="p-5">
-          <button onClick={onClose} className="w-full py-3 rounded-xl font-semibold text-white" style={{ backgroundColor: '#0F766E' }}>
-            Close
-          </button>
+          <Button className="w-full" onClick={onClose}>Close</Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -153,6 +148,44 @@ export default function PaymentsPage() {
   const stats = data?.stats;
   const totalPages = data?.pagination?.pages ?? 1;
 
+  const columns: Column<MpesaTransaction>[] = [
+    {
+      key: 'dot',
+      header: '',
+      className: 'w-8',
+      render: (tx) => {
+        const cfg = STATUS_CONFIG[tx.status] ?? STATUS_CONFIG.failed;
+        return <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: cfg.dot }} />;
+      },
+    },
+    { key: 'phoneNumber', header: 'Phone', render: (tx) => formatPhone(tx.phoneNumber) },
+    {
+      key: 'mpesaReceiptNumber',
+      header: 'Receipt',
+      render: (tx) => (tx.mpesaReceiptNumber ? <span className="font-mono text-xs">{tx.mpesaReceiptNumber}</span> : '—'),
+    },
+    { key: 'createdAt', header: 'Date', render: (tx) => format(new Date(tx.createdAt), 'dd MMM yyyy, HH:mm') },
+    {
+      key: 'amount',
+      header: 'Amount',
+      className: 'text-right',
+      render: (tx) => <span className="font-bold tabular-nums" style={{ color: '#0F172A' }}>{fmt(tx.amount)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (tx) => {
+        const cfg = STATUS_CONFIG[tx.status] ?? STATUS_CONFIG.failed;
+        return (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: cfg.bg, color: cfg.text }}>
+            {cfg.label}
+          </span>
+        );
+      },
+    },
+    { key: 'invoice', header: 'Invoice', render: (tx) => (tx.saleId ? `#${tx.saleId.invoiceNumber}` : '—') },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Page header */}
@@ -161,17 +194,13 @@ export default function PaymentsPage() {
           <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>M-Pesa Payments</h1>
           <p className="text-sm text-gray-500 mt-0.5">Lipa na M-Pesa transaction ledger</p>
         </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-[#0F766E] hover:border-[#0F766E] transition-colors disabled:opacity-50"
-        >
+        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} aria-label="Refresh transactions">
           <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-        </button>
+        </Button>
       </div>
 
       {/* Hero stats card — dark gradient matching mobile */}
-      <div className="rounded-2xl p-6 relative overflow-hidden shadow-xl" style={{ background: 'linear-gradient(135deg, #0B1D1B 0%, #0F2E2A 100%)' }}>
+      <div className="rounded-card p-6 relative overflow-hidden shadow-elevation-3" style={{ background: 'linear-gradient(135deg, #0B1D1B 0%, #0F2E2A 100%)' }}>
         {/* Decorative orb */}
         <div className="absolute top-0 right-0 w-44 h-44 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #14B8A6, transparent)', transform: 'translate(30%, -30%)' }} />
 
@@ -183,7 +212,7 @@ export default function PaymentsPage() {
             <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.6)' }}>Lipa Na M-Pesa</p>
           </div>
 
-          <p className="text-3xl font-extrabold text-white tracking-tight mb-1">
+          <p className="text-display tabular-nums text-white mb-1">
             {fmt(stats?.totalVolume ?? 0)}
           </p>
           <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.45)' }}>Total confirmed volume</p>
@@ -197,7 +226,7 @@ export default function PaymentsPage() {
               { label: 'Successful', value: String(stats?.successCount ?? 0) },
             ].map((s, i) => (
               <div key={s.label} className={`text-center ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                <p className="text-xl font-bold text-white">{s.value}</p>
+                <p className="text-xl font-bold text-white tabular-nums">{s.value}</p>
                 <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>{s.label}</p>
               </div>
             ))}
@@ -206,15 +235,12 @@ export default function PaymentsPage() {
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by phone number or receipt code…"
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200 transition-all"
-        />
-      </div>
+      <Input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by phone number or receipt code…"
+        icon={<Search className="w-4 h-4" />}
+      />
 
       {/* Status filter chips */}
       <div className="flex gap-2 flex-wrap">
@@ -233,63 +259,25 @@ export default function PaymentsPage() {
       <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">Transactions</p>
 
       {/* Transaction list */}
-      {isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-      ) : transactions.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
-          <Smartphone className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="font-medium text-gray-400">No M-Pesa transactions</p>
-          <p className="text-sm text-gray-400 mt-1">
-            {statusFilter !== 'all' ? 'Try a different status filter' : 'M-Pesa payments made at checkout will appear here'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {transactions.map((tx) => {
-            const cfg = STATUS_CONFIG[tx.status] ?? STATUS_CONFIG.failed;
-            return (
-              <button
-                key={tx._id}
-                onClick={() => setSelectedTx(tx)}
-                className="w-full bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 hover:border-[#0F766E] hover:shadow-md transition-all text-left"
-              >
-                {/* Status dot */}
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: cfg.dot }} />
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>{formatPhone(tx.phoneNumber)}</p>
-                  {tx.mpesaReceiptNumber && (
-                    <p className="text-xs text-gray-500 font-mono tracking-wide mt-0.5">{tx.mpesaReceiptNumber}</p>
-                  )}
-                  <p className="text-xs text-gray-400 mt-0.5">{format(new Date(tx.createdAt), 'dd MMM yyyy, HH:mm')}</p>
-                </div>
-
-                {/* Right side */}
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold" style={{ color: '#0F172A' }}>{fmt(tx.amount)}</p>
-                  <span
-                    className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mt-1"
-                    style={{ backgroundColor: cfg.bg, color: cfg.text }}
-                  >
-                    {cfg.label}
-                  </span>
-                  {tx.saleId && (
-                    <p className="text-xs text-gray-400 mt-0.5">#{tx.saleId.invoiceNumber}</p>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <div className="bg-white rounded-card border border-gray-100 overflow-hidden">
+        <Table<MpesaTransaction>
+          columns={columns}
+          data={transactions}
+          keyExtractor={(tx) => tx._id}
+          loading={isLoading}
+          onRowClick={setSelectedTx}
+          emptyMessage={
+            statusFilter !== 'all' ? 'No transactions match this status filter' : 'M-Pesa payments made at checkout will appear here'
+          }
+        />
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">← Previous</button>
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>← Previous</Button>
           <span className="text-xs font-semibold text-gray-500">Page {page} of {totalPages}</span>
-          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:border-[#0F766E] hover:text-[#0F766E] disabled:opacity-30 transition-all">Next →</button>
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next →</Button>
         </div>
       )}
 

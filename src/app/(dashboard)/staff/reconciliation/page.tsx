@@ -54,7 +54,7 @@ export default function MyReconciliationPage() {
         </Card>
       ) : (
         <>
-          <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: '#F1F5F9' }}>
+          <div className="flex gap-1 p-1 rounded-control w-fit" style={{ backgroundColor: '#F1F5F9' }}>
             {(Object.keys(PERIOD_LABELS) as ReconciliationPeriod[]).map((p) => (
               <button
                 key={p}
@@ -107,7 +107,7 @@ export default function MyReconciliationPage() {
                 </section>
 
                 <div
-                  className="rounded-xl p-3 flex items-baseline justify-between gap-4"
+                  className="rounded-control p-3 flex items-baseline justify-between gap-4"
                   style={{ backgroundColor: mine.cashDiscrepancyTotal === 0 ? '#F0FDF4' : '#FEF3C7' }}
                 >
                   <span

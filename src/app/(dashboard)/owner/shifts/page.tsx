@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import Spinner from '@/components/ui/Spinner';
 import Button from '@/components/ui/Button';
+import Table, { type Column } from '@/components/ui/Table';
 import EndShiftModal from '@/components/shifts/EndShiftModal';
 import { getShifts, type Shift } from '@/services/shifts';
 import { useShop } from '@/hooks/useShop';
@@ -22,6 +23,7 @@ const staffName = (shift: Shift) =>
   typeof shift.staff === 'object' && shift.staff ? shift.staff.name : 'Unknown';
 
 export default function ShiftsPage() {
+  const router = useRouter();
   const fmt = useMoney();
   const { shiftManagementEnabled, isLoading: shopLoading } = useShop();
   const [page, setPage] = useState(1);
@@ -36,6 +38,60 @@ export default function ShiftsPage() {
 
   const shifts = data?.data ?? [];
   const pages = data?.pagination?.pages ?? 1;
+
+  const columns: Column<Shift>[] = [
+    {
+      key: 'staff',
+      header: '',
+      className: 'w-8',
+      render: () => <Clock className="w-4 h-4 text-gray-400" />,
+    },
+    {
+      key: 'name',
+      header: 'Staff',
+      render: (shift) => (
+        <>
+          <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>{staffName(shift)}</p>
+          <p className="text-xs text-gray-500">
+            {format(new Date(shift.startedAt), 'd MMM, HH:mm')}
+            {shift.endedAt ? ` → ${format(new Date(shift.endedAt), 'HH:mm')}` : ''}
+          </p>
+        </>
+      ),
+    },
+    {
+      key: 'sales',
+      header: 'Sales',
+      className: 'text-right',
+      render: (shift) =>
+        shift.summary ? (
+          <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>{fmt(shift.summary.grossSales)}</span>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (shift) => {
+        const discrepancy = shift.summary?.cashDiscrepancy;
+        if (shift.status === 'active') return <Badge color="green">Open</Badge>;
+        if (discrepancy == null) return <Badge color="gray">Not counted</Badge>;
+        if (discrepancy === 0) return <Badge color="green">Balanced</Badge>;
+        return <Badge color="yellow">{discrepancy > 0 ? 'Over' : 'Short'} {fmt(Math.abs(discrepancy))}</Badge>;
+      },
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (shift) =>
+        shift.status === 'active' ? (
+          <div onClick={(e) => e.stopPropagation()}>
+            <Button size="sm" variant="outline" onClick={() => setForceCloseId(shift._id)}>Close</Button>
+          </div>
+        ) : null,
+    },
+  ];
 
   if (!shopLoading && !shiftManagementEnabled) {
     return (
@@ -58,7 +114,7 @@ export default function ShiftsPage() {
           <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Shifts</h1>
           <p className="text-gray-500 text-sm mt-1">Who was on the till, and how the drawer balanced</p>
         </div>
-        <div className="flex gap-1 p-1 rounded-xl" style={{ backgroundColor: '#F1F5F9' }}>
+        <div className="flex gap-1 p-1 rounded-control" style={{ backgroundColor: '#F1F5F9' }}>
           {(['all', 'active', 'closed'] as const).map((option) => (
             <button
               key={option}
@@ -76,57 +132,16 @@ export default function ShiftsPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-      ) : shifts.length === 0 ? (
-        <Card>
-          <p className="text-sm text-gray-500 py-4 text-center">No shifts recorded yet.</p>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {shifts.map((shift) => {
-            const discrepancy = shift.summary?.cashDiscrepancy;
-            return (
-              <Card key={shift._id} padding="sm">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <Clock className="w-4 h-4 shrink-0 text-gray-400" />
-                  <Link href={`/owner/shifts/${shift._id}`} className="flex-1 min-w-[12rem]">
-                    <p className="text-sm font-semibold" style={{ color: '#0F172A' }}>{staffName(shift)}</p>
-                    <p className="text-xs text-gray-500">
-                      {format(new Date(shift.startedAt), 'd MMM, HH:mm')}
-                      {shift.endedAt ? ` → ${format(new Date(shift.endedAt), 'HH:mm')}` : ''}
-                    </p>
-                  </Link>
-
-                  {shift.summary && (
-                    <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>
-                      {fmt(shift.summary.grossSales)}
-                    </span>
-                  )}
-
-                  {shift.status === 'active' ? (
-                    <Badge color="green">Open</Badge>
-                  ) : discrepancy == null ? (
-                    <Badge color="gray">Not counted</Badge>
-                  ) : discrepancy === 0 ? (
-                    <Badge color="green">Balanced</Badge>
-                  ) : (
-                    <Badge color="yellow">
-                      {discrepancy > 0 ? 'Over' : 'Short'} {fmt(Math.abs(discrepancy))}
-                    </Badge>
-                  )}
-
-                  {shift.status === 'active' && (
-                    <Button size="sm" variant="outline" onClick={() => setForceCloseId(shift._id)}>
-                      Close
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      <Card padding="none" className="overflow-hidden">
+        <Table<Shift>
+          columns={columns}
+          data={shifts}
+          keyExtractor={(shift) => shift._id}
+          loading={isLoading}
+          onRowClick={(shift) => router.push(`/owner/shifts/${shift._id}`)}
+          emptyMessage="No shifts recorded yet."
+        />
+      </Card>
 
       {pages > 1 && (
         <div className="flex items-center justify-between">

@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Desktop control radii — replaces the blanket rounded-2xl/rounded-xl mobile-sheet look */
+  --radius-control: 0.5rem;
+  --radius-card: 0.625rem;
+  --radius-modal: 0.75rem;
+
+  /* Elevation scale — flatter, more numerous steps than shadow-sm/shadow-2xl */
+  --shadow-elevation-1: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 1px 0 rgb(15 23 42 / 0.03);
+  --shadow-elevation-2: 0 2px 8px -2px rgb(15 23 42 / 0.08), 0 1px 2px -1px rgb(15 23 42 / 0.04);
+  --shadow-elevation-3: 0 8px 24px -4px rgb(15 23 42 / 0.12), 0 2px 6px -2px rgb(15 23 42 / 0.06);
+
+  /* Hero-number display size (dashboard totals, M-Pesa volume, etc.) */
+  --text-display: 2rem;
+  --text-display--line-height: 2.375rem;
+  --text-display--letter-spacing: -0.01em;
+}
+
 :root {
   --color-primary: #0F766E;
   --color-primary-dark: #115E59;
@@ -20,4 +39,13 @@ body {
 
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -46,13 +46,8 @@ export default function OwnerDashboardPage() {
 
       <TrialBanner />
 
-      <NeedsAttention items={attention} />
-
-      <QuickActions purchasingEnabled={purchasingEnabled} />
-
-      <DailyBrief bullets={brief} />
-
-      {/* Stats */}
+      {/* Stats lead the page — the numbers a desktop dashboard exists to show
+          shouldn't sit below three stacked full-width banners first. */}
       {isLoading ? (
         <div className="flex justify-center py-8"><Spinner /></div>
       ) : (
@@ -81,6 +76,8 @@ export default function OwnerDashboardPage() {
         </div>
       )}
 
+      <NeedsAttention items={attention} />
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Transactions */}
         <Card className="lg:col-span-2">
@@ -97,7 +94,7 @@ export default function OwnerDashboardPage() {
           ) : (
             <div className="space-y-3">
               {(data?.recentTransactions || []).map((tx) => (
-                <div key={tx._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                <div key={tx._id} className="flex items-center justify-between p-3 rounded-control bg-gray-50">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#CCFBF1' }}>
                       <ShoppingCart className="w-4 h-4" style={{ color: '#0F766E' }} />
@@ -111,7 +108,7 @@ export default function OwnerDashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: '#0F766E' }}>
+                    <p className="text-sm font-bold tabular-nums" style={{ color: '#0F766E' }}>
                       {fmt(tx.totalAmount)}
                     </p>
                     <Badge color={tx.paymentMethod === 'mpesa' ? 'teal' : 'gray'}>
@@ -156,6 +153,10 @@ export default function OwnerDashboardPage() {
           )}
         </Card>
       </div>
+
+      <QuickActions purchasingEnabled={purchasingEnabled} />
+
+      <DailyBrief bullets={brief} />
 
       <DepletionSection />
     </div>

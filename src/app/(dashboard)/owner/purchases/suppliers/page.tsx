@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
-import Spinner from '@/components/ui/Spinner';
+import Table, { type Column } from '@/components/ui/Table';
 import SupplierFormModal from '@/components/purchases/SupplierFormModal';
 import { deleteSupplier, getSuppliers, type Supplier } from '@/services/suppliers';
 import { useAuthStore } from '@/store/authStore';
@@ -16,6 +17,7 @@ import { hasPermission } from '@/lib/permissions';
 const PAGE_SIZE = 15;
 
 export default function SuppliersPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const canCreate = hasPermission(user, 'create_purchases');
@@ -49,6 +51,51 @@ export default function SuppliersPage() {
   const suppliers = data?.data ?? [];
   const pages = data?.pagination?.pages ?? 1;
 
+  const columns: Column<Supplier>[] = [
+    {
+      key: 'name',
+      header: 'Supplier',
+      render: (supplier) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#CCFBF1' }}>
+            <Building2 className="w-4 h-4" style={{ color: '#0F766E' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: '#0F172A' }}>{supplier.name}</p>
+            <p className="text-xs text-gray-500 truncate">
+              {[supplier.phone, supplier.location].filter(Boolean).join(' · ') || 'No contact details'}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      className: 'text-right',
+      render: (supplier) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          {canEdit && (
+            <Button variant="ghost" size="icon" aria-label={`Edit ${supplier.name}`} onClick={() => setEditing(supplier)}>
+              <Pencil className="w-4 h-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-red-50"
+              aria-label={`Remove ${supplier.name}`}
+              onClick={() => { setError(''); setRemoving(supplier); }}
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -63,69 +110,28 @@ export default function SuppliersPage() {
         )}
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search suppliers…"
-          aria-label="Search suppliers"
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm bg-white outline-none focus:ring-2 focus:ring-teal-200"
-        />
-      </div>
+      <Input
+        value={search}
+        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+        placeholder="Search suppliers…"
+        aria-label="Search suppliers"
+        icon={<Search className="w-4 h-4" />}
+      />
 
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
       )}
 
-      {isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-      ) : suppliers.length === 0 ? (
-        <Card>
-          <p className="text-sm text-gray-500 py-6 text-center">
-            {search ? 'No suppliers match that.' : 'No suppliers yet.'}
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {suppliers.map((supplier) => (
-            <Card key={supplier._id} padding="sm">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: '#CCFBF1' }}
-                >
-                  <Building2 className="w-4 h-4" style={{ color: '#0F766E' }} />
-                </div>
-                <Link href={`/owner/purchases/suppliers/${supplier._id}`} className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: '#0F172A' }}>{supplier.name}</p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {[supplier.phone, supplier.location].filter(Boolean).join(' · ') || 'No contact details'}
-                  </p>
-                </Link>
-                {canEdit && (
-                  <button
-                    onClick={() => setEditing(supplier)}
-                    aria-label={`Edit ${supplier.name}`}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                )}
-                {canDelete && (
-                  <button
-                    onClick={() => { setError(''); setRemoving(supplier); }}
-                    aria-label={`Remove ${supplier.name}`}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+      <Card padding="none" className="overflow-hidden">
+        <Table<Supplier>
+          columns={columns}
+          data={suppliers}
+          keyExtractor={(supplier) => supplier._id}
+          loading={isLoading}
+          onRowClick={(supplier) => router.push(`/owner/purchases/suppliers/${supplier._id}`)}
+          emptyMessage={search ? 'No suppliers match that.' : 'No suppliers yet.'}
+        />
+      </Card>
 
       {pages > 1 && (
         <div className="flex items-center justify-between">
