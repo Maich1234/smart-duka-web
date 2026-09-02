@@ -16,10 +16,10 @@ export function generateStaticParams(): Params[] {
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const topic = getHelpTopic(slug);
-  if (!topic) return { title: 'Help – Dukana' };
+  if (!topic) return { title: 'Help – DuQana' };
 
   return {
-    title: `${topic.title} – Dukana Help`,
+    title: `${topic.title} – DuQana Help`,
     description: topic.summary,
     keywords: topic.keywords,
     alternates: { canonical: `/help/${topic.slug}` },

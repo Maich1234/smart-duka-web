@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { ShoppingCart, Mail, Phone, Clock, Send, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
 import { SUPPORT_EMAIL, SUPPORT_PHONE } from '@/lib/site';
 import { submitContactForm } from '@/services/support';
@@ -29,11 +30,11 @@ const contactMethods = [
 
 const faqs = [
   {
-    q: 'Is Dukana free to use?',
+    q: 'Is DuQana free to use?',
     a: 'Yes! The Free plan lets you get started with up to 50 products and 1 staff account at no cost. Upgrade to Pro when you need more.',
   },
   {
-    q: 'Does Dukana work offline?',
+    q: 'Does DuQana work offline?',
     a: 'Yes. The mobile app queues sales offline and syncs automatically when you reconnect. The web app requires an internet connection.',
   },
   {
@@ -41,7 +42,7 @@ const faqs = [
     a: 'You add your M-Pesa Business (Paybill or Till) credentials in settings. During checkout, customers receive an STK Push prompt on their phone and pay directly.',
   },
   {
-    q: 'Can multiple staff use Dukana at the same time?',
+    q: 'Can multiple staff use DuQana at the same time?',
     a: 'Absolutely. Each staff member gets their own login with customisable permissions. The owner sees all activity in real time.',
   },
   {
@@ -50,18 +51,38 @@ const faqs = [
   },
 ];
 
+type TurnstileWindow = Window & {
+  onTurnstileVerified?: (token: string) => void;
+  onTurnstileExpired?: () => void;
+};
+
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
+  const [turnstileToken, setTurnstileToken] = useState('');
+
+  useEffect(() => {
+    const w = window as TurnstileWindow;
+    w.onTurnstileVerified = (token) => setTurnstileToken(token);
+    w.onTurnstileExpired = () => setTurnstileToken('');
+    return () => {
+      delete w.onTurnstileVerified;
+      delete w.onTurnstileExpired;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!turnstileToken) {
+      setError('Please complete the verification challenge below.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      await submitContactForm(form);
+      await submitContactForm({ ...form, turnstileToken });
       setSubmitted(true);
     } catch (err) {
       const message =
@@ -75,6 +96,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -83,7 +105,7 @@ export default function ContactPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
                 <ShoppingCart className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>Dukana</span>
+              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
               <Link href="/" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Home</Link>
@@ -150,7 +172,16 @@ export default function ContactPage() {
                   </div>
                   <h3 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Message Sent!</h3>
                   <p className="text-gray-600">Thank you for reaching out. We will reply to <strong>{form.email}</strong> within 24 hours.</p>
-                  <button onClick={() => { setSubmitted(false); setForm({ name: '', email: '', phone: '', subject: '', message: '' }); }} className="mt-6 text-sm font-medium underline" style={{ color: '#0F766E' }}>
+                  <button
+                    onClick={() => {
+                      setSubmitted(false);
+                      setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+                      setTurnstileToken('');
+                      (window as TurnstileWindow & { turnstile?: { reset: () => void } }).turnstile?.reset();
+                    }}
+                    className="mt-6 text-sm font-medium underline"
+                    style={{ color: '#0F766E' }}
+                  >
                     Send another message
                   </button>
                 </div>
@@ -219,6 +250,12 @@ export default function ContactPage() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 transition-all resize-none"
                     />
                   </div>
+                  <div
+                    className="cf-turnstile"
+                    data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                    data-callback="onTurnstileVerified"
+                    data-expired-callback="onTurnstileExpired"
+                  />
                   {error && (
                     <div className="flex items-start gap-2 p-3 rounded-xl text-sm" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -227,7 +264,7 @@ export default function ContactPage() {
                   )}
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !turnstileToken}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white transition-all disabled:opacity-70"
                     style={{ backgroundColor: '#0F766E' }}
                   >
@@ -271,9 +308,9 @@ export default function ContactPage() {
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <ShoppingCart className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-gray-300 font-semibold">Dukana</span>
+            <span className="text-gray-300 font-semibold">DuQana</span>
           </div>
-          <p>© 2025 Dukana. Built with ❤️ for Kenyan businesses.</p>
+          <p>© 2025 DuQana. Built with ❤️ for Kenyan businesses.</p>
           <div className="flex gap-4 mt-3 md:mt-0">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <Link href="/about" className="hover:text-white transition-colors">About</Link>

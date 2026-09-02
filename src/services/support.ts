@@ -6,6 +6,7 @@ export interface ContactFormPayload {
   phone?: string;
   subject: string;
   message: string;
+  turnstileToken: string;
 }
 
 /** The marketing site's contact form — public, unauthenticated. */

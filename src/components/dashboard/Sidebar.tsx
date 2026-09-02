@@ -58,7 +58,7 @@ const ownerLinks: NavLink[] = [
   { href: '/owner/shifts', icon: Clock, label: 'Shifts', requiresFlag: 'shiftManagementEnabled' },
   { href: '/owner/reconciliation', icon: Scale, label: 'Reconciliation' },
   { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
-  { href: '/owner/chat', icon: MessageSquare, label: 'Ask Dukana' },
+  { href: '/owner/chat', icon: MessageSquare, label: 'Ask DuQana' },
   { href: '/owner/expenses', icon: Receipt, label: 'Expenses' },
   { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
   { href: '/owner/payments', icon: CreditCard, label: 'M-Pesa' },
@@ -76,6 +76,7 @@ const staffLinks: NavLink[] = [
   { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
   { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
   { href: '/staff/reconciliation', icon: Scale, label: 'My Reconciliation', permissions: ['view_reconciliation'] },
+  { href: '/staff/refer', icon: Gift, label: 'Refer & Earn' },
   // Purchasing lives under /owner for both roles — one route tree rather than
   // a mirrored one. The dashboard layout lets permitted staff through.
   {
@@ -138,7 +139,7 @@ function SidebarContent({
           <ShoppingBag className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
-          <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>Dukana</span>
+          <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>DuQana</span>
         )}
         {showCloseButton && (
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">

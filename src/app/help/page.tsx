@@ -5,9 +5,9 @@ import { SiteNav } from '@/components/marketing/SiteNav';
 import { HELP_CATEGORIES, HELP_TOPICS } from '@/lib/helpTopics';
 
 export const metadata: Metadata = {
-  title: 'Help & Learning Center – Dukana',
+  title: 'Help & Learning Center – DuQana',
   description:
-    'Plain-language guides for running your shop with Dukana: products and stock, sales and checkout, staff permissions, M-Pesa payments, reports, and receipts.',
+    'Plain-language guides for running your shop with DuQana: products and stock, sales and checkout, staff permissions, M-Pesa payments, reports, and receipts.',
   alternates: { canonical: '/help' },
 };
 
@@ -42,20 +42,20 @@ export default function HelpPage() {
             How can we help?
           </h1>
           <p className="text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
-            Plain-language guides for the parts of Dukana that can be confusing at first. Browse by
+            Plain-language guides for the parts of DuQana that can be confusing at first. Browse by
             topic below.
           </p>
         </div>
       </section>
 
       <main className="max-w-4xl mx-auto px-4 py-14">
-        {/* Deep link, not a regular URL — dukana:// is only ever resolved by
+        {/* Deep link, not a regular URL — duqana:// is only ever resolved by
             the app itself (registered as its scheme in app.json). Opened from
             inside the app's own in-app browser tab, the OS hands control
             straight back to it; opened anywhere else it simply won't do
             anything, which is an acceptable no-op for a web-only visitor. */}
         <a
-          href="dukana://chat?new=1"
+          href="duqana://chat?new=1"
           className="group flex items-center gap-4 rounded-xl border border-gray-100 p-5 mb-12 hover:shadow-sm transition-all"
           style={{ background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)' }}
         >
@@ -63,9 +63,9 @@ export default function HelpPage() {
             <Sparkles className="w-5 h-5" style={{ color: '#B45309' }} />
           </div>
           <div className="flex-1">
-            <h2 className="font-semibold mb-1" style={{ color: '#0F172A' }}>Ask Dukana</h2>
+            <h2 className="font-semibold mb-1" style={{ color: '#0F172A' }}>Ask DuQana</h2>
             <p className="text-sm leading-relaxed" style={{ color: '#64748B' }}>
-              Get an instant answer about your shop from Dukana AI, right in the app.
+              Get an instant answer about your shop from DuQana AI, right in the app.
             </p>
           </div>
           <ChevronRight className="w-5 h-5 shrink-0 text-gray-300 group-hover:text-teal-700 transition-colors" />

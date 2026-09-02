@@ -370,7 +370,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Dukana AI */}
+      {/* DuQana AI */}
       <ShopFeaturesCard />
 
       <DukanaAiCard />

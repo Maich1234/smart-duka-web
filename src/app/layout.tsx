@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   // time — which publishes wrong canonical tags and breaks the SEO value the
   // help articles exist for.
   metadataBase: new URL(SITE_URL),
-  title: 'Dukana – POS System for Kenyan Businesses',
+  title: 'DuQana – POS System for Kenyan Businesses',
   description:
-    'Dukana is a powerful Point-of-Sale system built for Kenyan dukas and retail shops. Manage inventory, accept M-Pesa, and grow your business.',
+    'DuQana is a powerful Point-of-Sale system built for Kenyan dukas and retail shops. Manage inventory, accept M-Pesa, and grow your business.',
   openGraph: {
     siteName: SITE_NAME,
     type: 'website',
