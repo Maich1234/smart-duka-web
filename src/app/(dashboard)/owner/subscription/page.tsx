@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Gift, Sparkles, ShieldCheck, AlertCircle, Lock, Clock, Users, CreditCard, RefreshCw } from 'lucide-react';
+import { Gift, Sparkles, ShieldCheck, AlertCircle, Lock, Clock, Users, CreditCard, RefreshCw, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSubscription, useInvalidateSubscription } from '@/hooks/useSubscription';
 import {
@@ -11,6 +11,7 @@ import {
   cancelSubscription,
   getPlans,
   previewPricing,
+  validatePromo,
   type AccessState,
   type BillingCycle,
   type SubscriptionPlan,
@@ -56,6 +57,10 @@ export default function SubscriptionPage() {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [promo, setPromo] = useState<{ code: string; title: string; discountType: 'percentage' | 'fixed'; discountValue: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
 
   const plan = (subscription?.plan ?? null) as SubscriptionPlan | null;
   const state = access?.state ?? 'none';
@@ -98,19 +103,54 @@ export default function SubscriptionPage() {
   const isSwitching =
     !!renewal && (effectiveSlug !== renewal.planSlug || effectiveCycle !== renewal.billingCycle);
 
-  const { data: switchPreview } = useQuery({
-    queryKey: ['pricingPreview', effectiveSlug, effectiveCycle],
-    queryFn: () => previewPricing({ planSlug: effectiveSlug ?? undefined, billingCycle: effectiveCycle }),
-    enabled: isSwitching && !!effectiveSlug,
+  // A promo code re-prices the same plan/cycle, so it needs a fresh preview
+  // too — not just plan/cycle switches.
+  const needsPreview = isSwitching || !!promo;
+
+  const { data: pricePreview } = useQuery({
+    queryKey: ['pricingPreview', effectiveSlug, effectiveCycle, promo?.code ?? null],
+    queryFn: () => previewPricing({ planSlug: effectiveSlug ?? undefined, billingCycle: effectiveCycle, promoCode: promo?.code }),
+    enabled: needsPreview && !!effectiveSlug,
     staleTime: 30_000,
   });
 
   // Never trust a client-side total: the amount charged is always the
   // server's, whether that's the standing renewal or a fresh preview.
-  const payAmount = isSwitching ? switchPreview?.data.amountDue ?? 0 : renewal?.amountDue ?? 0;
-  const payCurrency = (isSwitching ? switchPreview?.data.currency : renewal?.currency) ?? 'KES';
+  // previewPricing doesn't know about accrued seat charges (it only prices
+  // the plan itself) — those only need adding back in when the owner is
+  // still on their current plan/cycle, since switching either already
+  // resets the billing basis or is a pre-existing gap this doesn't touch.
+  const seatCharges = renewal?.seatCharges ?? 0;
+  const payAmount = isSwitching
+    ? pricePreview?.data.amountDue ?? 0
+    : promo
+      ? (pricePreview?.data.amountDue ?? 0) + seatCharges
+      : renewal?.amountDue ?? 0;
+  const payCurrency = (needsPreview ? pricePreview?.data.currency : renewal?.currency) ?? 'KES';
+  const promoDiscount = promo ? pricePreview?.data.promoDiscount ?? 0 : 0;
   const meta = STATE_META[state];
   const StateIcon = meta.icon;
+
+  const applyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code || promoChecking) return;
+    setPromoChecking(true);
+    setPromoError(null);
+    try {
+      const res = await validatePromo(code);
+      setPromo(res.data);
+      setPromoInput('');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setPromoError(e.response?.data?.message ?? 'That promo code is invalid or has expired.');
+    } finally {
+      setPromoChecking(false);
+    }
+  };
+  const removePromo = () => {
+    setPromo(null);
+    setPromoError(null);
+  };
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
@@ -206,7 +246,13 @@ export default function SubscriptionPage() {
         {renewal && (
           <InfoRow
             icon={CreditCard}
-            label={renewal.billingCycle === 'yearly' ? 'Yearly price' : 'Monthly price'}
+            label={
+              renewal.billingCycle === 'yearly'
+                ? 'Yearly price'
+                : renewal.billingCycle === 'quarterly'
+                  ? '3-month price'
+                  : 'Monthly price'
+            }
             value={fmt(renewal.basePrice ?? renewal.amountDue, renewal.currency)}
           />
         )}
@@ -250,6 +296,35 @@ export default function SubscriptionPage() {
 
         {canPay && (
           <>
+            {promo ? (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl" style={{ backgroundColor: '#E6F4EA' }}>
+                <Check className="w-4 h-4 shrink-0" style={{ color: '#15803D' }} />
+                <span className="flex-1 text-sm font-semibold" style={{ color: '#15803D' }}>
+                  {promo.code} applied{promoDiscount > 0 ? ` · −${fmt(promoDiscount, payCurrency)}` : ''}
+                </span>
+                <button onClick={removePromo} className="text-xs font-semibold text-gray-500 hover:text-gray-700">
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="mb-3">
+                <div className="flex gap-2">
+                  <input
+                    value={promoInput}
+                    onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null); }}
+                    placeholder="Promo code"
+                    aria-label="Promo code"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold tracking-wide uppercase focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                    style={{ color: '#0F172A' }}
+                  />
+                  <Button onClick={applyPromo} disabled={!promoInput.trim()} loading={promoChecking} variant="outline">
+                    Apply
+                  </Button>
+                </div>
+                {promoError && <p className="mt-2 text-xs text-red-600">{promoError}</p>}
+              </div>
+            )}
+
             {bankAvailable ? (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={() => setPayOpen('mpesa')} className="flex-1">
@@ -292,11 +367,11 @@ export default function SubscriptionPage() {
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
               <p className="flex-1 text-sm text-gray-500">
                 Switching to <strong style={{ color: '#0F172A' }}>{effectiveSlug}</strong> ({effectiveCycle}):{' '}
-                {switchPreview ? fmt(payAmount, payCurrency) : 'pricing…'}
+                {pricePreview ? fmt(payAmount, payCurrency) : 'pricing…'}
               </p>
               <Button
                 onClick={() => setPayOpen('mpesa')}
-                disabled={!switchPreview}
+                disabled={!pricePreview}
                 className="w-full sm:w-auto"
               >
                 Pay &amp; switch
@@ -318,10 +393,12 @@ export default function SubscriptionPage() {
         currency={payCurrency}
         billingCycle={effectiveCycle}
         planSlug={effectiveSlug ?? undefined}
+        promoCode={promo?.code}
         defaultPhone={user?.shop?.phone}
         onClose={() => setPayOpen(null)}
         onSuccess={() => {
           setPayOpen(null);
+          removePromo();
           invalidate();
           refetch();
         }}
@@ -333,9 +410,11 @@ export default function SubscriptionPage() {
         currency={payCurrency}
         billingCycle={effectiveCycle}
         planSlug={effectiveSlug ?? undefined}
+        promoCode={promo?.code}
         onClose={() => setPayOpen(null)}
         onSuccess={() => {
           setPayOpen(null);
+          removePromo();
           invalidate();
           refetch();
         }}

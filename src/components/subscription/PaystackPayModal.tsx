@@ -11,25 +11,20 @@ import {
   initiateSubscriptionPayment,
   getSubscriptionPaymentStatus,
   recheckSubscriptionPayment,
-  validatePromo,
   type BillingCycle,
 } from '@/services/subscription';
 
 type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
 
-interface Promo {
-  code: string;
-  title: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number;
-}
-
 interface PaystackPayModalProps {
   isOpen: boolean;
+  /** Already final — the subscription page applies any promo before this is passed in. */
   amount: number;
   currency: string;
   billingCycle: BillingCycle;
   planSlug?: string;
+  /** Validated on the subscription page; carried through so the owner isn't asked twice. */
+  promoCode?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -45,9 +40,9 @@ const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocale
 /**
  * Card / bank transfer subscription payment via Paystack's inline popup.
  * Structurally a sibling of SubscriptionPayModal (same useStkPoll state
- * machine, same promo-code UI) but the "prompt" step is a Paystack popup
- * instead of a phone PIN, so there's no phone number and no SMS-recovery
- * step — "check status again" against Paystack directly is recovery enough.
+ * machine) but the "prompt" step is a Paystack popup instead of a phone PIN,
+ * so there's no phone number and no SMS-recovery step — "check status again"
+ * against Paystack directly is recovery enough.
  */
 export default function PaystackPayModal({
   isOpen,
@@ -55,21 +50,18 @@ export default function PaystackPayModal({
   currency,
   billingCycle,
   planSlug,
+  promoCode,
   onClose,
   onSuccess,
 }: PaystackPayModalProps) {
   const email = useAuthStore((s) => s.user?.email);
-  const [promoInput, setPromoInput] = useState('');
-  const [promo, setPromo] = useState<Promo | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoChecking, setPromoChecking] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [rechecking, setRechecking] = useState(false);
 
   const stk = useStkPoll({
     initiate: async (idempotencyKey) => {
       const res = await initiateSubscriptionPayment(
-        { billingCycle, planSlug, promoCode: promo?.code, provider: 'bank' },
+        { billingCycle, planSlug, promoCode, provider: 'bank' },
         idempotencyKey
       );
       const { paymentId, status, publicKey, providerRef, amount: amt, currency: cur } = res.data;
@@ -133,30 +125,6 @@ export default function PaystackPayModal({
     stk.start();
   };
 
-  const applyPromo = async () => {
-    const code = promoInput.trim().toUpperCase();
-    if (!code || promoChecking) return;
-    setPromoChecking(true);
-    setPromoError(null);
-    try {
-      const res = await validatePromo(code);
-      setPromo(res.data);
-      setPromoInput('');
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setPromoError(e.response?.data?.message ?? 'That promo code is invalid or has expired.');
-    } finally {
-      setPromoChecking(false);
-    }
-  };
-
-  const discount = promo
-    ? promo.discountType === 'percentage'
-      ? Math.round(amount * (promo.discountValue / 100))
-      : Math.min(Math.round(promo.discountValue), amount)
-    : 0;
-  const payable = Math.max(0, amount - discount);
-
   const recheck = async () => {
     if (!stk.id || rechecking) return;
     setRechecking(true);
@@ -193,43 +161,7 @@ export default function PaystackPayModal({
             <span className="font-semibold" style={{ color: '#0F172A' }}>{fmt(amount, currency)}</span>.
           </p>
 
-          {promo ? (
-            <div className="w-full flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ backgroundColor: '#E6F4EA' }}>
-              <Check className="w-4 h-4 shrink-0" style={{ color: '#15803D' }} />
-              <span className="flex-1 text-left text-sm font-semibold" style={{ color: '#15803D' }}>
-                {promo.code} · −{fmt(discount, currency)}
-              </span>
-              <button
-                onClick={() => { setPromo(null); setPromoError(null); }}
-                className="text-xs font-semibold text-gray-500 hover:text-gray-700"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div className="w-full mb-4">
-              <div className="flex gap-2">
-                <input
-                  value={promoInput}
-                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null); }}
-                  placeholder="Promo code (optional)"
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold tracking-wide uppercase focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                  style={{ color: '#0F172A' }}
-                />
-                <button
-                  onClick={applyPromo}
-                  disabled={!promoInput.trim() || promoChecking}
-                  className="px-4 rounded-xl border text-sm font-semibold disabled:opacity-40"
-                  style={{ color: '#0F766E', borderColor: '#0F766E' }}
-                >
-                  {promoChecking ? '…' : 'Apply'}
-                </button>
-              </div>
-              {promoError && <p className="mt-2 text-left text-xs text-red-600">{promoError}</p>}
-            </div>
-          )}
-
-          <Button onClick={pay} className="w-full">{`Pay ${fmt(payable, currency)}`}</Button>
+          <Button onClick={pay} className="w-full">{`Pay ${fmt(amount, currency)}`}</Button>
           <button onClick={handleClose} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Not now</button>
         </div>
       )}

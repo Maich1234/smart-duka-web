@@ -15,6 +15,9 @@ interface PlanCardsProps {
 
 const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocaleString()}`;
 
+const CYCLE_LABEL: Record<BillingCycle, string> = { monthly: 'Monthly', quarterly: '3 Months', yearly: 'Yearly' };
+const CYCLE_UNIT: Record<BillingCycle, string> = { monthly: 'month', quarterly: 'quarter', yearly: 'year' };
+
 /**
  * Plan chooser, ported from the mobile app.
  *
@@ -40,7 +43,7 @@ export default function PlanCards({
       {/* Billing cycle toggle */}
       <div className="flex justify-center mb-6">
         <div className="inline-flex p-1 rounded-xl bg-gray-100" role="tablist" aria-label="Billing cycle">
-          {(['monthly', 'yearly'] as BillingCycle[]).map((cycle) => (
+          {(['monthly', 'quarterly', 'yearly'] as BillingCycle[]).map((cycle) => (
             <button
               key={cycle}
               role="tab"
@@ -51,8 +54,8 @@ export default function PlanCards({
               }`}
               style={billingCycle === cycle ? { color: '#0F766E' } : undefined}
             >
-              {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-              {cycle === 'yearly' && (
+              {CYCLE_LABEL[cycle]}
+              {cycle !== 'monthly' && (
                 <span className="ml-2 text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#E6F4F2', color: '#0F766E' }}>
                   Save
                 </span>
@@ -65,8 +68,12 @@ export default function PlanCards({
       <div className="grid gap-4 md:grid-cols-2">
         {plans.map((plan) => {
           const isSelected = selectedSlug === plan.slug;
-          const total = billingCycle === 'yearly' ? plan.pricing.yearlyTotal : plan.pricing.monthlyTotal;
-          const savings = plan.pricing.yearlySavings;
+          const total = billingCycle === 'yearly'
+            ? plan.pricing.yearlyTotal
+            : billingCycle === 'quarterly'
+              ? plan.pricing.quarterlyTotal
+              : plan.pricing.monthlyTotal;
+          const savings = billingCycle === 'yearly' ? plan.pricing.yearlySavings : plan.pricing.quarterlySavings;
 
           return (
             <button
@@ -96,15 +103,15 @@ export default function PlanCards({
 
               <div className="mb-1">
                 <span className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>{fmt(total, currency)}</span>
-                <span className="text-sm text-gray-500">/{billingCycle === 'yearly' ? 'year' : 'month'}</span>
+                <span className="text-sm text-gray-500">/{CYCLE_UNIT[billingCycle]}</span>
               </div>
               <p className="text-xs text-gray-500 mb-1">
                 For {staffCount} {staffCount === 1 ? 'person' : 'people'}
                 {plan.billingType === 'flat' ? ` · up to ${plan.maxStaff} included` : ' · per person'}
               </p>
-              {billingCycle === 'yearly' && savings > 0 && (
+              {billingCycle !== 'monthly' && savings > 0 && (
                 <p className="text-xs font-semibold mb-2" style={{ color: '#15803D' }}>
-                  Save {fmt(savings, currency)} a year
+                  Save {fmt(savings, currency)} {billingCycle === 'yearly' ? 'a year' : 'every 3 months'}
                 </p>
               )}
               {plan.priceComparison && (

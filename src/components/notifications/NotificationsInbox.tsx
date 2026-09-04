@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bell,
   Package,
+  AlertTriangle,
   TrendingUp,
   BarChart3,
   ShieldCheck,
@@ -26,6 +27,7 @@ import {
 
 const TYPE_META: Record<string, { icon: LucideIcon; label: string }> = {
   depletion_alert: { icon: Package, label: 'Stock alert' },
+  negative_stock_alert: { icon: AlertTriangle, label: 'Negative stock' },
   daily_sales_anomaly: { icon: TrendingUp, label: 'Sales alert' },
   daily_summary: { icon: BarChart3, label: 'Daily summary' },
   subscription_reminder: { icon: ShieldCheck, label: 'Subscription' },

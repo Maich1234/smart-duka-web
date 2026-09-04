@@ -25,7 +25,7 @@ import Spinner from '@/components/ui/Spinner';
 import Table, { type Column } from '@/components/ui/Table';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 import { useMoney } from '@/lib/money';
-import { availableToAdd, clampQty, stepFor } from '@/lib/stock';
+import { availableToAdd, clampQty, stepFor, negativeStockAfter } from '@/lib/stock';
 
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
 interface Product {
@@ -66,15 +66,17 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
   const step = stepFor(product.productType);
   const qty = parseFloat(qtyText);
   // Typed quantities are never rewritten — being silently corrected at a
-  // till is worse than being told. The steppers still clamp, since those
-  // are increments rather than something someone typed.
+  // till is worse than being told. Selling past what's on hand is allowed
+  // (the shop owner is alerted at checkout), so overStock is a heads-up, not
+  // a block — only belowMin (genuinely invalid input) disables Add.
   const overStock = Number.isFinite(max) && qty > max;
   const belowMin = !Number.isFinite(qty) || qty < step;
   const qtyProblem = belowMin
     ? `Enter at least ${step}${isWeighted ? ` ${product.unitOfMeasure}` : ''}.`
-    : overStock
-      ? `Only ${max} ${product.unitOfMeasure} available${inCart(variantId || undefined) > 0 ? ' after what is already in the cart' : ''}.`
-      : '';
+    : '';
+  const qtyWarning = !belowMin && overStock
+    ? `Only ${max} ${product.unitOfMeasure} available${inCart(variantId || undefined) > 0 ? ' after what is already in the cart' : ''} — this will take stock ${qty - max} negative.`
+    : '';
   const canOverride = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
   return (
     <Modal isOpen onClose={onClose} size="sm">
@@ -104,20 +106,22 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
         <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Quantity{isWeighted ? ` (${product.unitOfMeasure})` : ''}</label>
           <div className="flex items-center gap-3">
-            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || step) - step, step, max)))}
+            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || step) - step, step, Infinity)))}
               className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50">
               <Minus className="w-4 h-4 text-gray-600" />
             </button>
             <input type="number" value={qtyText} onChange={(e) => setQtyText(e.target.value)}
-              step={step} min={step} max={Number.isFinite(max) ? max : undefined}
+              step={step} min={step}
               className="flex-1 text-center text-xl font-bold py-2.5 rounded-control border border-gray-200 outline-none focus:ring-2 focus:ring-teal-200" />
-            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || 0) + step, step, max)))}
-              disabled={Number.isFinite(max) && qty >= max} className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
+            <button onClick={() => setQtyText(String(clampQty((parseFloat(qtyText) || 0) + step, step, Infinity)))}
+              className="w-10 h-10 rounded-control border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
               <Plus className="w-4 h-4 text-gray-600" />
             </button>
           </div>
           {qtyProblem ? (
             <p className="text-xs mt-1.5 text-center font-medium" style={{ color: '#B91C1C' }}>{qtyProblem}</p>
+          ) : qtyWarning ? (
+            <p className="text-xs mt-1.5 text-center font-medium" style={{ color: '#B91C1C' }}>{qtyWarning}</p>
           ) : Number.isFinite(max) ? (
             <p className="text-xs mt-1.5 text-center" style={{ color: max === 0 ? '#B91C1C' : '#9CA3AF' }}>
               {max === 0 ? 'All remaining stock is already in the cart' : `${max} ${product.unitOfMeasure} available`}
@@ -315,6 +319,7 @@ export default function StaffSalesPage() {
   const [phoneDigits, setPhoneDigits] = useState('');
   const [quantityModalProduct, setQuantityModalProduct] = useState<Product | null>(null);
   const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
+  const [showStockConfirm, setShowStockConfirm] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
@@ -396,14 +401,12 @@ export default function StaffSalesPage() {
       const key = `${quantityModalProduct!._id}:${variantId ?? ''}`;
       const existing = prev.find((e) => cartKey(e) === key);
       if (existing) {
-        // The modal already caps itself, but another till may have sold some
-        // since this product list was fetched — clamp again rather than trust
-        // possibly stale stock.
+        // Selling past what's on hand is allowed — this only keeps the
+        // quantity step-aligned, it no longer caps it to stock.
         const product = quantityModalProduct!;
-        const ceiling = availableToAdd(product, variantId, 0);
         const step = stepFor(product.productType);
         return prev.map((e) =>
-          cartKey(e) === key ? { ...e, qty: clampQty(e.qty + qty, step, ceiling) } : e
+          cartKey(e) === key ? { ...e, qty: clampQty(e.qty + qty, step, Infinity) } : e
         );
       }
       return [...prev, { product: quantityModalProduct!, qty, unitPrice, variantId, variantName }];
@@ -423,10 +426,8 @@ export default function StaffSalesPage() {
         // a loaf of bread is not something anyone meant.
         const next = e.qty + delta;
         if (next < step) return [];
-        // Cap at what's on the shelf. This had no upper bound at all, so
-        // holding "+" built a basket the server would refuse at checkout.
-        const ceiling = availableToAdd(e.product, e.variantId, 0);
-        return [{ ...e, qty: clampQty(next, step, ceiling) }];
+        // No upper bound — selling past what's on the shelf is allowed.
+        return [{ ...e, qty: clampQty(next, step, Infinity) }];
       })
     );
   };
@@ -439,8 +440,14 @@ export default function StaffSalesPage() {
   const mySalesData = mySalesRaw?.data ?? [];
   const salesTotalPages = mySalesRaw?.pagination?.pages ?? 1;
 
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
+  // Cart lines that would take a product/variant below zero stock.
+  const negativeStockLines = useMemo(
+    () => cart.filter((e) => negativeStockAfter(e.product, e.variantId, e.qty) !== null),
+    [cart]
+  );
+
+  const proceedCheckout = () => {
+    setShowStockConfirm(false);
     // STK Push is the only flow with a precondition, and only where the shop
     // has connected M-Pesa Business. Everything else records and prints.
     if (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled) {
@@ -450,6 +457,15 @@ export default function StaffSalesPage() {
       setMpesaModalOpen(true); return;
     }
     createSaleMutation.mutate({ items: buildItems(), paymentMethod });
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    if (negativeStockLines.length > 0) {
+      setShowStockConfirm(true);
+      return;
+    }
+    proceedCheckout();
   };
 
   const salesColumns: Column<Sale>[] = [
@@ -508,11 +524,13 @@ export default function StaffSalesPage() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {productsData?.map((p) => {
+                  // "out"/"low" are informational only — selling past what's
+                  // on hand is allowed, so the card stays clickable either way.
                   const out = p.trackInventory && p.productType !== 'bundle' && p.quantity <= 0;
                   const low = p.trackInventory && !out && p.quantity <= p.lowStockAlert;
                   return (
-                    <button key={p._id} onClick={() => !out && addToCart(p)} disabled={out}
-                      className={`bg-white rounded-control border text-left p-4 transition-all ${out ? 'opacity-50 cursor-not-allowed border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
+                    <button key={p._id} onClick={() => addToCart(p)}
+                      className={`bg-white rounded-control border text-left p-4 transition-all ${out ? 'border-gray-100' : 'hover:border-[#0F766E] hover:shadow-sm active:scale-95 border-gray-100'}`}>
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: '#F0FDFA' }}>
                         <Package className="w-4 h-4" style={{ color: '#0F766E' }} />
                       </div>
@@ -656,6 +674,27 @@ export default function StaffSalesPage() {
 
       {/* Modals */}
       {quantityModalProduct && <QuantityModal product={quantityModalProduct} inCart={inCart(quantityModalProduct._id)} onConfirm={confirmAdd} onClose={() => setQuantityModalProduct(null)} />}
+      <Modal isOpen={showStockConfirm} onClose={() => setShowStockConfirm(false)} title="Stock Will Go Negative" size="sm">
+        <div className="space-y-3">
+          <div className="space-y-2 text-sm text-gray-600">
+            {negativeStockLines.map((e) => {
+              const variant = e.variantId ? e.product.variants?.find((v) => v._id === e.variantId) : undefined;
+              const name = variant ? `${e.product.name} (${variant.name})` : e.product.name;
+              const available = variant ? variant.quantity : e.product.quantity;
+              return (
+                <p key={cartKey(e)}>
+                  <span className="font-semibold" style={{ color: '#0F172A' }}>{name}</span>: selling {e.qty}, only {available} in stock
+                </p>
+              );
+            })}
+          </div>
+          <p className="text-sm text-gray-500">Continue with this sale? The shop owner will be notified.</p>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowStockConfirm(false)} className="flex-1">Cancel</Button>
+            <Button variant="danger" onClick={proceedCheckout} className="flex-1">Continue Anyway</Button>
+          </div>
+        </div>
+      </Modal>
       <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
       {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
       {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} canVoid={canVoid} onClose={() => setSelectedSale(null)} />}

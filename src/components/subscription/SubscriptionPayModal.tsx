@@ -9,7 +9,6 @@ import {
   initiateSubscriptionPayment,
   getSubscriptionPaymentStatus,
   reconcileSubscriptionByMessage,
-  validatePromo,
   type BillingCycle,
 } from '@/services/subscription';
 
@@ -19,19 +18,15 @@ import {
  */
 type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'recover';
 
-interface Promo {
-  code: string;
-  title: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number;
-}
-
 interface SubscriptionPayModalProps {
   isOpen: boolean;
+  /** Already final — the subscription page applies any promo before this is passed in. */
   amount: number;
   currency: string;
   billingCycle: BillingCycle;
   planSlug?: string;
+  /** Validated on the subscription page; carried through so the owner isn't asked twice. */
+  promoCode?: string;
   /** Prefill — the owner usually pays with their own line. */
   defaultPhone?: string;
   onClose: () => void;
@@ -56,15 +51,12 @@ export default function SubscriptionPayModal({
   currency,
   billingCycle,
   planSlug,
+  promoCode,
   defaultPhone,
   onClose,
   onSuccess,
 }: SubscriptionPayModalProps) {
   const [digits, setDigits] = useState(() => (defaultPhone ?? '').replace(/^\+?254/, '').replace(/\D/g, '').slice(0, 9));
-  const [promoInput, setPromoInput] = useState('');
-  const [promo, setPromo] = useState<Promo | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoChecking, setPromoChecking] = useState(false);
   // Kept so the recovery path can tell the owner which attempt it is chasing.
   const [smsText, setSmsText] = useState('');
   const [recovering, setRecovering] = useState(false);
@@ -74,7 +66,7 @@ export default function SubscriptionPayModal({
   const stk = useStkPoll({
     initiate: async (idempotencyKey) => {
       const res = await initiateSubscriptionPayment(
-        { phoneNumber: `+254${digits}`, billingCycle, planSlug, promoCode: promo?.code },
+        { phoneNumber: `+254${digits}`, billingCycle, planSlug, promoCode },
         idempotencyKey
       );
       return { id: res.data.paymentId, status: res.data.status as StkStatus };
@@ -122,32 +114,6 @@ export default function SubscriptionPayModal({
     setLocalError(null);
     stk.start();
   };
-
-  const applyPromo = async () => {
-    const code = promoInput.trim().toUpperCase();
-    if (!code || promoChecking) return;
-    setPromoChecking(true);
-    setPromoError(null);
-    try {
-      const res = await validatePromo(code);
-      setPromo(res.data);
-      setPromoInput('');
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setPromoError(e.response?.data?.message ?? 'That promo code is invalid or has expired.');
-    } finally {
-      setPromoChecking(false);
-    }
-  };
-
-  // Display-only. The server recomputes the real amount from the code itself,
-  // so a tampered discount here changes nothing that gets charged.
-  const discount = promo
-    ? promo.discountType === 'percentage'
-      ? Math.round(amount * (promo.discountValue / 100))
-      : Math.min(Math.round(promo.discountValue), amount)
-    : 0;
-  const payable = Math.max(0, amount - discount);
 
   /**
    * Last-resort recovery: the owner pastes their M-Pesa confirmation SMS.
@@ -202,45 +168,7 @@ export default function SubscriptionPayModal({
               style={{ color: '#0F172A' }}
             />
           </div>
-          {/* Promo code. Only the code travels to the server; the discount
-              shown here is presentational. */}
-          {promo ? (
-            <div className="w-full flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ backgroundColor: '#E6F4EA' }}>
-              <Check className="w-4 h-4 shrink-0" style={{ color: '#15803D' }} />
-              <span className="flex-1 text-left text-sm font-semibold" style={{ color: '#15803D' }}>
-                {promo.code} · −{fmt(discount, currency)}
-              </span>
-              <button
-                onClick={() => { setPromo(null); setPromoError(null); }}
-                className="text-xs font-semibold text-gray-500 hover:text-gray-700"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div className="w-full mb-4">
-              <div className="flex gap-2">
-                <input
-                  value={promoInput}
-                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null); }}
-                  placeholder="Promo code (optional)"
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold tracking-wide uppercase focus:outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                  style={{ color: '#0F172A' }}
-                />
-                <button
-                  onClick={applyPromo}
-                  disabled={!promoInput.trim() || promoChecking}
-                  className="px-4 rounded-xl border text-sm font-semibold disabled:opacity-40"
-                  style={{ color: '#0F766E', borderColor: '#0F766E' }}
-                >
-                  {promoChecking ? '…' : 'Apply'}
-                </button>
-              </div>
-              {promoError && <p className="mt-2 text-left text-xs text-red-600">{promoError}</p>}
-            </div>
-          )}
-
-          <Button onClick={pay} disabled={!phoneValid} className="w-full">{`Pay ${fmt(payable, currency)}`}</Button>
+          <Button onClick={pay} disabled={!phoneValid} className="w-full">{`Pay ${fmt(amount, currency)}`}</Button>
           <button onClick={handleClose} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Not now</button>
         </div>
       )}

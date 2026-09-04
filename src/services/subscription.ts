@@ -1,13 +1,15 @@
 import api from '@/lib/api';
 
-export type BillingCycle = 'monthly' | 'yearly';
+export type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'cancelled';
 export type AccessState = 'none' | 'trialing' | 'active' | 'grace' | 'locked';
 export type PaymentStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
 
 export interface PlanPricing {
   monthlyTotal: number;
+  quarterlyTotal: number;
   yearlyTotal: number;
+  quarterlySavings: number;
   yearlySavings: number;
 }
 
@@ -19,6 +21,7 @@ export interface SubscriptionPlan {
   description: string;
   billingType: 'per_staff' | 'flat';
   monthlyPrice: number;
+  quarterlyDiscountPercent: number;
   yearlyDiscountPercent: number;
   maxStaff: number;
   extraStaffPrice: number;
@@ -123,7 +126,9 @@ export interface PricingPreview {
   staffCount: number;
   billingCycle: BillingCycle;
   monthlyTotal: number;
+  quarterlyTotal: number;
   yearlyTotal: number;
+  quarterlySavings: number;
   yearlySavings: number;
   promoDiscount: number;
   amountDue: number;
