@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuthStore();
-  const { access } = useSubscription();
+  const { access, isLoading: subscriptionLoading } = useSubscription();
   const { shop } = useShop();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,7 +75,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [mounted, isAuthenticated, user, access, pathname, router]);
 
-  if (!mounted || !isAuthenticated) {
+  // access is undefined until this resolves — rendering real content before
+  // then lets a locked owner's dashboard flash on screen for a frame before
+  // the redirect effect above catches up.
+  if (!mounted || !isAuthenticated || (user?.role === 'owner' && subscriptionLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8FAFC' }}>
         <Spinner size="lg" />
