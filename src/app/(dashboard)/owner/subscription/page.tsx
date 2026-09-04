@@ -10,6 +10,7 @@ import {
   activateTrial,
   cancelSubscription,
   getPlans,
+  initiateSubscriptionPayment,
   previewPricing,
   validatePromo,
   type AccessState,
@@ -56,6 +57,7 @@ export default function SubscriptionPage() {
   const [selectedCycle, setSelectedCycle] = useState<BillingCycle | null>(null);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [working, setWorking] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [promoInput, setPromoInput] = useState('');
   const [promo, setPromo] = useState<{ code: string; title: string; discountType: 'percentage' | 'fixed'; discountValue: number } | null>(null);
@@ -128,8 +130,47 @@ export default function SubscriptionPage() {
       : renewal?.amountDue ?? 0;
   const payCurrency = (needsPreview ? pricePreview?.data.currency : renewal?.currency) ?? 'KES';
   const promoDiscount = promo ? pricePreview?.data.promoDiscount ?? 0 : 0;
+  // Only meaningful once a live server preview backs it up (switching plans,
+  // or a promo applied) — the plain-renewal amount already reflects any
+  // banked referral credit on its own and never needs this shortcut.
+  const isFreeActivation = needsPreview && !!pricePreview && payAmount <= 0;
   const meta = STATE_META[state];
   const StateIcon = meta.icon;
+
+  // Skips the M-Pesa/Paystack modal entirely for a promo/referral discount
+  // that already covers the invoice in full — there's nothing to pay, so
+  // asking for a phone number or opening a card popup would be pointless.
+  // The server independently recomputes and enforces amountDue <= 0 itself;
+  // `isFreeActivation` only decides which button to render.
+  const activateFree = async () => {
+    if (activating || working) return;
+    setActivating(true);
+    try {
+      const res = await initiateSubscriptionPayment(
+        { billingCycle: effectiveCycle, planSlug: effectiveSlug ?? undefined, promoCode: promo?.code },
+        crypto.randomUUID()
+      );
+      if (res.data.status === 'success') {
+        showToast('success', res.message || 'Subscription activated for free.');
+        setPayOpen(null);
+        setShowPlanPicker(false);
+        removePromo();
+        invalidate();
+        refetch();
+      } else {
+        // The server disagreed with our last preview (price moved between
+        // preview and click) — safer to ask for a fresh attempt than open a
+        // payment modal pre-loaded with a now-stale amount.
+        showToast('error', 'Pricing just changed — please try again.');
+        invalidate();
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast('error', e.response?.data?.message ?? 'Could not activate the subscription. Try again.');
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
@@ -325,7 +366,11 @@ export default function SubscriptionPage() {
               </div>
             )}
 
-            {bankAvailable ? (
+            {isFreeActivation ? (
+              <Button onClick={activateFree} loading={activating} className="w-full">
+                Activate for free
+              </Button>
+            ) : bankAvailable ? (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={() => setPayOpen('mpesa')} className="flex-1">
                   M-Pesa · {fmt(payAmount, payCurrency)}
@@ -367,14 +412,15 @@ export default function SubscriptionPage() {
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
               <p className="flex-1 text-sm text-gray-500">
                 Switching to <strong style={{ color: '#0F172A' }}>{effectiveSlug}</strong> ({effectiveCycle}):{' '}
-                {pricePreview ? fmt(payAmount, payCurrency) : 'pricing…'}
+                {pricePreview ? (isFreeActivation ? 'free' : fmt(payAmount, payCurrency)) : 'pricing…'}
               </p>
               <Button
-                onClick={() => setPayOpen('mpesa')}
+                onClick={isFreeActivation ? activateFree : () => setPayOpen('mpesa')}
                 disabled={!pricePreview}
+                loading={isFreeActivation && activating}
                 className="w-full sm:w-auto"
               >
-                Pay &amp; switch
+                {isFreeActivation ? 'Activate for free' : 'Pay & switch'}
               </Button>
             </div>
           )}

@@ -68,7 +68,7 @@ export default function PaystackPayModal({
       if (status !== 'pending') {
         return { id: paymentId, status: status as StkStatus };
       }
-      if (!publicKey) {
+      if (!publicKey || !providerRef) {
         throw new Error('Card and bank payments are not configured yet. Please pay with M-Pesa for now.');
       }
 

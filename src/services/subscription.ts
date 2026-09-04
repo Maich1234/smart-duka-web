@@ -196,7 +196,8 @@ export async function initiateSubscriptionPayment(
     currency: string;
     /** Paystack only — the client opens its own popup with these. Null for M-Pesa. */
     publicKey: string | null;
-    providerRef: string;
+    /** Null when a promo/referral discount covered the invoice in full — no provider was ever charged. */
+    providerRef: string | null;
   };
   message: string;
 }> {
