@@ -9,6 +9,7 @@ import {
   TrendingUp,
   BarChart3,
   ShieldCheck,
+  Shield,
   Clock,
   Megaphone,
   type LucideIcon,
@@ -33,6 +34,7 @@ const TYPE_META: Record<string, { icon: LucideIcon; label: string }> = {
   subscription_reminder: { icon: ShieldCheck, label: 'Subscription' },
   shift_closed: { icon: Clock, label: 'Shift' },
   campaign: { icon: Megaphone, label: 'Announcement' },
+  security_alert: { icon: Shield, label: 'Security' },
   general: { icon: Bell, label: 'Notification' },
 };
 
