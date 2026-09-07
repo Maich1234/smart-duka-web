@@ -15,7 +15,6 @@ import {
   ArrowRight,
   Menu,
   X,
-  TrendingUp,
   Package,
   CreditCard,
   MessageSquare,
@@ -228,52 +227,26 @@ export default function LandingPage() {
             </div>
 
             <div className="relative">
-              <div className="rounded-2xl shadow-2xl overflow-hidden border border-gray-200 bg-white">
-                <div className="p-4 border-b flex items-center gap-2" style={{ backgroundColor: '#0F766E' }}>
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
-                  </div>
-                  <span className="text-white text-sm font-medium ml-2">DuQana Dashboard</span>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: "Today's Sales", value: 'KES 24,500', icon: TrendingUp, color: '#0F766E' },
-                      { label: 'Products', value: '142', icon: Package, color: '#C8932A' },
-                      { label: 'Transactions', value: '38', icon: CreditCard, color: '#14B8A6' },
-                      { label: 'Staff Online', value: '3', icon: Users, color: '#115E59' },
-                    ].map((s) => (
-                      <div key={s.label} className="rounded-xl p-4 border border-gray-100 bg-gray-50">
-                        <div className="flex items-center gap-2 mb-2">
-                          <s.icon className="w-4 h-4" style={{ color: s.color }} />
-                          <span className="text-xs text-gray-500">{s.label}</span>
-                        </div>
-                        <p className="text-lg font-bold" style={{ color: '#0F172A' }}>{s.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="rounded-xl border border-gray-100 p-4 bg-gray-50">
-                    <p className="text-xs font-medium text-gray-500 mb-3">Recent Sales</p>
-                    {[
-                      { item: 'Unga 2kg', amount: 'KES 180', time: '2m ago' },
-                      { item: 'Cooking Oil 1L', amount: 'KES 320', time: '5m ago' },
-                      { item: 'Sugar 1kg', amount: 'KES 160', time: '12m ago' },
-                    ].map((t, i) => (
-                      <div key={i} className="flex justify-between items-center py-2 border-b last:border-0 border-gray-100">
-                        <span className="text-sm text-gray-700">{t.item}</span>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold" style={{ color: '#0F766E' }}>{t.amount}</p>
-                          <p className="text-xs text-gray-400">{t.time}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div className="rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+                <img
+                  src="/images/hero-photo.jpg"
+                  alt="A DuQana shop owner checking today's sales on her phone"
+                  className="w-full h-auto block"
+                  width={600}
+                  height={430}
+                />
               </div>
               <div className="absolute -top-4 -right-4 w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#C8932A' }}>
                 <Zap className="w-8 h-8 text-white" />
+              </div>
+              <div className="hidden sm:block absolute -bottom-6 -left-6 w-44 rounded-xl shadow-xl border border-gray-100 overflow-hidden bg-white">
+                <img
+                  src="/images/hero-insight-card.png"
+                  alt="A real Reports screen from the DuQana app"
+                  className="w-full h-auto block"
+                  width={480}
+                  height={430}
+                />
               </div>
             </div>
           </div>
