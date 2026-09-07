@@ -19,6 +19,7 @@ import clsx from 'clsx';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
+import { useToast } from '@/components/ui/Toast';
 import {
   getNotifications,
   markNotificationRead,
@@ -48,6 +49,7 @@ const metaFor = (type: string) => TYPE_META[type] ?? TYPE_META.general;
  */
 export default function NotificationsInbox() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AppNotification | null>(null);
 
@@ -67,11 +69,13 @@ export default function NotificationsInbox() {
   const markReadMutation = useMutation({
     mutationFn: markNotificationRead,
     onSuccess: invalidate,
+    onError: () => showToast('Failed to mark notification as read', 'error'),
   });
 
   const markAllMutation = useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: invalidate,
+    onError: () => showToast('Failed to mark all notifications as read', 'error'),
   });
 
   const open = (item: AppNotification) => {

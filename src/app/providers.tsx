@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { REFRESH_TOKEN_KEY, TOKEN_KEY, USER_KEY, useAuthStore } from '@/store/authStore';
+import { ToastProvider } from '@/components/ui/Toast';
 
 function AuthHydrator({ children }: { children: React.ReactNode }) {
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -38,7 +39,9 @@ function AuthHydrator({ children }: { children: React.ReactNode }) {
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthHydrator>{children}</AuthHydrator>
+      <ToastProvider>
+        <AuthHydrator>{children}</AuthHydrator>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

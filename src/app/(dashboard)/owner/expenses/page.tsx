@@ -14,6 +14,7 @@ import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Table, { type Column } from '@/components/ui/Table';
+import { useToast } from '@/components/ui/Toast';
 import { useMoney } from '@/lib/money';
 import { useShop } from '@/hooks/useShop';
 import {
@@ -56,6 +57,7 @@ export default function ExpensesPage() {
   const fmt = useMoney();
   const { currency } = useShop();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [addOpen, setAddOpen] = useState(false);
   const [serverError, setServerError] = useState('');
 
@@ -89,6 +91,10 @@ export default function ExpensesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/expenses/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to delete expense', 'error');
+    },
   });
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormData>({
@@ -121,7 +127,15 @@ export default function ExpensesPage() {
       key: 'actions',
       header: '',
       render: (e) => (
-        <Button variant="ghost" size="icon" className="hover:bg-red-50" aria-label="Delete expense" onClick={() => deleteMutation.mutate(e._id)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-red-50"
+          aria-label="Delete expense"
+          loading={deleteMutation.isPending && deleteMutation.variables === e._id}
+          disabled={deleteMutation.isPending && deleteMutation.variables !== e._id}
+          onClick={() => deleteMutation.mutate(e._id)}
+        >
           <Trash2 className="w-4 h-4 text-red-400" />
         </Button>
       ),

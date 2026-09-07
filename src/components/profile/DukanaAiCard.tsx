@@ -23,13 +23,18 @@ const HELP_URL = '/help/smart-duka-ai';
 export function DukanaAiCard() {
   const { state, aiEnabled } = useAiAccess();
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [error, setError] = useState('');
   const queryClient = useQueryClient();
 
   const toggleMutation = useMutation({
     mutationFn: (enabled: boolean) => updateShopConfig({ aiEnabled: enabled }),
     onSuccess: () => {
+      setError('');
       queryClient.invalidateQueries({ queryKey: SHOP_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['aiInsight'] });
+    },
+    onError: (err: { response?: { data?: { message?: string } } }) => {
+      setError(err?.response?.data?.message ?? 'Could not save that. Try again.');
     },
   });
 
@@ -43,6 +48,10 @@ export function DukanaAiCard() {
         </div>
         <h2 className="font-bold" style={{ color: '#0F172A' }}>DuQana AI</h2>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+      )}
 
       {!isSubscribed ? (
         <Link href="/owner/subscription" className="flex items-center justify-between gap-3 group">

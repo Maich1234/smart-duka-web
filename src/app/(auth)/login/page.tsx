@@ -11,6 +11,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getDeviceInfo } from '@/utils/deviceId';
 import { hasCompletedOnboarding } from '@/store/onboardingStore';
+import { useToast } from '@/components/ui/Toast';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -34,6 +35,7 @@ const EXPIRY_NOTICES: Record<string, string> = {
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
@@ -64,6 +66,7 @@ export default function LoginPage() {
       // token's one hour. Dropping it here was why web users were signed out
       // hourly.
       login(userData, userData.token, userData.refreshToken);
+      showToast('Signed in successfully', 'success');
       if (userData.role !== 'owner') {
         router.push('/staff/dashboard');
         return;

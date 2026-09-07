@@ -29,6 +29,7 @@ export default function ForgotPasswordPage() {
   const [canResend, setCanResend] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -46,6 +47,7 @@ export default function ForgotPasswordPage() {
 
   const handleEmailSubmit = async (data: EmailData) => {
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       await api.post('/auth/forgot-password', { email: data.email });
@@ -75,6 +77,7 @@ export default function ForgotPasswordPage() {
     const code = otp.join('');
     if (code.length !== 6) { setError('Enter all 6 digits'); return; }
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       await api.post('/auth/verify-otp', { email, otp: code });
@@ -103,12 +106,18 @@ export default function ForgotPasswordPage() {
 
   const resend = async () => {
     if (!canResend) return;
+    setError('');
+    setSuccess('');
     setLoading(true);
     try {
       await api.post('/auth/forgot-password', { email });
       setCountdown(60);
       setCanResend(false);
-    } catch { /* ignore */ } finally {
+      setSuccess('Code resent successfully!');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Failed to resend code');
+    } finally {
       setLoading(false);
     }
   };
@@ -150,6 +159,9 @@ export default function ForgotPasswordPage() {
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+      )}
+      {success && (
+        <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">{success}</div>
       )}
 
       {step === 'email' && (

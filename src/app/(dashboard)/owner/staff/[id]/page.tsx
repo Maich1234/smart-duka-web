@@ -12,6 +12,7 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import { useToast } from '@/components/ui/Toast';
 import CommissionCard from '@/components/sales/CommissionCard';
 import { SaleStatusBadge } from '@/components/sales/RefundSaleSection';
 import { useShop } from '@/hooks/useShop';
@@ -86,6 +87,7 @@ export default function StaffDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const fmtKES = useMoney();
   const [resetOpen, setResetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -120,6 +122,10 @@ export default function StaffDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       router.push('/owner/staff');
     },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to remove staff member', 'error');
+    },
   });
 
   const forceLogoutMutation = useMutation({
@@ -127,6 +133,10 @@ export default function StaffDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', id] });
       setForceLogoutOpen(false);
+    },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to log staff member out', 'error');
     },
   });
 
@@ -177,6 +187,10 @@ export default function StaffDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['staffDeletionRequests'] });
       setApproveClosureOpen(false);
     },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to approve closure request', 'error');
+    },
   });
 
   const declineClosureMutation = useMutation({
@@ -186,6 +200,10 @@ export default function StaffDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['staffDeletionRequests'] });
       setDeclineClosureOpen(false);
       setDeclineReason('');
+    },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to decline closure request', 'error');
     },
   });
 

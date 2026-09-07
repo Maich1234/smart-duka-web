@@ -15,6 +15,7 @@ import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
+import { useToast } from '@/components/ui/Toast';
 import {
   forceLogoutStaff,
   checkStaffEmailAvailability,
@@ -52,6 +53,7 @@ const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocale
 
 export default function StaffPage() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const shopName = useAuthStore((s) => s.user?.shop?.name) ?? '';
   const domain = useMemo(() => buildSystemEmailDomain(shopName), [shopName]);
   const [addOpen, setAddOpen] = useState(false);
@@ -148,6 +150,10 @@ export default function StaffPage() {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       setDeleteId(null);
     },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to remove staff member', 'error');
+    },
   });
 
   const forceLogoutMutation = useMutation({
@@ -155,6 +161,10 @@ export default function StaffPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       setForceLogoutTarget(null);
+    },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to log staff member out', 'error');
     },
   });
 
@@ -425,6 +435,9 @@ export default function StaffPage() {
                 )}
                 {availability === 'taken' && (
                   <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5"><XCircle className="w-3.5 h-3.5" /> This email is taken. Try another</p>
+                )}
+                {availability === 'error' && (
+                  <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5"><XCircle className="w-3.5 h-3.5" /> Couldn&apos;t check availability. It will be checked again on submit</p>
                 )}
                 {availability === 'idle' && (
                   <p className="text-xs text-gray-400 mt-1.5">Auto-verified: ready to use immediately, no email needed.</p>

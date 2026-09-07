@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import Table, { type Column } from '@/components/ui/Table';
+import { useToast } from '@/components/ui/Toast';
 import { useMoney } from '@/lib/money';
 
 interface Product {
@@ -32,6 +33,7 @@ interface ProductsResponse {
 export default function InventoryPage() {
   const fmt = useMoney();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -54,6 +56,10 @@ export default function InventoryPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setDeleteId(null);
+    },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      showToast(e.response?.data?.message || 'Failed to delete product', 'error');
     },
   });
 
