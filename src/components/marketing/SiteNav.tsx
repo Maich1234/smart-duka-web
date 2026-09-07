@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
 
 const LINKS = [
   { href: '/', label: 'Home' },
@@ -23,7 +22,7 @@ export function SiteNav({ active }: { active?: string }) {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-              <ShoppingCart className="w-5 h-5 text-white" />
+              <img src="/icons/logo-mark.png" alt="" className="w-5 h-5" />
             </div>
             <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
           </Link>

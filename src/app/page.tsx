@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import {
   ShoppingCart,
   BarChart3,
@@ -18,7 +19,15 @@ import {
   Package,
   CreditCard,
   MessageSquare,
+  Truck,
 } from 'lucide-react';
+import { getPublicStats, getPublicPlans } from '@/services/publicMarketing';
+
+/** Never claims a number smaller than `floor` — true counts are honest but
+ * an early, tiny real number reads as failure rather than growth. */
+function formatFloored(value: number | undefined, floor: number): string {
+  return `${Math.max(value ?? 0, floor).toLocaleString()}+`;
+}
 
 const features = [
   {
@@ -43,13 +52,28 @@ const features = [
   },
   {
     icon: CreditCard,
-    title: 'M-Pesa Integration',
-    description: 'Accept M-Pesa STK Push payments directly. Automatic transaction reconciliation and receipt generation.',
+    title: 'Flexible Payments',
+    description: 'Accept M-Pesa STK Push, cash, and your own custom till buttons. Automatic reconciliation and receipt generation.',
   },
   {
     icon: Shield,
     title: 'Secure & Reliable',
     description: 'Bank-grade security with role-based access control. Your data is encrypted and always backed up.',
+  },
+  {
+    icon: MessageSquare,
+    title: 'AI Business Assistant',
+    description: 'Ask Bella about today’s sales, this month’s profit, or low stock in plain language, no digging through reports.',
+  },
+  {
+    icon: Smartphone,
+    title: 'Works Offline, Always',
+    description: 'Keep selling even without internet. Every sale queues locally and syncs automatically the moment you’re back online.',
+  },
+  {
+    icon: Truck,
+    title: 'Purchasing & Suppliers',
+    description: 'Raise purchase orders, track deliveries, and restock from suppliers, with stock updating automatically on receipt.',
   },
 ];
 
@@ -92,15 +116,28 @@ const testimonials = [
   },
 ];
 
-const stats = [
-  { value: '5,000+', label: 'Active Shops' },
-  { value: 'KES 2B+', label: 'Transactions Processed' },
-  { value: '99.9%', label: 'Uptime' },
-  { value: '4.9★', label: 'Average Rating' },
-];
-
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { data: publicStats } = useQuery({
+    queryKey: ['public-stats'],
+    queryFn: getPublicStats,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: publicPlans, isError: plansError } = useQuery({
+    queryKey: ['public-plans'],
+    queryFn: getPublicPlans,
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
+  });
+
+  const shopsDisplay = formatFloored(publicStats?.shopCount, 500);
+  const stats = [
+    { value: shopsDisplay, label: 'Active Shops' },
+    { value: formatFloored(publicStats?.transactionCount, 1000), label: 'Transactions Processed' },
+    { value: '99.9%', label: 'Uptime' },
+    { value: publicStats?.rating?.count ? `${publicStats.rating.average.toFixed(1)}★` : '—', label: 'Average Rating' },
+  ];
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
@@ -110,7 +147,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-                <ShoppingCart className="w-5 h-5 text-white" />
+                <img src="/icons/logo-mark.png" alt="" className="w-5 h-5" />
               </div>
               <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
             </div>
@@ -186,7 +223,7 @@ export default function LandingPage() {
                     <div key={i} className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: ['#0F766E','#C8932A','#115E59','#14B8A6'][i] }}>{l}</div>
                   ))}
                 </div>
-                <p className="text-sm text-gray-600"><strong className="text-gray-900">5,000+ shops</strong> trust DuQana</p>
+                <p className="text-sm text-gray-600"><strong className="text-gray-900">{shopsDisplay} shops</strong> trust DuQana</p>
               </div>
             </div>
 
@@ -343,48 +380,71 @@ export default function LandingPage() {
             <p className="text-lg text-gray-600">No hidden fees. Cancel anytime.</p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free */}
-            <div className="rounded-2xl border-2 border-gray-200 p-8">
-              <h3 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Free</h3>
-              <p className="text-gray-500 mb-6">Perfect for getting started</p>
-              <div className="mb-8">
-                <span className="text-4xl font-extrabold" style={{ color: '#0F172A' }}>KES 0</span>
-                <span className="text-gray-500">/month</span>
+            {plansError ? (
+              <div className="md:col-span-2 text-center py-8 text-gray-500">
+                Pricing is temporarily unavailable.{' '}
+                <Link href="/contact" className="font-semibold underline" style={{ color: '#0F766E' }}>
+                  Contact us
+                </Link>{' '}
+                for current plans.
               </div>
-              <ul className="space-y-3 mb-8">
-                {['Up to 50 products', '1 staff account', 'Basic sales reports', 'M-Pesa payments', 'Email support'].map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-sm text-gray-700">
-                    <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#0F766E' }} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block text-center py-3 rounded-xl font-semibold border-2 transition-all" style={{ color: '#0F766E', borderColor: '#0F766E' }}>
-                Get Started Free
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div className="rounded-2xl p-8 text-white relative overflow-hidden shadow-2xl" style={{ backgroundColor: '#0F766E' }}>
-              <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: '#C8932A' }}>POPULAR</div>
-              <h3 className="text-xl font-bold mb-2">Pro</h3>
-              <p className="opacity-80 mb-6">For growing businesses</p>
-              <div className="mb-8">
-                <span className="text-4xl font-extrabold">KES 999</span>
-                <span className="opacity-80">/month</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {['Unlimited products', 'Up to 10 staff', 'Advanced analytics & reports', 'M-Pesa + cash reconciliation', 'Low stock alerts', 'Receipt sharing', 'Priority support', 'Data export'].map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-sm opacity-90">
-                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block text-center py-3 rounded-xl font-semibold transition-all" style={{ backgroundColor: '#C8932A' }}>
-                Start 14-Day Free Trial
-              </Link>
-            </div>
+            ) : publicPlans === undefined
+              ? [0, 1].map((i) => (
+                  <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 animate-pulse">
+                    <div className="h-6 w-24 rounded bg-gray-200 mb-3" />
+                    <div className="h-4 w-40 rounded bg-gray-100 mb-6" />
+                    <div className="h-10 w-32 rounded bg-gray-200 mb-8" />
+                    <div className="space-y-3 mb-8">
+                      {[0, 1, 2, 3].map((j) => <div key={j} className="h-4 w-full rounded bg-gray-100" />)}
+                    </div>
+                    <div className="h-12 rounded-xl bg-gray-200" />
+                  </div>
+                ))
+              : publicPlans.map((plan) => {
+                  const highlighted = !!plan.badge;
+                  return (
+                    <div
+                      key={plan.slug}
+                      className={highlighted
+                        ? 'rounded-2xl p-8 text-white relative overflow-hidden shadow-2xl'
+                        : 'rounded-2xl border-2 border-gray-200 p-8'}
+                      style={highlighted ? { backgroundColor: '#0F766E' } : undefined}
+                    >
+                      {highlighted && (
+                        <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: '#C8932A' }}>
+                          {plan.badge!.toUpperCase()}
+                        </div>
+                      )}
+                      <h3 className="text-xl font-bold mb-2" style={highlighted ? undefined : { color: '#0F172A' }}>{plan.name}</h3>
+                      <p className={highlighted ? 'opacity-80 mb-6' : 'text-gray-500 mb-6'}>{plan.tagline || plan.description}</p>
+                      <div className="mb-8">
+                        <span className="text-4xl font-extrabold" style={highlighted ? undefined : { color: '#0F172A' }}>
+                          {plan.currency} {plan.monthlyPrice.toLocaleString()}
+                        </span>
+                        <span className={highlighted ? 'opacity-80' : 'text-gray-500'}>
+                          {plan.billingType === 'per_staff' ? '/staff/month' : '/month'}
+                        </span>
+                      </div>
+                      <ul className="space-y-3 mb-8">
+                        {plan.highlights.map((f) => (
+                          <li key={f} className={highlighted ? 'flex items-center gap-3 text-sm opacity-90' : 'flex items-center gap-3 text-sm text-gray-700'}>
+                            <CheckCircle className="w-4 h-4 flex-shrink-0" style={highlighted ? undefined : { color: '#0F766E' }} />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link
+                        href="/register"
+                        className={highlighted
+                          ? 'block text-center py-3 rounded-xl font-semibold transition-all'
+                          : 'block text-center py-3 rounded-xl font-semibold border-2 transition-all'}
+                        style={highlighted ? { backgroundColor: '#C8932A' } : { color: '#0F766E', borderColor: '#0F766E' }}
+                      >
+                        Start {plan.trialDays}-Day Free Trial
+                      </Link>
+                    </div>
+                  );
+                })}
           </div>
         </div>
       </section>
@@ -393,7 +453,7 @@ export default function LandingPage() {
       <section className="py-20" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #115E59 100%)' }}>
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Ready to Grow Your Business?</h2>
-          <p className="text-lg mb-8 opacity-90 text-white">Join thousands of Kenyan shop owners who trust DuQana every day.</p>
+          <p className="text-lg mb-8 opacity-90 text-white">Join {shopsDisplay} Kenyan shop owners who trust DuQana every day.</p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link href="/register" className="px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl" style={{ backgroundColor: '#C8932A', color: 'white' }}>
               Create Free Account
@@ -412,7 +472,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-                  <ShoppingCart className="w-5 h-5 text-white" />
+                  <img src="/icons/logo-mark.png" alt="" className="w-5 h-5" />
                 </div>
                 <span className="text-lg font-bold">DuQana</span>
               </div>
@@ -444,7 +504,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-            <p>© 2025 DuQana. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} DuQana. All rights reserved.</p>
             <p className="mt-2 md:mt-0">Built with ❤️ for Kenyan businesses</p>
           </div>
         </div>

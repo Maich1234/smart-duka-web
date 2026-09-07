@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ShoppingCart, Target, Heart, Users, TrendingUp, Shield, ArrowRight } from 'lucide-react';
+import { Target, Heart, Users, TrendingUp, Shield, ArrowRight } from 'lucide-react';
 
 const team = [
   {
@@ -67,7 +67,7 @@ export default function AboutPage() {
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-                <ShoppingCart className="w-5 h-5 text-white" />
+                <img src="/icons/logo-mark.png" alt="" className="w-5 h-5" />
               </div>
               <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
             </Link>
@@ -231,11 +231,11 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
           <div className="flex items-center gap-2 mb-3 md:mb-0">
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-              <ShoppingCart className="w-3.5 h-3.5 text-white" />
+              <img src="/icons/logo-mark.png" alt="" className="w-4 h-4" />
             </div>
             <span className="text-gray-300 font-semibold">DuQana</span>
           </div>
-          <p>© 2025 DuQana. Built with ❤️ for Kenyan businesses.</p>
+          <p>© {new Date().getFullYear()} DuQana. Built with ❤️ for Kenyan businesses.</p>
           <div className="flex gap-4 mt-3 md:mt-0">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <Link href="/about" className="hover:text-white transition-colors">About</Link>
