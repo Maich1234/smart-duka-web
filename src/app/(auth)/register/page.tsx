@@ -38,6 +38,7 @@ function RegisterForm() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -61,8 +62,25 @@ function RegisterForm() {
       });
       router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setServerError(error.response?.data?.message || 'Registration failed. Please try again.');
+      const error = err as {
+        response?: { data?: { message?: string; fieldErrors?: { field: string; message: string }[] } };
+      };
+      const fieldErrors = error.response?.data?.fieldErrors || [];
+      const formFields = new Set<keyof FormData>([
+        'name', 'email', 'password', 'confirmPassword', 'shopName', 'referralCode', 'acceptedTerms',
+      ]);
+      let matchedAField = false;
+      fieldErrors.forEach(({ field, message }) => {
+        if (formFields.has(field as keyof FormData)) {
+          setError(field as keyof FormData, { type: 'server', message });
+          matchedAField = true;
+        }
+      });
+      // Only fall back to the generic banner when nothing could be pinned to
+      // a specific input — e.g. a rate limit or unexpected server error.
+      if (!matchedAField) {
+        setServerError(error.response?.data?.message || 'Registration failed. Please try again.');
+      }
     }
   };
 

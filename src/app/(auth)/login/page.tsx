@@ -52,6 +52,7 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -78,10 +79,27 @@ export default function LoginPage() {
       const needsOnboarding = !hasCompletedOnboarding() && !userData.shop?.country;
       router.push(needsOnboarding ? '/onboarding/setup' : '/owner/dashboard');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
+      const error = err as {
+        response?: { data?: { message?: string; fieldErrors?: { field: string; message: string }[] } };
+      };
       const message = error.response?.data?.message || 'Login failed. Please try again.';
-      setServerError(message);
-      if (message === UNVERIFIED_MESSAGE) setUnverifiedEmail(data.email);
+      if (message === UNVERIFIED_MESSAGE) {
+        setServerError(message);
+        setUnverifiedEmail(data.email);
+        return;
+      }
+      const fieldErrors = error.response?.data?.fieldErrors || [];
+      const formFields = new Set<keyof FormData>(['email', 'password']);
+      let matchedAField = false;
+      fieldErrors.forEach(({ field, message: fieldMessage }) => {
+        if (formFields.has(field as keyof FormData)) {
+          setError(field as keyof FormData, { type: 'server', message: fieldMessage });
+          matchedAField = true;
+        }
+      });
+      if (!matchedAField) {
+        setServerError(message);
+      }
     }
   };
 

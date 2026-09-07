@@ -107,18 +107,13 @@ function VerifyEmailContent() {
       <p className="text-gray-500 text-sm mb-2">We sent a 6-digit code to</p>
       <p className="font-semibold mb-8" style={{ color: '#0F766E' }}>{email || 'your email'}</p>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 text-left">
-          {error}
-        </div>
-      )}
       {success && (
         <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700 text-left">
           {success}
         </div>
       )}
 
-      <div className="flex justify-center gap-3 mb-8" onPaste={handlePaste}>
+      <div className="flex justify-center gap-3 mb-3" onPaste={handlePaste}>
         {otp.map((digit, i) => (
           <input
             key={i}
@@ -138,6 +133,12 @@ function VerifyEmailContent() {
           />
         ))}
       </div>
+
+      {error && (
+        <div className="mb-6 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 text-left">
+          {error}
+        </div>
+      )}
 
       <button
         onClick={verify}

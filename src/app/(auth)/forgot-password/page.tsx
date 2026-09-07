@@ -28,7 +28,8 @@ export default function ForgotPasswordPage() {
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
+  const [bannerError, setBannerError] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -46,7 +47,7 @@ export default function ForgotPasswordPage() {
   const passwordForm = useForm<PasswordData>({ resolver: zodResolver(passwordSchema) });
 
   const handleEmailSubmit = async (data: EmailData) => {
-    setError('');
+    setBannerError('');
     setSuccess('');
     setLoading(true);
     try {
@@ -54,8 +55,15 @@ export default function ForgotPasswordPage() {
       setEmail(data.email);
       setStep('otp');
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to send reset code');
+      const e = err as {
+        response?: { data?: { message?: string; fieldErrors?: { field: string; message: string }[] } };
+      };
+      const emailFieldError = (e.response?.data?.fieldErrors || []).find((fe) => fe.field === 'email');
+      if (emailFieldError) {
+        emailForm.setError('email', { type: 'server', message: emailFieldError.message });
+      } else {
+        setBannerError(e.response?.data?.message || 'Failed to send reset code');
+      }
     } finally {
       setLoading(false);
     }
@@ -66,6 +74,7 @@ export default function ForgotPasswordPage() {
     const next = [...otp];
     next[index] = value;
     setOtp(next);
+    if (otpError) setOtpError('');
     if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
@@ -75,30 +84,44 @@ export default function ForgotPasswordPage() {
 
   const verifyOtp = async () => {
     const code = otp.join('');
-    if (code.length !== 6) { setError('Enter all 6 digits'); return; }
-    setError('');
+    if (code.length !== 6) { setOtpError('Enter all 6 digits'); return; }
+    setOtpError('');
     setSuccess('');
     setLoading(true);
     try {
       await api.post('/auth/verify-otp', { email, otp: code });
       setStep('password');
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Invalid OTP');
+      const e = err as {
+        response?: { data?: { message?: string; fieldErrors?: { field: string; message: string }[] } };
+      };
+      const otpFieldError = (e.response?.data?.fieldErrors || []).find((fe) => fe.field === 'otp');
+      setOtpError(otpFieldError?.message || e.response?.data?.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
   };
 
   const handlePasswordSubmit = async (data: PasswordData) => {
-    setError('');
+    setBannerError('');
     setLoading(true);
     try {
       await api.post('/auth/reset-password', { email, otp: otp.join(''), newPassword: data.password });
       setStep('done');
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to reset password');
+      const e = err as {
+        response?: { data?: { message?: string; fieldErrors?: { field: string; message: string }[] } };
+      };
+      // The backend's field name is `newPassword` (its request body key) —
+      // this step's own field is named `password`, so map it across.
+      const newPasswordFieldError = (e.response?.data?.fieldErrors || []).find((fe) => fe.field === 'newPassword');
+      if (newPasswordFieldError) {
+        passwordForm.setError('password', { type: 'server', message: newPasswordFieldError.message });
+      } else {
+        // An expired/invalid OTP has no field to land on at this step — that
+        // input isn't shown here — so it stays on the banner.
+        setBannerError(e.response?.data?.message || 'Failed to reset password');
+      }
     } finally {
       setLoading(false);
     }
@@ -106,7 +129,7 @@ export default function ForgotPasswordPage() {
 
   const resend = async () => {
     if (!canResend) return;
-    setError('');
+    setBannerError('');
     setSuccess('');
     setLoading(true);
     try {
@@ -116,7 +139,7 @@ export default function ForgotPasswordPage() {
       setSuccess('Code resent successfully!');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to resend code');
+      setBannerError(e.response?.data?.message || 'Failed to resend code');
     } finally {
       setLoading(false);
     }
@@ -157,8 +180,8 @@ export default function ForgotPasswordPage() {
         ))}
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+      {bannerError && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{bannerError}</div>
       )}
       {success && (
         <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">{success}</div>
@@ -221,6 +244,7 @@ export default function ForgotPasswordPage() {
               />
             ))}
           </div>
+          {otpError && <p className="mb-4 text-xs text-red-500">{otpError}</p>}
           <button
             onClick={verifyOtp}
             disabled={loading || otp.some((d) => !d)}
