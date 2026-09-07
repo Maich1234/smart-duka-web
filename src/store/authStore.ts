@@ -41,6 +41,8 @@ export const USER_KEY = 'user';
 interface AuthState {
   user: User | null;
   token: string | null;
+  /** Set only by /auth/bridge, when this session was opened via an admin's "Login as" action. */
+  isImpersonating: boolean;
   /**
    * Rotating 30-day refresh token, exchanged at POST /auth/refresh whenever
    * the 1-hour access token expires.
@@ -55,6 +57,8 @@ interface AuthState {
   isAuthenticated: boolean;
   sessionExpiredReason: SessionExpiredReason | null;
   login: (user: User, token: string, refreshToken?: string) => void;
+  /** /auth/bridge only — marks the session as an admin support session (see logout()). */
+  setImpersonating: (value: boolean) => void;
   logout: () => void;
   hydrate: () => void;
   /** Persist a freshly rotated token pair. Storage first, then state. */
@@ -97,9 +101,18 @@ function revokeRefreshToken(refreshToken: string | null) {
     .catch(() => {});
 }
 
+/** Same best-effort, un-awaited pattern as revokeRefreshToken above. */
+function endImpersonationSession(token: string | null) {
+  if (!token) return;
+  axios
+    .post(`${API_BASE_URL}/auth/impersonation/end`, {}, { headers: { Authorization: `Bearer ${token}` }, timeout: 8000 })
+    .catch(() => {});
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
+  isImpersonating: false,
   refreshToken: null,
   isAuthenticated: false,
   sessionExpiredReason: null,
@@ -117,8 +130,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user, token, refreshToken: nextRefresh, isAuthenticated: true, sessionExpiredReason: null });
   },
 
+  setImpersonating: (value) => set({ isImpersonating: value }),
+
   logout: () => {
     if (typeof window !== 'undefined') {
+      if (get().isImpersonating) endImpersonationSession(get().token);
       revokeRefreshToken(get().refreshToken);
       clearStoredSession();
     }
@@ -130,7 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // path (Sidebar, SessionExpiredHandler, ...) funnels through, means no
     // call site can forget it.
     queryClient.clear();
-    set({ user: null, token: null, refreshToken: null, isAuthenticated: false, sessionExpiredReason: null });
+    set({ user: null, token: null, refreshToken: null, isAuthenticated: false, sessionExpiredReason: null, isImpersonating: false });
   },
 
   hydrate: () => {
