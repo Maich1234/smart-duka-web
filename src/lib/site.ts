@@ -23,12 +23,12 @@ function resolveSiteUrl(): string {
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercel) return `https://${vercel}`;
 
-  return 'https://duqana.app';
+  return 'https://duqana.co.ke';
 }
 
 /** No trailing slash — callers append paths beginning with "/". */
 export const SITE_URL = resolveSiteUrl();
 
 export const SITE_NAME = 'DuQana';
-export const SUPPORT_EMAIL = 'info@duqana.app';
+export const SUPPORT_EMAIL = 'info@duqana.co.ke';
 export const SUPPORT_PHONE = '+254107596454';
