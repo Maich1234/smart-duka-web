@@ -18,10 +18,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  // Without metadataBase, the relative `alternates.canonical` values on the
-  // Help Center, privacy, and terms pages resolve against localhost at build
-  // time — which publishes wrong canonical tags and breaks the SEO value the
-  // help articles exist for.
+  // Without metadataBase, relative Open Graph URLs resolve against
+  // localhost at build time instead of the deployed origin.
   metadataBase: new URL(SITE_URL),
   title: 'DuQana – POS System for Kenyan Businesses',
   description:

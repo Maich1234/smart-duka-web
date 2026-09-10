@@ -1,9 +1,8 @@
 /**
  * Where this app is deployed.
  *
- * Needed as an absolute URL in a few places that can't work with a relative
- * one: Next.js `metadataBase` (which resolves every `alternates.canonical` and
- * Open Graph URL), the sitemap, and robots.txt.
+ * Needed as an absolute URL for Next.js `metadataBase`, which resolves the
+ * Open Graph URL.
  *
  * `NEXT_PUBLIC_SITE_URL` wins so preview deployments describe themselves
  * correctly instead of claiming to be production. Vercel injects
@@ -23,12 +22,10 @@ function resolveSiteUrl(): string {
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercel) return `https://${vercel}`;
 
-  return 'https://duqana.co.ke';
+  return 'https://app.duqana.co.ke';
 }
 
 /** No trailing slash — callers append paths beginning with "/". */
 export const SITE_URL = resolveSiteUrl();
 
 export const SITE_NAME = 'DuQana';
-export const SUPPORT_EMAIL = 'info@duqana.co.ke';
-export const SUPPORT_PHONE = '+254107596454';
