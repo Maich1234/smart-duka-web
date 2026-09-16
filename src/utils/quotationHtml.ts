@@ -37,6 +37,7 @@ export interface QuotationData {
   quoteNumber: string;
   shopName: string;
   shopPhone?: string;
+  shopAddress?: string;
   shopLogoUrl?: string;
   currency?: string;
   customerSnapshot: { name: string; phone?: string; email?: string };
@@ -105,7 +106,7 @@ function totalsBlock(data: QuotationData, accentColor: string): string {
 
 function footerBlock(data: QuotationData): string {
   return `
-    ${data.notes ? `<p style="font-size:11px;color:#555;margin-top:20px"><b>Notes</b><br>${escapeHtml(data.notes)}</p>` : ''}
+    ${data.notes ? `<p style="font-size:11px;color:#555;margin-top:20px">Notes<br>${escapeHtml(data.notes)}</p>` : ''}
     <p style="text-align:center;font-size:10px;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:12px">
       Valid until ${formatDate(data.validUntil)}. This is a quotation, not a tax invoice.
     </p>`;
@@ -120,6 +121,7 @@ function classicHtml(data: QuotationData): string {
         ${logoSection(data)}
         <h1 style="margin:0;font-size:20px;color:#0F172A">${escapeHtml(data.shopName)}</h1>
         ${data.shopPhone ? `<p style="margin:4px 0 0;font-size:11px;color:#666">${escapeHtml(data.shopPhone)}</p>` : ''}
+        ${data.shopAddress ? `<p style="margin:4px 0 0;font-size:11px;color:#666">${escapeHtml(data.shopAddress)}</p>` : ''}
       </div>
       <div style="text-align:right">
         <h2 style="margin:0;font-size:16px;color:${accent};letter-spacing:1px">QUOTATION</h2>
@@ -156,6 +158,7 @@ function modernHtml(data: QuotationData): string {
           ${logoSection(data)}
           <h1 style="margin:0;font-size:20px">${escapeHtml(data.shopName)}</h1>
           ${data.shopPhone ? `<p style="margin:4px 0 0;font-size:11px;color:#9ca3af">${escapeHtml(data.shopPhone)}</p>` : ''}
+          ${data.shopAddress ? `<p style="margin:4px 0 0;font-size:11px;color:#9ca3af">${escapeHtml(data.shopAddress)}</p>` : ''}
         </div>
         <div style="text-align:right">
           <h2 style="margin:0;font-size:14px;letter-spacing:2px">QUOTATION</h2>
@@ -198,6 +201,7 @@ function minimalHtml(data: QuotationData): string {
       ${logoSection(data)}
       <p style="font-size:13px;color:#111;margin:0">${escapeHtml(data.shopName)}</p>
       ${data.shopPhone ? `<p style="font-size:10px;color:#999;margin:4px 0 0">${escapeHtml(data.shopPhone)}</p>` : ''}
+      ${data.shopAddress ? `<p style="font-size:10px;color:#999;margin:4px 0 0">${escapeHtml(data.shopAddress)}</p>` : ''}
       <p style="font-size:10px;color:#999;margin:4px 0 0">Quotation ${escapeHtml(data.quoteNumber)} &middot; ${formatDate(data.createdAt)}</p>
     </div>
     <div style="margin-top:16px">
