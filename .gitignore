@@ -42,3 +42,5 @@ next-env.d.ts
 # serwist (generated at build time by next.config.ts's swDest)
 /public/sw.js
 /public/sw.js.map
+
+.worktrees/
