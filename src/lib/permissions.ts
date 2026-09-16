@@ -44,6 +44,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/staff/expenses': ['manage_expenses'],
   '/staff/sales': ['record_sale', 'view_sales'],
   '/staff/reconciliation': ['view_reconciliation'],
+  '/staff/quotations': ['create_quotation', 'convert_quotation_to_sale'],
   '/owner/purchases': ['view_purchases'],
 };
 

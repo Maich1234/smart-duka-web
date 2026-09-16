@@ -13,6 +13,7 @@ import {
   Wallet,
   User,
   ShoppingBag,
+  FileText,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -64,6 +65,7 @@ const ownerGroups: NavGroup[] = [
     links: [
       { href: '/owner/inventory', icon: Package, label: 'Inventory' },
       { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
+      { href: '/owner/quotations', icon: FileText, label: 'Quotations' },
       { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
     ],
   },
@@ -113,6 +115,7 @@ const staffGroups: NavGroup[] = [
     links: [
       { href: '/staff/inventory', icon: Package, label: 'Products', permissions: ['view_products'] },
       { href: '/staff/sales', icon: ShoppingCart, label: 'New Sale', permissions: ['record_sale', 'view_sales'] },
+      { href: '/staff/quotations', icon: FileText, label: 'Quotations', permissions: ['create_quotation', 'convert_quotation_to_sale'] },
       { href: '/staff/expenses', icon: Receipt, label: 'Expenses', permissions: ['manage_expenses'] },
       { href: '/staff/commission', icon: Coins, label: 'My Commission', requiresFlag: 'showStaffCommission' },
       { href: '/staff/reconciliation', icon: Scale, label: 'My Reconciliation', permissions: ['view_reconciliation'] },
