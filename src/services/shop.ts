@@ -45,6 +45,8 @@ export interface Shop {
    * back to Cash + M-PESA.
    */
   paymentMethods?: ShopPaymentMethod[];
+  /** Which layout a quotation is rendered/printed with, owner-chosen. Defaults to 'classic' server-side. */
+  quotationTemplate?: 'classic' | 'modern' | 'minimal';
   /** ISO timestamp — earliest possible sale date, used to bound date pickers. */
   createdAt?: string;
 }

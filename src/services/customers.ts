@@ -36,3 +36,30 @@ export async function createCustomer(data: CreateCustomerInput): Promise<Custome
   const res = await api.post('/customers', data);
   return res.data.data;
 }
+
+/**
+ * Mirrors creditService.js's summariseAccount() — present on GET /customers/:id
+ * for a caller who may see credit (owner, or make_credit_sale/record_credit_payment/
+ * view_all_credit/view_own_credit), absent otherwise.
+ */
+export interface CustomerAccount {
+  creditLimit: number;
+  outstanding: number;
+  availableCredit: number;
+  overdueAmount: number;
+  blocked: boolean;
+  blockedReason: string;
+  status: 'none' | 'current' | 'overdue' | 'paid';
+  /** Why the till would refuse a credit sale right now, computed server-side. */
+  canTakeCredit: boolean;
+}
+
+export interface CustomerWithAccount extends Customer {
+  account?: CustomerAccount;
+}
+
+/** Used by the quotation detail page's credit-sale confirm step. */
+export async function getCustomerById(id: string): Promise<CustomerWithAccount> {
+  const res = await api.get(`/customers/${id}`);
+  return res.data.data;
+}
