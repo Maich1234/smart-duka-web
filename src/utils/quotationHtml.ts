@@ -25,6 +25,38 @@ function formatDate(d: string | Date): string {
   return new Date(d).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+/**
+ * validUntil is stored server-side as a Date parsed from an ISO date-only
+ * string (e.g. "2026-10-17"), which lands at UTC midnight. Comparing that
+ * instant directly against `new Date()` — a naive `<` check — flips a
+ * quotation to expired up to a day early for any shop east of UTC (Kenya is
+ * UTC+3, so "valid until 17 Oct" would read as expired from 03:00 EAT on 17
+ * Oct), and can render the wrong calendar day for any shop west of UTC.
+ *
+ * Both helpers below work off the UTC calendar-date components rather than
+ * the raw instant, so "valid until 17 Oct" means all of 17 Oct in the
+ * viewer's own local time, everywhere.
+ */
+function endOfValidUntilLocalDay(validUntil: string | Date): Date {
+  const d = new Date(validUntil);
+  // Rebuild the threshold from the UTC Y/M/D the date-only string
+  // represented, as a LOCAL date one day later — the instant the quotation
+  // actually stops being valid, in the viewer's own timezone.
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+}
+
+/** True only once the day AFTER validUntil's calendar date has begun, in the viewer's local time — the final day is inclusive. */
+export function isQuotationExpired(validUntil: string | Date): boolean {
+  return new Date() >= endOfValidUntilLocalDay(validUntil);
+}
+
+/** Formats validUntil's UTC calendar date as a local date, so the displayed day never shifts because of the viewer's timezone offset. */
+export function formatQuotationDate(validUntil: string | Date): string {
+  const d = new Date(validUntil);
+  const localMidnight = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return localMidnight.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 interface QuotationItem {
   name: string;
   description?: string;
@@ -109,7 +141,7 @@ function footerBlock(data: QuotationData): string {
   return `
     ${data.notes ? `<p style="font-size:11px;color:#555;margin-top:20px">Notes<br>${escapeHtml(data.notes)}</p>` : ''}
     <p style="text-align:center;font-size:10px;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:12px">
-      Valid until ${formatDate(data.validUntil)}. This is a quotation, not a tax invoice.
+      Valid until ${formatQuotationDate(data.validUntil)}. This is a quotation, not a tax invoice.
     </p>`;
 }
 
@@ -243,11 +275,13 @@ export function buildQuotationHtml(data: QuotationData, template: QuotationTempl
 </html>`;
 }
 
-export function printQuotationHtml(html: string): void {
+/** Returns false when the popup was blocked, so callers can surface that instead of silently doing nothing. */
+export function printQuotationHtml(html: string): boolean {
   const win = window.open('', '_blank', 'width=850,height=1100,scrollbars=yes');
-  if (!win) return;
+  if (!win) return false;
   win.document.write(html);
   win.document.close();
   win.focus();
   setTimeout(() => win.print(), 250);
+  return true;
 }

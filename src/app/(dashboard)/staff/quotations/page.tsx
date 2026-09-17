@@ -8,12 +8,13 @@ import { ArrowRight, Plus, Search, Trash2, User } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { hasPermission } from '@/lib/permissions';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
 import Table, { type Column } from '@/components/ui/Table';
 import { useMoney } from '@/lib/money';
+import { formatQuotationDate } from '@/utils/quotationHtml';
+import QuotationStatusBadge, { displayStatus } from '@/components/quotations/StatusBadge';
 import {
   getQuotations, createQuotation, type Quotation, type CreateQuotationItemInput,
 } from '@/services/quotations';
@@ -53,23 +54,6 @@ const newLineKey = () => `line-${++lineKeySeq}`;
 const blankLine = (): LineItem => ({
   key: newLineKey(), mode: 'catalog', productId: undefined, name: '', description: '', quantity: 1, unitPrice: 0,
 });
-
-/** draft/declined/converted, plus 'expired' — a draft past its own validUntil. The server never stores this status. */
-function displayStatus(q: Quotation): 'draft' | 'declined' | 'converted' | 'expired' {
-  if (q.status === 'draft' && new Date(q.validUntil) < new Date()) return 'expired';
-  return q.status;
-}
-
-function QuotationStatusBadge({ status }: { status: 'draft' | 'declined' | 'converted' | 'expired' }) {
-  const map = {
-    draft: { color: 'blue' as const, label: 'Draft' },
-    declined: { color: 'red' as const, label: 'Declined' },
-    converted: { color: 'green' as const, label: 'Converted' },
-    expired: { color: 'gold' as const, label: 'Expired' },
-  };
-  const { color, label } = map[status];
-  return <Badge color={color}>{label}</Badge>;
-}
 
 // ─── Create Quotation Modal ─────────────────────────────────────────────────
 function CreateQuotationModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
@@ -427,7 +411,7 @@ export default function StaffQuotationsPage() {
       key: 'validUntil',
       header: 'Valid Until',
       className: 'text-gray-600',
-      render: (q) => format(new Date(q.validUntil), 'dd MMM yyyy'),
+      render: (q) => formatQuotationDate(q.validUntil),
     },
     {
       key: 'actions',

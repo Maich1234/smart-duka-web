@@ -10,43 +10,23 @@ import {
   Trash2, XCircle, CheckCircle2,
 } from 'lucide-react';
 import api from '@/lib/api';
-import { CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods } from '@/lib/paymentMethods';
+import { CASH_METHOD_KEY, CREDIT_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods } from '@/lib/paymentMethods';
 import { useAuthStore } from '@/store/authStore';
 import { hasPermission } from '@/lib/permissions';
 import { useShop } from '@/hooks/useShop';
 import { useMoney } from '@/lib/money';
 import { useToast } from '@/components/ui/Toast';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
-import { buildQuotationHtml, printQuotationHtml } from '@/utils/quotationHtml';
+import { buildQuotationHtml, printQuotationHtml, formatQuotationDate } from '@/utils/quotationHtml';
+import QuotationStatusBadge, { displayStatus } from '@/components/quotations/StatusBadge';
 import {
   getQuotation, convertQuotation, declineQuotation, deleteQuotation, sendQuotationEmail,
-  type Quotation, type ConvertQuotationPayload,
+  type ConvertQuotationPayload,
 } from '@/services/quotations';
 import { getCustomerById } from '@/services/customers';
-
-/** The till button that means "the customer is taking this on account" — mirrors constants/credit.js's CREDIT_METHOD_KEY. */
-const CREDIT_METHOD_KEY = 'credit';
-
-/** draft/declined/converted, plus 'expired' — a draft past its own validUntil. The server never stores this status. */
-function displayStatus(q: Quotation): 'draft' | 'declined' | 'converted' | 'expired' {
-  if (q.status === 'draft' && new Date(q.validUntil) < new Date()) return 'expired';
-  return q.status;
-}
-
-function QuotationStatusBadge({ status }: { status: 'draft' | 'declined' | 'converted' | 'expired' }) {
-  const map = {
-    draft: { color: 'blue' as const, label: 'Draft' },
-    declined: { color: 'red' as const, label: 'Declined' },
-    converted: { color: 'green' as const, label: 'Converted' },
-    expired: { color: 'gold' as const, label: 'Expired' },
-  };
-  const { color, label } = map[status];
-  return <Badge color={color}>{label}</Badge>;
-}
 
 function errMsg(err: unknown, fallback: string): string {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
@@ -100,12 +80,15 @@ export default function StaffQuotationDetailPage() {
 
   const convertMutation = useMutation({
     mutationFn: (payload: ConvertQuotationPayload) => convertQuotation(id, payload),
-    onSuccess: (sale) => {
+    onSuccess: ({ sale, message }) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['quotation', id] });
       setCreditConfirmOpen(false);
+      // Prefer the backend's own copy (e.g. the credit-specific "Sale recorded
+      // on X's account.") over a generic message, while still surfacing the
+      // invoice number when there is one.
       const invoiceNumber = (sale as { invoiceNumber?: string })?.invoiceNumber;
-      showToast(invoiceNumber ? `Converted to sale #${invoiceNumber}` : 'Quotation converted to a sale', 'success');
+      showToast(invoiceNumber ? `${message} (Sale #${invoiceNumber})` : message, 'success');
       router.push('/staff/sales');
     },
   });
@@ -140,7 +123,7 @@ export default function StaffQuotationDetailPage() {
   // The customer's credit account, fetched only once the credit confirm step
   // opens — mirrors creditService.js's summariseAccount(), the same figures
   // a till credit sale would check.
-  const { data: creditCustomer, isLoading: creditLoading } = useQuery({
+  const { data: creditCustomer, isLoading: creditLoading, isError: creditError } = useQuery({
     queryKey: ['customer-account', quotation?.customer],
     queryFn: () => getCustomerById(quotation!.customer),
     enabled: creditConfirmOpen && !!quotation,
@@ -170,7 +153,9 @@ export default function StaffQuotationDetailPage() {
       },
       shop?.quotationTemplate ?? 'classic',
     );
-    printQuotationHtml(html);
+    if (!printQuotationHtml(html)) {
+      showToast('Pop-up blocked — allow pop-ups to print.', 'error');
+    }
   };
 
   // GET /quotations/:id/pdf sits behind the same Bearer-token auth as every
@@ -308,7 +293,7 @@ export default function StaffQuotationDetailPage() {
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Valid Until</p>
-            <p className="text-sm font-medium" style={{ color: '#0F172A' }}>{format(new Date(quotation.validUntil), 'dd MMM yyyy')}</p>
+            <p className="text-sm font-medium" style={{ color: '#0F172A' }}>{formatQuotationDate(quotation.validUntil)}</p>
           </div>
         </div>
 
@@ -467,6 +452,11 @@ export default function StaffQuotationDetailPage() {
             <p className="text-sm text-gray-600">
               Record this {fmt(quotation.total)} quotation as credit for <strong>{quotation.customerSnapshot.name}</strong>?
             </p>
+            {creditError && (
+              <div className="p-3 rounded-control bg-red-50 border border-red-200 text-xs text-red-700">
+                Could not load {quotation.customerSnapshot.name}&apos;s credit account. Try again before confirming.
+              </div>
+            )}
             {account && (
               <div className="rounded-control border border-gray-200 p-3 space-y-1.5 text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">Credit limit</span><span className="font-semibold">{fmt(account.creditLimit)}</span></div>
@@ -492,7 +482,7 @@ export default function StaffQuotationDetailPage() {
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={() => setCreditConfirmOpen(false)}>Cancel</Button>
               <Button
-                disabled={overLimit}
+                disabled={overLimit || creditError}
                 loading={convertMutation.isPending}
                 onClick={() => convertMutation.mutate({ paymentMethod: CREDIT_METHOD_KEY })}
               >

@@ -15,6 +15,8 @@ import { Banknote, Smartphone, Landmark, CreditCard, Clock, Tag, Wallet, type Lu
 
 export const CASH_METHOD_KEY = 'cash';
 export const MPESA_METHOD_KEY = 'mpesa';
+/** The till button that means "the customer is taking this on account" — mirrors constants/credit.js's CREDIT_METHOD_KEY. */
+export const CREDIT_METHOD_KEY = 'credit';
 
 export type MethodIcon = 'cash' | 'phone' | 'bank' | 'card' | 'clock' | 'tag' | 'wallet';
 

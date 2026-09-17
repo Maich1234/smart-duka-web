@@ -81,6 +81,18 @@ export async function createQuotation(data: CreateQuotationInput): Promise<Quota
   return res.data.data;
 }
 
+// PATCH /quotations/:id — backend-only for now, no UI calls this yet. The
+// design spec grants create_quotation "draft, edit, delete/archive" and the
+// backend's updateQuotationSchema is identical to createQuotationSchema
+// (edit is only allowed while status: 'draft'), so this mirrors
+// createQuotation's shape exactly. Added so the capability exists in the
+// client layer rather than being silently absent; wiring up an actual edit
+// UI is out of scope for this fix wave.
+export async function updateQuotation(id: string, data: CreateQuotationInput): Promise<Quotation> {
+  const res = await api.patch(`/quotations/${id}`, data);
+  return res.data.data;
+}
+
 export async function declineQuotation(id: string): Promise<Quotation> {
   const res = await api.patch(`/quotations/${id}/decline`);
   return res.data.data;
@@ -97,12 +109,18 @@ export interface ConvertQuotationPayload {
   mpesaReceiptNumber?: string;
 }
 
+export interface ConvertQuotationResult {
+  sale: Record<string, unknown>;
+  /** The backend's own success copy — e.g. credit conversions get "Sale recorded on X's account." instead of the generic message. */
+  message: string;
+}
+
 export async function convertQuotation(
   id: string,
   payload: ConvertQuotationPayload
-): Promise<Record<string, unknown>> {
+): Promise<ConvertQuotationResult> {
   const res = await api.post(`/quotations/${id}/convert`, payload);
-  return res.data.data;
+  return { sale: res.data.data, message: res.data.message };
 }
 
 /** Emails the customer the quotation PDF + a public link. Requires an email on file. */

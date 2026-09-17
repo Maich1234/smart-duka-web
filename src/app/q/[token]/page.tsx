@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ShoppingCart, Printer, Download, XCircle } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/config';
-import { buildQuotationHtml, printQuotationHtml, type QuotationData } from '@/utils/quotationHtml';
+import { buildQuotationHtml, printQuotationHtml, isQuotationExpired, type QuotationData } from '@/utils/quotationHtml';
 
 // Deliberately a bare axios call rather than @/lib/api — same reasoning as
 // src/app/r/[token]/page.tsx: this page is public, so it must never attach an
@@ -18,6 +18,7 @@ export default function PublicQuotationPage() {
   const [quotation, setQuotation] = useState<QuotationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [printError, setPrintError] = useState('');
 
   useEffect(() => {
     const fetchQuotation = async () => {
@@ -68,9 +69,18 @@ export default function PublicQuotationPage() {
     );
   }
 
-  const isExpired = new Date(quotation.validUntil) < new Date();
+  const isExpired = isQuotationExpired(quotation.validUntil);
+  const isDeclined = quotation.status === 'declined';
+  const isConverted = quotation.status === 'converted';
   const html = buildQuotationHtml(quotation, quotation.template ?? 'classic');
   const bodyMarkup = html.match(/<body[^>]*>([\s\S]*)<\/body>/)![1];
+
+  const handlePrint = () => {
+    setPrintError('');
+    if (!printQuotationHtml(html)) {
+      setPrintError('Pop-up blocked — allow pop-ups in your browser to print this quotation.');
+    }
+  };
 
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: '#F8FAFC' }}>
@@ -84,7 +94,17 @@ export default function PublicQuotationPage() {
           </Link>
         </div>
 
-        {isExpired && (
+        {isDeclined && (
+          <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 text-center">
+            This quotation was declined and is no longer active.
+          </div>
+        )}
+        {isConverted && (
+          <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800 text-center">
+            This quotation has already been accepted and converted to a sale.
+          </div>
+        )}
+        {!isDeclined && !isConverted && isExpired && (
           <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 text-center">
             This quotation&apos;s valid-until date has passed — contact {quotation.shopName} to confirm pricing is still current.
           </div>
@@ -96,7 +116,7 @@ export default function PublicQuotationPage() {
 
         <div className="flex gap-3 mt-6 justify-center">
           <button
-            onClick={() => printQuotationHtml(html)}
+            onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <Printer className="w-4 h-4" /> Print
@@ -111,6 +131,10 @@ export default function PublicQuotationPage() {
             <Download className="w-4 h-4" /> Download PDF
           </a>
         </div>
+
+        {printError && (
+          <p className="text-center text-xs text-red-600 mt-3">{printError}</p>
+        )}
 
         <p className="text-center text-xs text-gray-400 mt-6">
           Powered by{' '}
