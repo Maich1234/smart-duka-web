@@ -50,6 +50,7 @@ export interface QuotationData {
   validUntil: string;
   createdAt: string;
   status?: string;
+  template?: QuotationTemplate;
 }
 
 export type QuotationTemplate = 'classic' | 'modern' | 'minimal';
