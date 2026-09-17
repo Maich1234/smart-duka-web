@@ -84,6 +84,7 @@ export interface UpdateShopConfigData {
   purchaseCostAllocationMethod?: 'quantity' | 'value' | 'none';
   aiEnabled?: boolean;
   paymentMethods?: ShopPaymentMethod[];
+  quotationTemplate?: 'classic' | 'modern' | 'minimal';
 }
 
 export async function getShopConfig(): Promise<Shop> {

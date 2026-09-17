@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
-import { User, Store, Lock, CheckCircle, Upload, ImageIcon, Globe, DollarSign, FileText, Heart } from 'lucide-react';
+import { User, Store, Lock, CheckCircle, Upload, ImageIcon, Globe, DollarSign, FileText, Heart, LayoutTemplate } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useInvalidateShop, useShop } from '@/hooks/useShop';
@@ -44,7 +44,14 @@ interface ShopConfig {
   receiptThankYouNote: string;
   logoUrl: string;
   motto: string;
+  quotationTemplate: 'classic' | 'modern' | 'minimal';
 }
+
+const QUOTATION_TEMPLATES: { value: ShopConfig['quotationTemplate']; label: string; description: string }[] = [
+  { value: 'classic', label: 'Classic', description: 'Clean letterhead with a teal accent and bold masthead.' },
+  { value: 'modern', label: 'Modern', description: 'Dark full-bleed header banner.' },
+  { value: 'minimal', label: 'Minimal', description: 'Lightest visual weight, no bold text anywhere.' },
+];
 
 export default function ProfilePage() {
   const { user, login } = useAuthStore();
@@ -71,6 +78,7 @@ export default function ProfilePage() {
     receiptThankYouNote: '',
     logoUrl: '',
     motto: '',
+    quotationTemplate: 'classic',
   });
 
   // Server state seeds the form once. A background refetch must not overwrite
@@ -88,6 +96,7 @@ export default function ProfilePage() {
       receiptThankYouNote: shopData.receiptThankYouNote ?? '',
       logoUrl: shopData.logoUrl ?? '',
       motto: shopData.motto ?? '',
+      quotationTemplate: shopData.quotationTemplate ?? 'classic',
     });
   }, [shopData, touched]);
 
@@ -144,6 +153,7 @@ export default function ProfilePage() {
         receiptThankYouNote: shop.receiptThankYouNote,
         logoUrl: shop.logoUrl,
         motto: shop.motto,
+        quotationTemplate: shop.quotationTemplate,
       });
       setTouched(false);
       invalidateShop();
@@ -361,6 +371,33 @@ export default function ProfilePage() {
                   rows={2}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-teal-200 resize-none" />
               </div>
+            </div>
+          </div>
+
+          {/* Quotation template section */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <LayoutTemplate className="w-4 h-4 text-gray-400" />
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Quotation Template</p>
+            </div>
+            <div role="radiogroup" aria-label="Quotation template" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {QUOTATION_TEMPLATES.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={shop.quotationTemplate === t.value}
+                  onClick={() => patchShop({ quotationTemplate: t.value })}
+                  className="text-left px-4 py-3 rounded-xl border text-sm transition-colors"
+                  style={{
+                    borderColor: shop.quotationTemplate === t.value ? '#0F766E' : '#E5E7EB',
+                    backgroundColor: shop.quotationTemplate === t.value ? '#CCFBF1' : undefined,
+                  }}
+                >
+                  <p className="font-medium" style={{ color: '#0F172A' }}>{t.label}</p>
+                  <p className="text-xs text-gray-500 mt-1">{t.description}</p>
+                </button>
+              ))}
             </div>
           </div>
         </div>
