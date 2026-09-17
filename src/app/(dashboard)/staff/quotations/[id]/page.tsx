@@ -177,14 +177,28 @@ export default function StaffQuotationDetailPage() {
   // other API call — a plain <a href> new-tab link would 401 since the token
   // lives in localStorage, not a cookie. Fetched through the authenticated
   // api client instead, then opened from a blob URL.
+  //
+  // The window must open synchronously, in the same tick as the click —
+  // exactly like printQuotationHtml's own `window.open` — because a
+  // `window.open` issued after an `await` breaks the user-gesture chain most
+  // popup blockers require (Safari reliably blocks it). Opening blank first
+  // and filling in its location once the blob resolves keeps the open()
+  // itself synchronous while still surfacing a clear error when it's blocked,
+  // rather than a silent no-op.
   const handleDownloadPdf = async () => {
     if (!quotation) return;
+    const win = window.open('', '_blank');
+    if (!win) {
+      showToast('Pop-up blocked — allow pop-ups to download the PDF.', 'error');
+      return;
+    }
     setDownloadingPdf(true);
     try {
       const res = await api.get(`/quotations/${quotation._id}/pdf`, { responseType: 'blob' });
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      window.open(url, '_blank');
+      win.location.href = url;
     } catch {
+      win.close();
       showToast('Could not open the PDF. Try again.', 'error');
     } finally {
       setDownloadingPdf(false);
