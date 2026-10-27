@@ -29,3 +29,7 @@ Focused Node tests cover receipt HTML escaping, promotion preview and malformed/
 ## Latest verification
 
 13 focused web tests pass. 147 selected backend tests pass across quotation CRUD/permissions, credit authorization/rules/service, sale creation and idempotency. These tests use mocks and do not substitute for a live database concurrency test, payment-provider integration test or physical-device usability review. Customer account activity is paginated; the purchase panel deliberately shows only the latest five purchases returned by the backend.
+
+## Security check follow-up
+
+The full backend test suite passes (593 tests). Web regression tests now cover session identity changes and an explicit runtime cache allowlist (16 tests total). Query caches clear on cross-tab logout, account/shop changes, and permission changes. Dashboard routes stop disallowed children from mounting before redirects. Runtime caching is limited to same-origin Next static build assets; the new worker deletes the previous default runtime caches on activation. These changes require deployment and browser activation; authenticated browser and live database tests remain outstanding.

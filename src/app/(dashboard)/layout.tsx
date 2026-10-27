@@ -87,6 +87,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // Effects handle navigation; this gate prevents a disallowed page from
+  // mounting and starting queries before that navigation completes.
+  const wrongRole = !user ||
+    (user.role === 'staff' && pathname.startsWith('/owner') && !isStaffReachable(pathname)) ||
+    (user.role === 'owner' && pathname.startsWith('/staff'));
+  const subscriptionLocked = user?.role === 'owner' && access?.state === 'locked' && !pathname.startsWith('/owner/subscription');
+  if (wrongRole || subscriptionLocked) return <div className="flex min-h-screen items-center justify-center"><Spinner size="lg" /></div>;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
       <SessionExpiredHandler />
