@@ -63,7 +63,10 @@ const ownerGroups: NavGroup[] = [
     label: 'Sales & Inventory',
     links: [
       { href: '/owner/inventory', icon: Package, label: 'Inventory' },
+      { href: '/owner/assets', icon: Package, label: 'Business assets' },
       { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
+      { href: '/owner/customers', icon: Users, label: 'Customers' },
+      { href: '/owner/quotations', icon: Receipt, label: 'Quotations' },
       { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
     ],
   },
@@ -79,6 +82,7 @@ const ownerGroups: NavGroup[] = [
     label: 'Insights',
     links: [
       { href: '/owner/reports', icon: BarChart3, label: 'Reports' },
+      { href: '/owner/books', icon: Receipt, label: 'Financial records' },
       { href: '/owner/summary', icon: CalendarDays, label: 'Daily Summary' },
       { href: '/owner/insights', icon: Sparkles, label: 'Insights' },
       { href: '/owner/chat', icon: MessageSquare, label: 'Ask DuQana' },
