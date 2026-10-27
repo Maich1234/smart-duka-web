@@ -1,26 +1,27 @@
-# Mobile to web feature parity
+# Duqana mobile-to-web parity
 
-The web source is smart-duka-web; smart-duka is the mobile reference. Existing web workflows must be retained.
+Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web`. This is a source-based comparison, not release sign-off. Offline browser behaviour is deferred by request.
 
-## Implemented in this branch
+## Implemented; end-to-end testing still required
 
-- Owner business assets: paginated list, create, edit, archive and restore; acquisition/current values and status. Backend computes estimated value.
-- Typed API clients for business overview, customers, credit, quotations and location presets, adapted to the authenticated web API.
+- Owner assets: list, add, edit, archive/restore, pagination.
+- Owner customers: search, add, edit, archive, account and credit activity.
+- Owner credit overview and ledger; repayment form retains retry key and payload on this browser.
+- Owner financial records: preview and CSV/XLSX/PDF download.
+- Owner quotation list/detail, pagination, custom multiline creation and decline.
+- Existing web till covers standard, variable, weighted, refillable, service, bundle and configurable product paths; promotion preview now follows backend pricing rules for supported product types.
 
-## Still required before claiming parity
+## Remaining or incomplete
 
-- Customers: search, filter, create, edit, archive, account and scoped ledger.
-- Credit: overview, repayments, reversal with reason, opening balances, customer selection at POS and settings.
-- Quotations: create catalog/custom lines, detail, decline, delete, conversion with existing payment workflows, public sharing.
-- Business overview: capital, sales, product and staff analysis; financial books preview/export CSV/XLSX/PDF.
-- Compare existing POS support for every product type, promotions, price overrides, commissions and payment methods.
-- Compare profile/settings, onboarding, permissions, billing and subscription feature gates.
-- Verify offline persistence, retry/idempotency, queue visibility and conflict handling in browser.
-- Verify camera scanning, printing, receipt downloads/sharing and browser notification support; expose explicit browser capability limits.
-- Verify mobile and desktop layouts, error/empty/loading states, permission denial and browser navigation.
+- Credit checkout, settings, opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations.
+- Quotations: searchable/paginated customer selection, catalogue lines, edit/delete, public share/PDF and conversion to a sale with full payment support.
+- Customer filters, credit account settings, complete ledger pagination and customer history.
+- Business overview: capital, sales, product and staff analysis.
+- Verify pricing under concurrent catalog changes, all product combinations, configurable variants, promotions, staff commissions and payment methods against the backend.
+- Compare remaining profile/settings, onboarding, billing and subscription gates.
+- Browser camera scanning, printing, receipt sharing and notifications, including unsupported-device responses.
+- Mobile/desktop layout, keyboard and accessibility tests, RBAC/security checks and real API integration tests.
 
-Native APIs cannot simply be imported into Next.js. Downloads must use authenticated HTTP with blob URLs; printer and scanner support must respect browser capabilities. Financial data must use backend totals, never independently recompute balances.
+## Test evidence
 
-## Validation
-
-TypeScript check passed for the first implementation. Full browser integration and authenticated end-to-end verification remain required.
+Focused Node tests cover promotion preview and malformed/pending repayment recovery. TypeScript is checked separately. Production builds verify compilation, not real transactions. No physical-device usability test or authenticated live transaction has been performed for these changes. Retrying the same repayment retains its key on the same browser; storage clearing, other browsers/devices and user-cleared pending requests require ledger reconciliation.

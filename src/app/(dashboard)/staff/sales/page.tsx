@@ -26,6 +26,7 @@ import Table, { type Column } from '@/components/ui/Table';
 import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 import { useMoney } from '@/lib/money';
 import { availableToAdd, clampQty, stepFor, negativeStockAfter } from '@/lib/stock';
+import { saleLinePreview, type Promotion } from '@/lib/salePricing';
 
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
 interface Product {
@@ -33,6 +34,7 @@ interface Product {
   unitOfMeasure: string; productType: ProductType; trackInventory: boolean;
   lowStockAlert: number; minPrice?: number; maxPrice?: number; allowPriceOverride?: boolean;
   variants?: { _id: string; name: string; sellingPrice: number; quantity: number }[];
+  promotions?: Promotion[];
 }
 interface CartEntry { product: Product; qty: number; unitPrice: number; variantId?: string; variantName?: string; }
 interface SaleItem { name?: string; productName?: string; quantity: number; unitPrice: number; subtotal: number; variantName?: string; }
@@ -432,7 +434,7 @@ export default function StaffSalesPage() {
     );
   };
   const removeFromCart = (key: string) => setCart((prev) => prev.filter((e) => cartKey(e) !== key));
-  const totalAmount = cart.reduce((s, e) => s + e.unitPrice * e.qty, 0);
+  const totalAmount = cart.reduce((s, e) => s + saleLinePreview(e.product.productType, e.product.promotions, e.qty, e.unitPrice).subtotal, 0);
   const buildItems = () => cart.map((e) => ({ productId: e.product._id, quantity: e.qty, ...(e.variantId ? { variantId: e.variantId } : {}), ...(e.unitPrice !== e.product.sellingPrice ? { unitPrice: e.unitPrice } : {}) }));
 
   const productsData = productsRaw?.data ?? [];
@@ -586,13 +588,14 @@ export default function StaffSalesPage() {
                         {entry.product.name}{entry.variantName ? ` (${entry.variantName})` : ''}
                       </p>
                       <p className="text-xs" style={{ color: '#0F766E' }}>{fmt(entry.unitPrice)} each</p>
+                      {saleLinePreview(entry.product.productType, entry.product.promotions, entry.qty, entry.unitPrice).label && <p className="text-xs text-teal-700">{saleLinePreview(entry.product.productType, entry.product.promotions, entry.qty, entry.unitPrice).label}</p>}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => updateQty(cartKey(entry), -1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"><Minus className="w-3 h-3" /></button>
                       <span className="w-8 text-center text-sm font-bold">{entry.qty}</span>
                       <button onClick={() => updateQty(cartKey(entry), 1)} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"><Plus className="w-3 h-3" /></button>
                     </div>
-                    <span className="text-sm font-bold min-w-[48px] text-right" style={{ color: '#0F172A' }}>{fmt(entry.unitPrice * entry.qty)}</span>
+                    <span className="text-sm font-bold min-w-[48px] text-right" style={{ color: '#0F172A' }}>{fmt(saleLinePreview(entry.product.productType, entry.product.promotions, entry.qty, entry.unitPrice).subtotal)}</span>
                     <button onClick={() => removeFromCart(cartKey(entry))} className="text-gray-300 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
