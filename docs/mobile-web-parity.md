@@ -8,13 +8,13 @@ Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web
 - Owner customers: search, add, edit, archive, account and credit activity.
 - Owner credit overview and ledger; repayment form retains retry key and payload on this browser.
 - Owner financial records: preview and CSV/XLSX/PDF download.
-- Owner quotation list/detail, pagination, custom multiline creation and decline.
+- Owner quotation list/detail, pagination, custom and catalogue multiline creation, searchable paginated customer/product pickers, and decline.
 - Existing web till covers standard, variable, weighted, refillable, service, bundle and configurable product paths; promotion preview now follows backend pricing rules for supported product types.
 
 ## Remaining or incomplete
 
 - Credit checkout, settings, opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations.
-- Quotations: searchable/paginated customer selection, catalogue lines, edit/delete, public share/PDF and conversion to a sale with full payment support.
+- Quotations: edit/delete, public share/PDF and conversion to a sale with full payment support; end-to-end verify catalogue pricing and customer selection.
 - Customer filters, credit account settings, complete ledger pagination and customer history.
 - Business overview: capital, sales, product and staff analysis.
 - Verify pricing under concurrent catalog changes, all product combinations, configurable variants, promotions, staff commissions and payment methods against the backend.
