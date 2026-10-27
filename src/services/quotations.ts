@@ -82,9 +82,9 @@ export interface ConvertQuotationResponse {
 
 /** Owner, or staff with 'create_quotation' (draft/manage) or 'convert_quotation_to_sale' (view only). */
 export const getQuotations = async (
-  status?: 'draft' | 'declined' | 'converted'
+  status?: 'draft' | 'declined' | 'converted', page = 1
 ): Promise<QuotationsResponse> => {
-  const response = await api.get('/quotations', { params: { status } });
+  const response = await api.get('/quotations', { params: { status, page, limit: 20 } });
   return response.data;
 };
 
