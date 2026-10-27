@@ -66,6 +66,7 @@ const ownerGroups: NavGroup[] = [
       { href: '/owner/assets', icon: Package, label: 'Business assets' },
       { href: '/owner/sales', icon: ShoppingCart, label: 'Sales' },
       { href: '/owner/customers', icon: Users, label: 'Customers' },
+      { href: '/owner/credit', icon: Wallet, label: 'Credit book' },
       { href: '/owner/quotations', icon: Receipt, label: 'Quotations' },
       { href: '/owner/purchases', icon: ShoppingBag, label: 'Purchasing', requiresFlag: 'purchasingEnabled' },
     ],
