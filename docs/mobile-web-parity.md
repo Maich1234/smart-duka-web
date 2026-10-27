@@ -14,7 +14,7 @@ Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web
 ## Remaining or incomplete
 
 - Credit checkout is implemented with a customer picker and retry recovery, gated on the backend guarded-credit capability. The backend guard must be deployed and the end-to-end flow tested before it is available. Credit settings, opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations remain.
-- Quotations: edit/delete, public share/PDF and conversion to a sale with full payment support; end-to-end verify catalogue pricing and customer selection.
+- Quotations: edit and conversion to a sale with full payment support; deletion is available only after the guarded backend update is deployed. Configurable products cannot yet be quoted as catalogue items; end-to-end verify catalogue pricing and customer selection.
 - Customer filters, credit account settings, complete ledger pagination and customer history.
 - Business overview: capital, sales, product and staff analysis.
 - Verify pricing under concurrent catalog changes, all product combinations, configurable variants, promotions, staff commissions and payment methods against the backend.
@@ -24,4 +24,4 @@ Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web
 
 ## Test evidence
 
-Focused Node tests cover promotion preview and malformed/pending repayment recovery. TypeScript is checked separately. Production builds verify compilation, not real transactions. No physical-device usability test or authenticated live transaction has been performed for these changes. Retrying the same repayment retains its key on the same browser; storage clearing, other browsers/devices and user-cleared pending requests require ledger reconciliation.
+Focused Node tests cover receipt HTML escaping, promotion preview and malformed/pending repayment recovery. TypeScript is checked separately. Production builds verify compilation, not real transactions. No physical-device usability test or authenticated live transaction has been performed for these changes. Retrying the same repayment retains its key on the same browser; storage clearing, other browsers/devices and user-cleared pending requests require ledger reconciliation.

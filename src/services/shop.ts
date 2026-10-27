@@ -46,7 +46,7 @@ export interface Shop {
    */
   paymentMethods?: ShopPaymentMethod[];
   creditSettings?: { enabled: boolean };
-  capabilities?: { guardedCreditSale?: boolean };
+  capabilities?: { guardedCreditSale?: boolean; guardedQuotationMutations?: boolean };
   /** ISO timestamp — earliest possible sale date, used to bound date pickers. */
   createdAt?: string;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ShoppingCart, Banknote, Smartphone, Trash2, Plus, Minus,
@@ -324,6 +324,8 @@ export default function StaffSalesPage() {
   const [creditAttempt, setCreditAttempt] = useState<CreditAttempt | null>(null);
   const [creditStorageError, setCreditStorageError] = useState(false);
   const [creditStorageReady, setCreditStorageReady] = useState(false);
+  const [creditNotice, setCreditNotice] = useState('');
+  const creditSubmissionLock = useRef(false);
   const storageKey = user ? `duqana-credit-sale:${user.shop._id}:${user._id}` : '';
   useEffect(() => {
     setCreditStorageReady(false);
@@ -336,6 +338,17 @@ export default function StaffSalesPage() {
       setCreditStorageError(false);
     } catch { setCreditStorageError(true); }
     setCreditStorageReady(true);
+  }, [storageKey]);
+  useEffect(() => {
+    const syncPending = (event: StorageEvent) => {
+      if (event.key !== storageKey && event.key !== null) return;
+      try {
+        const raw = localStorage.getItem(storageKey);
+        setCreditAttempt(raw ? parsePendingCreditSale(raw) : null);
+      } catch { setCreditStorageError(true); }
+    };
+    window.addEventListener('storage', syncPending);
+    return () => window.removeEventListener('storage', syncPending);
   }, [storageKey]);
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneDigits, setPhoneDigits] = useState('');
@@ -484,10 +497,27 @@ export default function StaffSalesPage() {
     if (creditAttempt || creditStorageError || !creditStorageReady) return;
     if (paymentMethod === CREDIT_METHOD_KEY && creditEnabled) {
       if (!creditCustomer || !storageKey) return;
-      const attempt: CreditAttempt = { key: crypto.randomUUID(), createdAt: Date.now(), customerName: creditCustomer.name, data: { items: buildItems(), paymentMethod: 'credit', customerId: creditCustomer._id, requireCreditBooking: true } };
-      try { localStorage.setItem(storageKey, JSON.stringify(attempt)); } catch { setCreditStorageError(true); return; }
-      setCreditAttempt(attempt);
-      createSaleMutation.mutate({ data: attempt.data, key: attempt.key });
+      if (creditSubmissionLock.current) return;
+      if (!globalThis.crypto?.randomUUID || !navigator.locks) {
+        setCreditNotice('This browser cannot safely coordinate credit sales. Use an up-to-date browser over HTTPS.');
+        return;
+      }
+      creditSubmissionLock.current = true;
+      setCreditNotice('');
+      const customer = creditCustomer;
+      const items = buildItems();
+      void navigator.locks.request(storageKey, { ifAvailable: true }, async (lock) => {
+        if (!lock) { setCreditNotice('A credit sale is being processed in another tab. Check it before continuing.'); return; }
+        try {
+          const saved = localStorage.getItem(storageKey);
+          if (saved) { setCreditAttempt(parsePendingCreditSale(saved)); return; }
+          const attempt: CreditAttempt = { key: crypto.randomUUID(), createdAt: Date.now(), customerName: customer.name, data: { items, paymentMethod: 'credit', customerId: customer._id, requireCreditBooking: true } };
+          localStorage.setItem(storageKey, JSON.stringify(attempt));
+          setCreditAttempt(attempt);
+          await createSaleMutation.mutateAsync({ data: attempt.data, key: attempt.key }).catch(() => {});
+        } catch { setCreditStorageError(true); }
+      }).catch(() => setCreditNotice('Could not safely start the credit sale. Please try again.'))
+        .finally(() => { creditSubmissionLock.current = false; });
       return;
     }
     createSaleMutation.mutate({ data: { items: buildItems(), paymentMethod } });
@@ -675,6 +705,7 @@ export default function StaffSalesPage() {
                     {phoneDigits && !isValidPhone && <p className="text-xs text-red-500 mt-1">Enter a valid number starting with 7 or 1</p>}
                   </div>
                 )}
+                {creditNotice && <p role="alert" className="text-sm text-red-700">{creditNotice}</p>}
                 {createSaleMutation.error && (
                   <div className="p-3 rounded-control bg-red-50 border border-red-200 text-xs text-red-700">
                     {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
