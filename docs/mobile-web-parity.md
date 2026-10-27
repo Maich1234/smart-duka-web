@@ -13,7 +13,7 @@ Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web
 
 ## Remaining or incomplete
 
-- Credit checkout, settings, opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations.
+- Credit checkout is implemented with a customer picker and retry recovery, gated on the backend guarded-credit capability. The backend guard must be deployed and the end-to-end flow tested before it is available. Credit settings, opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations remain.
 - Quotations: edit/delete, public share/PDF and conversion to a sale with full payment support; end-to-end verify catalogue pricing and customer selection.
 - Customer filters, credit account settings, complete ledger pagination and customer history.
 - Business overview: capital, sales, product and staff analysis.

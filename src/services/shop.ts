@@ -45,6 +45,8 @@ export interface Shop {
    * back to Cash + M-PESA.
    */
   paymentMethods?: ShopPaymentMethod[];
+  creditSettings?: { enabled: boolean };
+  capabilities?: { guardedCreditSale?: boolean };
   /** ISO timestamp — earliest possible sale date, used to bound date pickers. */
   createdAt?: string;
 }

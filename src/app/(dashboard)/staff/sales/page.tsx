@@ -14,7 +14,7 @@ import { usePreloadedLogo } from '@/hooks/useLogoPreload';
 import { hasAnyPermission, hasPermission } from '@/lib/permissions';
 import MpesaPaymentModal from '@/components/payments/MpesaPaymentModal';
 import {
-  CASH_METHOD_KEY, MPESA_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
+  CASH_METHOD_KEY, MPESA_METHOD_KEY, CREDIT_METHOD_KEY, methodIcon, resolveSaleMethods, saleMethodLabel,
 } from '@/lib/paymentMethods';
 import RefundSaleSection, { SaleStatusBadge, type RefundInfo } from '@/components/sales/RefundSaleSection';
 import VoidSaleSection from '@/components/sales/VoidSaleSection';
@@ -27,6 +27,9 @@ import { buildReceiptHtml, printReceiptHtml } from '@/utils/receiptHtml';
 import { useMoney } from '@/lib/money';
 import { availableToAdd, clampQty, stepFor, negativeStockAfter } from '@/lib/stock';
 import { saleLinePreview, type Promotion } from '@/lib/salePricing';
+import CustomerPicker from '@/components/quotations/CustomerPicker';
+import type { Customer } from '@/services/customers';
+import { parsePendingCreditSale, mayRetryCreditSale, type CreditAttempt } from '@/lib/pendingCreditSale';
 
 type ProductType = 'standard' | 'variable' | 'weighted' | 'refillable' | 'service' | 'bundle' | 'configurable';
 interface Product {
@@ -317,6 +320,23 @@ export default function StaffSalesPage() {
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>(CASH_METHOD_KEY);
+  const [creditCustomer, setCreditCustomer] = useState<Customer | null>(null);
+  const [creditAttempt, setCreditAttempt] = useState<CreditAttempt | null>(null);
+  const [creditStorageError, setCreditStorageError] = useState(false);
+  const [creditStorageReady, setCreditStorageReady] = useState(false);
+  const storageKey = user ? `duqana-credit-sale:${user.shop._id}:${user._id}` : '';
+  useEffect(() => {
+    setCreditStorageReady(false);
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        setCreditAttempt(parsePendingCreditSale(raw));
+      } else setCreditAttempt(null);
+      setCreditStorageError(false);
+    } catch { setCreditStorageError(true); }
+    setCreditStorageReady(true);
+  }, [storageKey]);
   const [customerPhone, setCustomerPhone] = useState('');
   const [phoneDigits, setPhoneDigits] = useState('');
   const [quantityModalProduct, setQuantityModalProduct] = useState<Product | null>(null);
@@ -359,7 +379,8 @@ export default function StaffSalesPage() {
 
   // The shop's own till buttons; falls back to Cash + M-PESA for shops that
   // never opened the setting, so nobody is left without a way to sell.
-  const saleMethods = useMemo(() => resolveSaleMethods(shopData?.paymentMethods), [shopData]);
+  const creditEnabled = shopData?.creditSettings?.enabled ?? false;
+  const saleMethods = useMemo(() => resolveSaleMethods(shopData?.paymentMethods, { enabled: creditEnabled, permitted: hasPermission(user, 'make_credit_sale') && shopData?.capabilities?.guardedCreditSale === true }), [shopData, creditEnabled, user]);
 
   // If the selected button is removed or switched off, fall back to the first.
   useEffect(() => {
@@ -379,11 +400,13 @@ export default function StaffSalesPage() {
   }, [refetchShop]);
 
   const createSaleMutation = useMutation({
-    mutationFn: async (data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string }) => {
-      const res = await api.post('/sales', data);
+    mutationFn: async ({ data, key }: { data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string; customerId?: string; requireCreditBooking?: boolean }; key?: string }) => {
+      const res = await api.post('/sales', data, key ? { headers: { 'X-Idempotency-Key': key } } : undefined);
       return res.data.data as Sale;
     },
-    onSuccess: (sale) => {
+    onSuccess: (sale, variables) => {
+      if (variables.key) { try { localStorage.removeItem(storageKey); } catch { setCreditStorageError(true); } setCreditAttempt(null); }
+      setCreditCustomer(null);
       setCart([]); setCustomerPhone(''); setPhoneDigits(''); setCompletedSale(sale);
       queryClient.invalidateQueries({ queryKey: ['my-sales'] });
       queryClient.invalidateQueries({ queryKey: ['products-sale'] });
@@ -458,11 +481,20 @@ export default function StaffSalesPage() {
       if (!isValidPhone) return;
       setMpesaModalOpen(true); return;
     }
-    createSaleMutation.mutate({ items: buildItems(), paymentMethod });
+    if (creditAttempt || creditStorageError || !creditStorageReady) return;
+    if (paymentMethod === CREDIT_METHOD_KEY && creditEnabled) {
+      if (!creditCustomer || !storageKey) return;
+      const attempt: CreditAttempt = { key: crypto.randomUUID(), createdAt: Date.now(), customerName: creditCustomer.name, data: { items: buildItems(), paymentMethod: 'credit', customerId: creditCustomer._id, requireCreditBooking: true } };
+      try { localStorage.setItem(storageKey, JSON.stringify(attempt)); } catch { setCreditStorageError(true); return; }
+      setCreditAttempt(attempt);
+      createSaleMutation.mutate({ data: attempt.data, key: attempt.key });
+      return;
+    }
+    createSaleMutation.mutate({ data: { items: buildItems(), paymentMethod } });
   };
 
   const handleCheckout = () => {
-    if (cart.length === 0) return;
+    if (!shopData || cart.length === 0 || creditAttempt || creditStorageError || !creditStorageReady || (paymentMethod === CREDIT_METHOD_KEY && creditEnabled && !creditCustomer)) return;
     if (negativeStockLines.length > 0) {
       setShowStockConfirm(true);
       return;
@@ -573,6 +605,15 @@ export default function StaffSalesPage() {
               )}
             </div>
 
+            {(creditAttempt || creditStorageError) && <div className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+              {creditStorageError ? 'Cannot safely access the saved credit sale on this device. Check the sales and credit ledger before recording another sale.' : <>
+                <p className="font-semibold">Credit sale awaiting confirmation</p>
+                <p className="mt-1">For {creditAttempt?.customerName}. The server may have recorded it. Retry this same request before making another sale.</p>
+                {creditAttempt && mayRetryCreditSale(creditAttempt.createdAt, Date.now()) ? <button className="mt-2 rounded-lg bg-amber-900 px-3 py-2 text-white disabled:opacity-50" disabled={createSaleMutation.isPending} onClick={() => createSaleMutation.mutate({ data: creditAttempt.data, key: creditAttempt.key })}>{createSaleMutation.isPending ? 'Checking…' : 'Retry confirmation'}</button> : <p className="mt-1">The retry window has expired. Check the sales and credit ledger before taking further action.</p>}
+                {createSaleMutation.error && <p className="mt-2">{(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Could not confirm the sale. Check the connection and retry.'}</p>}
+                <button className="mt-3 block text-left underline disabled:opacity-50" disabled={createSaleMutation.isPending} onClick={() => { if (window.confirm('Have you checked the sales and customer credit ledger and resolved this sale? Clearing this reminder does not undo a sale.')) { try { localStorage.removeItem(storageKey); setCreditAttempt(null); createSaleMutation.reset(); } catch { setCreditStorageError(true); } } }}>I checked the ledger; clear this reminder</button>
+              </>}
+            </div>}
             {cart.length === 0 ? (
               <div className="py-12 text-center text-gray-400">
                 <ShoppingCart className="w-10 h-10 mx-auto mb-3 text-gray-200" />
@@ -619,6 +660,8 @@ export default function StaffSalesPage() {
                     );
                   })}
                 </div>
+                {paymentMethod === CREDIT_METHOD_KEY && creditEnabled && <div><p className="mb-2 text-sm font-semibold">Customer for this credit sale</p><CustomerPicker selected={creditCustomer} onSelect={setCreditCustomer} />{creditCustomer?.account && <p className="mt-2 text-sm text-slate-600">Available credit: {fmt(creditCustomer.account.availableCredit)}{creditCustomer.account.blocked ? ' · Credit blocked' : ''}</p>}<p className="mt-1 text-xs text-slate-500">The server checks eligibility and the final balance when the sale is recorded.</p></div>}
+                {creditEnabled && !shopData?.capabilities?.guardedCreditSale && <p className="text-xs text-amber-800">Credit checkout needs a backend update before it can be used safely.</p>}
                 {/* Phone entry belongs to STK Push, which needs credentials.
                     Unconfigured M-Pesa is just another button. */}
                 {paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && (
@@ -637,7 +680,7 @@ export default function StaffSalesPage() {
                     {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
                   </div>
                 )}
-                <button onClick={handleCheckout} disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
+                <button onClick={handleCheckout} disabled={!shopData || createSaleMutation.isPending || !!creditAttempt || creditStorageError || !creditStorageReady || (paymentMethod === CREDIT_METHOD_KEY && creditEnabled && !creditCustomer) || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white disabled:opacity-60" style={{ backgroundColor: '#0F766E' }}>
                   {createSaleMutation.isPending
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
@@ -698,7 +741,7 @@ export default function StaffSalesPage() {
           </div>
         </div>
       </Modal>
-      <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId }); }} onCancel={() => setMpesaModalOpen(false)} />
+      <MpesaPaymentModal open={mpesaModalOpen} phoneNumber={customerPhone} amount={totalAmount} onSuccess={(txId) => { setMpesaModalOpen(false); createSaleMutation.mutate({ data: { items: buildItems(), paymentMethod: 'mpesa', mpesaTransactionId: txId } }); }} onCancel={() => setMpesaModalOpen(false)} />
       {completedSale && <ReceiptSuccessModal sale={completedSale} shopName={shopName} shopConfig={shopConfig} onClose={() => setCompletedSale(null)} onNewSale={() => setCompletedSale(null)} />}
       {selectedSale && <SaleDetailModal sale={selectedSale} shopName={shopName} shopConfig={shopConfig} canRefund={canRefund} canVoid={canVoid} onClose={() => setSelectedSale(null)} />}
     </div>
