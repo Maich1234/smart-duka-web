@@ -413,8 +413,19 @@ export default function StaffSalesPage() {
   }, [refetchShop]);
 
   const createSaleMutation = useMutation({
-    mutationFn: async ({ data, key }: { data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string; customerId?: string; requireCreditBooking?: boolean }; key?: string }) => {
-      const res = await api.post('/sales', data, key ? { headers: { 'X-Idempotency-Key': key } } : undefined);
+    mutationFn: async (variables: { data: { items: object[]; paymentMethod: string; mpesaTransactionId?: string; customerId?: string; requireCreditBooking?: boolean }; key?: string }) => {
+      const { data } = variables;
+      if (!variables.key) {
+        if (!crypto.randomUUID || !storageKey) throw new Error('Secure sale recovery is unavailable.');
+        const existing = localStorage.getItem(storageKey);
+        if (existing) { setCreditAttempt(parsePendingCreditSale(existing)); throw new Error('Resolve the pending sale first.'); }
+        variables.key = crypto.randomUUID();
+        const attempt: CreditAttempt = { key: variables.key, createdAt: Date.now(), customerName: creditCustomer?.name || 'Walk-in customer', data };
+        localStorage.setItem(storageKey, JSON.stringify(attempt));
+        setCreditAttempt(attempt);
+      }
+      const key = variables.key;
+      const res = await api.post('/sales', data, { headers: { 'X-Idempotency-Key': key } });
       return res.data.data as Sale;
     },
     onSuccess: (sale, variables) => {
@@ -636,8 +647,8 @@ export default function StaffSalesPage() {
             </div>
 
             {(creditAttempt || creditStorageError) && <div className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
-              {creditStorageError ? 'Cannot safely access the saved credit sale on this device. Check the sales and credit ledger before recording another sale.' : <>
-                <p className="font-semibold">Credit sale awaiting confirmation</p>
+              {creditStorageError ? 'Cannot safely access the saved sale on this device. Check the sales and credit ledger before recording another sale.' : <>
+                <p className="font-semibold">Sale awaiting confirmation</p>
                 <p className="mt-1">For {creditAttempt?.customerName}. The server may have recorded it. Retry this same request before making another sale.</p>
                 {creditAttempt && mayRetryCreditSale(creditAttempt.createdAt, Date.now()) ? <button className="mt-2 rounded-lg bg-amber-900 px-3 py-2 text-white disabled:opacity-50" disabled={createSaleMutation.isPending} onClick={() => createSaleMutation.mutate({ data: creditAttempt.data, key: creditAttempt.key })}>{createSaleMutation.isPending ? 'Checking…' : 'Retry confirmation'}</button> : <p className="mt-1">The retry window has expired. Check the sales and credit ledger before taking further action.</p>}
                 {createSaleMutation.error && <p className="mt-2">{(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Could not confirm the sale. Check the connection and retry.'}</p>}

@@ -89,7 +89,7 @@ export interface ProductPayload {
   maxPrice?: number;
   allowPriceOverride?: boolean;
   bundleItems?: { product: string; quantity: number }[];
-  variants?: Omit<ProductVariant, '_id'>[];
+  variants?: ProductVariant[];
   promotions?: Promotion[];
 }
 
