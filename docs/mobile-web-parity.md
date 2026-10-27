@@ -6,16 +6,16 @@ Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web
 
 - Owner assets: list, add, edit, archive/restore, pagination.
 - Owner customers: search, add, edit, archive, account and credit activity.
-- Owner credit overview and ledger; repayment form retains retry key and payload on this browser.
+- Owner credit overview and ledger; repayment form retains retry key and payload on this browser. Owner credit settings, individual customer limits/blocks and per-product eligibility are implemented; end-to-end testing is still required.
 - Owner financial records: preview and CSV/XLSX/PDF download.
 - Owner quotation list/detail, pagination, custom and catalogue multiline creation, searchable paginated customer/product pickers, and decline.
 - Existing web till covers standard, variable, weighted, refillable, service, bundle and configurable product paths; promotion preview now follows backend pricing rules for supported product types.
 
 ## Remaining or incomplete
 
-- Credit checkout is implemented with a customer picker and retry recovery, gated on the backend guarded-credit capability. The backend guard must be deployed and the end-to-end flow tested before it is available. Credit settings, opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations remain.
+- Credit checkout is implemented with a customer picker and retry recovery, gated on the backend guarded-credit capability. The backend guard must be deployed and the end-to-end flow tested before it is available. Opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations remain.
 - Quotations: edit and conversion to a sale with full payment support; deletion is available only after the guarded backend update is deployed. Configurable products cannot yet be quoted as catalogue items; end-to-end verify catalogue pricing and customer selection.
-- Customer filters, credit account settings, complete ledger pagination and customer history.
+- Customer filters, complete ledger pagination and customer history.
 - Business overview: capital, sales, product and staff analysis.
 - Verify pricing under concurrent catalog changes, all product combinations, configurable variants, promotions, staff commissions and payment methods against the backend.
 - Compare remaining profile/settings, onboarding, billing and subscription gates.
