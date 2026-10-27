@@ -100,13 +100,14 @@ export const getCreditTransactions = async (params?: {
  */
 export const recordCreditPayment = async (
   customerId: string,
-  data: RecordPaymentData
+  data: RecordPaymentData,
+  idempotencyKey: string
 ): Promise<{
   success: boolean;
   data: { transaction: CreditTransaction; account: CreditAccount; customerName: string };
   message: string;
 }> => {
-  const res = await api.post(`/credit/customers/${customerId}/payments`, data);
+  const res = await api.post(`/credit/customers/${customerId}/payments`, data, { headers: { 'X-Idempotency-Key': idempotencyKey } });
   return res.data;
 };
 
