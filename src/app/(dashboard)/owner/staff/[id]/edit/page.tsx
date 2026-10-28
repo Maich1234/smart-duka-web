@@ -1,4 +1,5 @@
 'use client';
+import DataLoadError from '@/components/ui/DataLoadError';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -36,7 +37,7 @@ export default function EditStaffPage() {
   const [seeded, setSeeded] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: staff, isLoading } = useQuery<StaffDetail>({
+  const { data: staff, isLoading, isError, refetch } = useQuery<StaffDetail>({
     queryKey: ['staff', id],
     queryFn: async () => {
       const res = await api.get(`/staff/${id}`);
@@ -45,7 +46,7 @@ export default function EditStaffPage() {
     enabled: !!id,
   });
 
-  const { data: permissionsData } = useQuery<{ data: Permission[] }>({
+  const { data: permissionsData, isError: permissionsError, refetch: retryPermissions } = useQuery<{ data: Permission[] }>({
     queryKey: ['permissions'],
     queryFn: async () => {
       const res = await api.get('/staff/permissions');
@@ -108,6 +109,10 @@ export default function EditStaffPage() {
       return next;
     });
   };
+
+  if (isError) return <DataLoadError label="staff details" onRetry={() => { void refetch(); }} />;
+
+  if (permissionsError) return <DataLoadError label="permissions" onRetry={() => { void retryPermissions(); }} />;
 
   if (isLoading || !seeded) {
     return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;

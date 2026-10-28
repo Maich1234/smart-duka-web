@@ -56,7 +56,9 @@ function preload(url: string): Promise<string> {
   const existing = inFlight.get(url);
   if (existing) return existing;
 
-  const promise = fetch(url)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  const promise = fetch(url, { signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer' })
     .then((res) => (res.ok ? res.blob() : Promise.reject(new Error('logo fetch failed'))))
     .then(blobToDataUrl)
     .then((result) => {
@@ -64,6 +66,7 @@ function preload(url: string): Promise<string> {
       return result;
     })
     .finally(() => {
+      clearTimeout(timer);
       inFlight.delete(url);
     });
 

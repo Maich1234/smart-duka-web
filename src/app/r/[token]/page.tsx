@@ -35,6 +35,7 @@ export default function ReceiptPage() {
   const { token } = useParams<{ token: string }>();
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
   const [stars, setStars] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -44,22 +45,27 @@ export default function ReceiptPage() {
   const [ratingLoading, setRatingLoading] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setError(''); setReceipt(null);
     const fetchReceipt = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/public/receipt/${token}`);
-        setReceipt(res.data.data);
+        const res = await axios.get(`${API_BASE_URL}/public/receipt/${encodeURIComponent(token)}`, { timeout: 15000, signal: controller.signal });
+        if (!controller.signal.aborted) setReceipt(res.data.data);
       } catch (err) {
+        if (controller.signal.aborted) return;
         // The server distinguishes a malformed token from a sale that no
         // longer exists — a customer holding a genuine printed receipt should
         // not be told their code is invalid.
         const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
-        setError(message || 'Receipt not found or the link has expired.');
+        setError(message || 'Could not load the receipt. Check your connection and try again.');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     if (token) fetchReceipt();
-  }, [token]);
+    else { setError('This receipt link is invalid.'); setLoading(false); }
+    return () => controller.abort();
+  }, [token, attempt]);
 
   const submitRating = async () => {
     if (!stars) return;
@@ -69,7 +75,7 @@ export default function ReceiptPage() {
       await axios.post(`${API_BASE_URL}/public/receipt/${token}/rating`, {
         stars,
         comment: comment.trim() || undefined,
-      });
+      }, { timeout: 15000 });
       setRatingSubmitted(true);
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
@@ -110,8 +116,9 @@ export default function ReceiptPage() {
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-red-500" />
           </div>
-          <h1 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Receipt Not Found</h1>
+          <h1 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Receipt unavailable</h1>
           <p className="text-gray-500 text-sm mb-6">{error || 'This receipt link is invalid or has expired.'}</p>
+          <button type="button" onClick={() => setAttempt(value => value + 1)} className="mb-4 block w-full text-sm font-semibold text-teal-700 underline">Try again</button>
           <Link href="/" className="text-sm font-medium underline" style={{ color: '#0F766E' }}>
             Go to DuQana
           </Link>
