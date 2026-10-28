@@ -54,9 +54,9 @@ const values = [
 
 const milestones = [
   { year: '2022', event: 'DuQana founded in Nairobi after a frustrating experience running a hardware shop.' },
-  { year: '2023', event: 'Launched beta with 50 shops in Nairobi. Added M-Pesa STK Push integration.' },
-  { year: '2024', event: 'Expanded to Mombasa, Kisumu, and Nakuru. Crossed 1,000 active shops.' },
-  { year: '2025', event: 'Launched web platform, staff management, and advanced analytics. 5,000+ active shops.' },
+  { year: '2023', event: 'Launched beta in Nairobi. Added M-Pesa STK Push integration.' },
+  { year: '2024', event: 'Expanded to Mombasa, Kisumu, and Nakuru.' },
+  { year: '2025', event: 'Launched web platform, staff management, and advanced analytics.' },
 ];
 
 export default function AboutPage() {
@@ -104,7 +104,7 @@ export default function AboutPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { value: '5,000+', label: 'Active Shops' },
+                { value: '500+', label: 'Active Shops' },
                 { value: 'KES 2B+', label: 'Processed' },
                 { value: '47', label: 'Counties Reached' },
                 { value: '4.9★', label: 'User Rating' },
