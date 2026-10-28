@@ -66,6 +66,7 @@ export interface Product {
   minPrice?: number;
   maxPrice?: number;
   allowPriceOverride?: boolean;
+  creditEligible?: boolean;
   bundleItems?: BundleItem[];
   promotions?: Promotion[];
   variants?: ProductVariant[];
@@ -88,7 +89,7 @@ export interface ProductPayload {
   maxPrice?: number;
   allowPriceOverride?: boolean;
   bundleItems?: { product: string; quantity: number }[];
-  variants?: Omit<ProductVariant, '_id'>[];
+  variants?: ProductVariant[];
   promotions?: Promotion[];
 }
 
@@ -118,4 +119,10 @@ export async function updateProduct(id: string, payload: ProductPayload): Promis
 
 export async function deleteProduct(id: string): Promise<void> {
   await api.delete(`/products/${id}`);
+}
+
+/** Owner-only on the server. Updates just the credit policy flag. */
+export async function setProductCreditEligibility(id: string, creditEligible: boolean): Promise<Product> {
+  const res = await api.put(`/products/${encodeURIComponent(id)}`, { creditEligible });
+  return res.data.data;
 }

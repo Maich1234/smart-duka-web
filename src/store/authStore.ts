@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/config';
 import { queryClient } from '@/lib/queryClient';
+import { sameSessionIdentity } from '@/lib/sessionIdentity';
 
 export interface Shop {
   _id: string;
@@ -121,11 +122,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // to refresh the cached user object after PUT /auth/profile. Omitting it
   // has to keep the existing one rather than wipe the session.
   login: (user, token, refreshToken) => {
-    const nextRefresh = refreshToken ?? get().refreshToken;
+    const sameIdentity = sameSessionIdentity(get().user, user);
+    if (!sameIdentity) queryClient.clear();
+    const sameAccount = get().user?._id === user._id && get().user?.shop._id === user.shop._id;
+    const nextRefresh = refreshToken ?? (sameAccount ? get().refreshToken : null);
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       if (nextRefresh) localStorage.setItem(REFRESH_TOKEN_KEY, nextRefresh);
+      else localStorage.removeItem(REFRESH_TOKEN_KEY);
     }
     set({ user, token, refreshToken: nextRefresh, isAuthenticated: true, sessionExpiredReason: null });
   },
@@ -154,6 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = localStorage.getItem(TOKEN_KEY);
     const user = readUser();
     if (token && user) {
+      if (!sameSessionIdentity(get().user, user)) queryClient.clear();
       set({ user, token, refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY), isAuthenticated: true });
     } else {
       // A half-written session (one key present, the other not) is unusable.
@@ -184,8 +190,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = localStorage.getItem(TOKEN_KEY);
     const user = readUser();
     if (token && user) {
+      if (!sameSessionIdentity(get().user, user)) queryClient.clear();
       set({ user, token, refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY), isAuthenticated: true });
     } else if (get().isAuthenticated) {
+      queryClient.clear();
       set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
     }
   },

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Spinner from '@/components/ui/Spinner';
+import Button from '@/components/ui/Button';
 import ProductForm, {
   EMPTY_PRODUCT_FORM,
   productToForm,
@@ -23,7 +24,7 @@ export default function EditProductPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState('');
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError, refetch } = useQuery({
     queryKey: ['product', id],
     queryFn: () => getProduct(id),
     enabled: !!id,
@@ -61,6 +62,8 @@ export default function EditProductPage() {
     setServerError('');
     mutation.mutate();
   };
+
+  if (isError) return <div className="space-y-4 p-6" role="alert"><p>Could not load this product. It may be unavailable or your connection was interrupted.</p><Button onClick={() => refetch()}>Retry</Button><Button variant="outline" onClick={() => router.push('/owner/inventory')}>Back to inventory</Button></div>;
 
   if (isLoading || !seeded) {
     return (

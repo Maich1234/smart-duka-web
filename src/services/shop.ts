@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import type { ShopPaymentMethod } from '@/lib/paymentMethods';
+import type { CreditSettings } from '@/lib/creditSettings';
 
 /**
  * The shop document, mirroring the mobile app's services/shop.ts so the two
@@ -45,6 +46,8 @@ export interface Shop {
    * back to Cash + M-PESA.
    */
   paymentMethods?: ShopPaymentMethod[];
+  creditSettings?: CreditSettings;
+  capabilities?: { guardedCreditSale?: boolean; guardedQuotationMutations?: boolean };
   /** ISO timestamp — earliest possible sale date, used to bound date pickers. */
   createdAt?: string;
 }
@@ -82,6 +85,7 @@ export interface UpdateShopConfigData {
   purchaseCostAllocationMethod?: 'quantity' | 'value' | 'none';
   aiEnabled?: boolean;
   paymentMethods?: ShopPaymentMethod[];
+  creditSettings?: Partial<CreditSettings>;
 }
 
 export async function getShopConfig(): Promise<Shop> {

@@ -53,7 +53,7 @@ function escapeHtml(value: string): string {
 }
 
 function formatCurrency(amount: number, currency = 'KES'): string {
-  return `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${escapeHtml(String(currency))} ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatDateTime(dateString: string | Date): string {
@@ -102,14 +102,14 @@ export function buildReceiptHtml(
             ? `<br><span style="font-size:9px;color:#16a34a">${escapeHtml(item.appliedPromotionLabel)}</span>`
             : ''
         }</td>
-        <td style="text-align:center;padding:3px 4px;font-size:11px">x${item.quantity}</td>
+        <td style="text-align:center;padding:3px 4px;font-size:11px">x${escapeHtml(String(item.quantity))}</td>
         <td style="text-align:right;padding-left:6px;font-size:11px;font-weight:bold">${formatCurrency(item.subtotal, currency)}</td>
       </tr>`,
     )
     .join('');
 
   const logoSection = logoUrl?.trim()
-    ? `<div style="text-align:center;margin-bottom:6px"><img src="${escapeHtml(logoUrl)}" style="max-width:80px;max-height:80px;object-fit:contain" /></div>`
+    ? `<div style="text-align:center;margin-bottom:6px"><img src="${escapeHtml(logoUrl)}" referrerpolicy="no-referrer" style="max-width:80px;max-height:80px;object-fit:contain" /></div>`
     : '';
 
   const mottoLine = motto?.trim()
@@ -147,7 +147,9 @@ export function buildReceiptHtml(
 
   return `<!DOCTYPE html>
 <html>
-<head><meta name="viewport" content="width=device-width, initial-scale=1">
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: http: data: blob:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>@media print { body { margin: 0; } }</style>
 </head>
 <body style="font-family:'Courier New',monospace;width:280px;margin:0 auto;padding:16px 8px;color:#000">
@@ -161,7 +163,7 @@ export function buildReceiptHtml(
     <tr><td><b>Invoice</b></td><td style="text-align:right">${escapeHtml(sale.invoiceNumber)}</td></tr>
     <tr><td><b>Date</b></td><td style="text-align:right">${formatDateTime(sale.createdAt)}</td></tr>
     <tr><td><b>Served By</b></td><td style="text-align:right">${escapeHtml(sale.staff?.name ?? servedByName ?? '-')}</td></tr>
-    <tr><td><b>Payment</b></td><td style="text-align:right">${sale.paymentMethod.toUpperCase()}</td></tr>
+    <tr><td><b>Payment</b></td><td style="text-align:right">${escapeHtml(sale.paymentMethod.toUpperCase())}</td></tr>
   </table>
   ${mpesaSection}
   <hr style="border:none;border-top:1px dashed #000;margin:8px 0">
@@ -192,6 +194,7 @@ export function buildReceiptHtml(
 export function printReceiptHtml(html: string): void {
   const win = window.open('', '_blank', 'width=420,height=700,scrollbars=yes');
   if (!win) return;
+  win.opener = null;
   win.document.write(html);
   win.document.close();
   win.focus();

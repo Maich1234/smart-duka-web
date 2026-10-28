@@ -15,6 +15,7 @@ import { Banknote, Smartphone, Landmark, CreditCard, Clock, Tag, Wallet, type Lu
 
 export const CASH_METHOD_KEY = 'cash';
 export const MPESA_METHOD_KEY = 'mpesa';
+export const CREDIT_METHOD_KEY = 'credit';
 
 export type MethodIcon = 'cash' | 'phone' | 'bank' | 'card' | 'clock' | 'tag' | 'wallet';
 
@@ -60,13 +61,18 @@ export const methodIcon = (method?: ShopPaymentMethod): LucideIcon =>
  * list — old shops, and any response predating this field.
  */
 export const resolveSaleMethods = (
-  methods?: ShopPaymentMethod[] | null
+  methods?: ShopPaymentMethod[] | null,
+  credit?: { enabled: boolean; permitted: boolean }
 ): ShopPaymentMethod[] => {
   const list = methods?.length ? methods : DEFAULT_SALE_METHODS;
-  return list
-    .filter((m) => m.enabled !== false)
+  const visible = list
+    .filter((m) => m.enabled !== false && !(credit?.enabled && !credit.permitted && m.key === CREDIT_METHOD_KEY))
     .slice()
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  if (credit?.enabled && credit.permitted && !visible.some((m) => m.key === CREDIT_METHOD_KEY)) {
+    visible.push({ key: CREDIT_METHOD_KEY, label: 'Credit', icon: 'clock' });
+  }
+  return visible;
 };
 
 /** Turn a typed label into a valid key: "Airtel Money" → "airtel_money". */
