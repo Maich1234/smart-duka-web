@@ -82,17 +82,17 @@ export interface ConvertQuotationResponse {
 
 /** Owner, or staff with 'create_quotation' (draft/manage) or 'convert_quotation_to_sale' (view only). */
 export const getQuotations = async (
-  status?: 'draft' | 'declined' | 'converted', page = 1
+  status?: 'draft' | 'declined' | 'converted', page = 1, signal?: AbortSignal
 ): Promise<QuotationsResponse> => {
-  const response = await api.get('/quotations', { params: { status, page, limit: 20 } });
+  const response = await api.get('/quotations', { params: { status, page, limit: 20 }, signal });
   return response.data;
 };
 
 /** Same access as getQuotations. Fetches a single quotation by id — used
  * wherever a specific quotation is needed regardless of where it falls in
  * the default list's pagination (e.g. ConvertQuotationScreen). */
-export const getQuotationById = async (id: string): Promise<QuotationResponse> => {
-  const response = await api.get(`/quotations/${id}`);
+export const getQuotationById = async (id: string, signal?: AbortSignal): Promise<QuotationResponse> => {
+  const response = await api.get(`/quotations/${id}`, { signal });
   return response.data;
 };
 
