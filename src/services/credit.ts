@@ -117,7 +117,8 @@ export const recordCreditPayment = async (
  */
 export const reverseCreditTransaction = async (
   transactionId: string,
-  reason: string
+  reason: string,
+  idempotencyKey?: string
 ): Promise<{
   success: boolean;
   data: { transaction: CreditTransaction; account: CreditAccount };
@@ -125,7 +126,8 @@ export const reverseCreditTransaction = async (
 }> => {
   const res = await api.post(
     `/credit/transactions/${transactionId}/reverse`,
-    { reason }
+    { reason },
+    idempotencyKey ? { headers: { 'X-Idempotency-Key': idempotencyKey } } : undefined
   );
   return res.data;
 };
@@ -158,11 +160,11 @@ export const recordOpeningBalance = async (data: {
   dueAt?: string;
   saleId?: string;
   note?: string;
-}): Promise<{
+}, idempotencyKey?: string): Promise<{
   success: boolean;
   data: { transaction: CreditTransaction; account: CreditAccount };
   message: string;
 }> => {
-  const res = await api.post('/credit/opening-balances', data);
+  const res = await api.post('/credit/opening-balances', data, idempotencyKey ? { headers: { 'X-Idempotency-Key': idempotencyKey } } : undefined);
   return res.data;
 };
