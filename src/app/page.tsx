@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { createPublicQueryClient } from '@/lib/publicQueryClient';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowRight, ArrowUpRight, Check } from 'lucide-react';
@@ -15,7 +17,8 @@ const workflows = [
 ];
 
 export default function LandingPage() {
-  const plans = useQuery({ queryKey:['public-plans'], queryFn:getPublicPlans, staleTime:3600000, retry:1 });
+  const [publicClient] = useState(createPublicQueryClient);
+  const plans = useQuery({ queryKey:['public-plans'], queryFn:getPublicPlans, staleTime:3600000, retry:1 }, publicClient);
   return <main className="landing">
     <SiteNav />
     <section className="hero"><div className="hero-copy"><p className="eyebrow"><span className="eyebrow-dot"/> MADE FOR THE WAY YOU TRADE</p><h1>Your shop has<br/><em>a lot going on.</em><br/>Keep it together.</h1><p className="hero-description">Sales, stock and the people behind your business—all in one place. DuQana helps you spend less time searching for answers and more time serving customers.</p><div className="hero-buttons"><Link href="/register" className="button button-dark">Start with DuQana <ArrowRight size={18}/></Link><a href="#features" className="text-link">Explore the app <ArrowDown size={16}/></a></div><p className="hero-note">For kiosks, shops and growing businesses.</p></div>
