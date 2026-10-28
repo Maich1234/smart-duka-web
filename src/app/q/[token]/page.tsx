@@ -1,15 +1,86 @@
 'use client';
+
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/lib/config';
 import Link from 'next/link';
+import { Download, Printer } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/config';
+import { fetchJson } from '@/lib/fetchJson';
+import DocumentPrinter from '@/components/documents/DocumentPrinter';
 
-type PublicQuote={quoteNumber:string;shopName?:string;shopPhone?:string;shopAddress?:string;currency?:string;customerSnapshot:{name:string};items:{name:string;description?:string;quantity:number;unitPrice:number;subtotal:number}[];subtotal:number;taxRate:number;taxAmount:number;total:number;notes?:string;validUntil:string;status:string};
-export default function PublicQuotation({params}:{params:Promise<{token:string}>}){
- const {token}=use(params);const url=`${API_BASE_URL}/public/quotation/${encodeURIComponent(token)}`;
- const query=useQuery({queryKey:['public-quotation',token],retry:false,queryFn:async()=>{const r=await fetch(url,{credentials:'omit'});if(!r.ok)throw new Error(r.status===404?'Quotation not found.':r.status===400?'This quotation link is invalid.':'Could not load the quotation. Please try again.');return (await r.json()).data as PublicQuote;}});
- if(query.isPending)return <main className="p-8 text-center" role="status">Loading quotation…</main>;
- if(query.isError)return <main className="space-y-4 p-8 text-center"><h1 className="text-xl font-semibold">Quotation unavailable</h1><p role="alert">{query.error.message}</p><button className="text-teal-700 underline" onClick={()=>query.refetch()}>Try again</button></main>;
- const q=query.data;const fmt=(n:number)=>new Intl.NumberFormat('en-KE',{style:'currency',currency:q.currency||'KES'}).format(n);
- return <main className="min-h-screen bg-slate-50 px-4 py-8"><article className="mx-auto max-w-3xl space-y-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-10"><header className="flex flex-wrap justify-between gap-4 border-b pb-5"><div><p className="text-sm text-slate-500">QUOTATION</p><h1 className="text-2xl font-semibold">{q.quoteNumber}</h1><p className="mt-2 font-semibold">{q.shopName||'Shop'}</p>{q.shopAddress&&<p className="text-sm text-slate-600">{q.shopAddress}</p>}{q.shopPhone&&<p className="text-sm text-slate-600">{q.shopPhone}</p>}</div><div className="text-sm"><p>Prepared for <strong>{q.customerSnapshot.name}</strong></p><p>Valid until {new Date(q.validUntil).toLocaleDateString('en-KE')}</p><p className="capitalize">Status: {q.status}</p></div></header><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left text-slate-500"><th className="py-3">Item</th><th className="px-2 text-right">Qty</th><th className="px-2 text-right">Price</th><th className="text-right">Total</th></tr></thead><tbody>{q.items.map((item,i)=><tr key={i} className="border-b"><td className="py-3">{item.name}{item.description&&<p className="text-xs text-slate-500">{item.description}</p>}</td><td className="px-2 text-right">{item.quantity}</td><td className="px-2 text-right">{fmt(item.unitPrice)}</td><td className="text-right">{fmt(item.subtotal)}</td></tr>)}</tbody></table></div><div className="ml-auto max-w-xs space-y-2 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{fmt(q.subtotal)}</span></div>{q.taxAmount>0&&<div className="flex justify-between"><span>Tax ({q.taxRate}%)</span><span>{fmt(q.taxAmount)}</span></div>}<div className="flex justify-between border-t pt-3 text-lg font-semibold"><span>Total</span><span>{fmt(q.total)}</span></div></div>{q.notes&&<div><h2 className="font-semibold">Notes</h2><p className="whitespace-pre-wrap text-sm text-slate-600">{q.notes}</p></div>}<a href={`${url}/pdf`} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white">Open PDF</a></article><p className="mt-5 text-center text-xs text-slate-500">Powered by <Link href="/" className="text-teal-700">DuQana</Link></p></main>;
+type PublicQuote = {
+  quoteNumber: string;
+  shopName?: string;
+  shopPhone?: string;
+  shopAddress?: string;
+  currency?: string;
+  customerSnapshot: { name: string };
+  items: { name: string; description?: string; quantity: number; unitPrice: number; subtotal: number }[];
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  notes?: string;
+  validUntil: string;
+  status: string;
+};
+
+export default function PublicQuotation({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = use(params);
+  const url = `${API_BASE_URL}/public/quotation/${encodeURIComponent(token)}`;
+  const query = useQuery({
+    queryKey: ['public-quotation', token], retry: false, networkMode: 'always',
+    queryFn: async ({ signal }) => {
+      const result = await fetchJson<{ data: PublicQuote }>(url, { signal });
+      if (!result.data?.customerSnapshot || !Array.isArray(result.data.items)) {
+        throw new Error('The quotation response was incomplete. Please try again.');
+      }
+      return result.data;
+    },
+  });
+  const q = query.data;
+  const fmt = (n: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: q?.currency || 'KES' }).format(n);
+
+  return (
+    <main className="min-h-screen bg-[#f3f5ef] px-4 py-10 sm:py-16 print:bg-white print:p-0">
+      <div className="mx-auto max-w-xl">
+        <DocumentPrinter kind="quotation" state={query.isPending ? 'loading' : query.isError ? 'error' : 'ready'}
+          shopName={q?.shopName} total={q ? fmt(q.total) : undefined} error={query.error?.message} onRetry={() => query.refetch()}>
+          {q && <>
+            <header className="border-b border-dashed border-slate-300 pb-5 text-center">
+              <p className="text-[10px] tracking-[0.2em] text-slate-500">QUOTATION</p>
+              <h2 className="mt-1 text-lg font-bold">{q.quoteNumber}</h2>
+              <p className="mt-3 font-semibold">{q.shopName || 'Shop'}</p>
+              {q.shopAddress && <p className="text-slate-500">{q.shopAddress}</p>}
+              {q.shopPhone && <p className="text-slate-500">{q.shopPhone}</p>}
+            </header>
+            <dl className="space-y-2 border-b border-dashed border-slate-300 py-5">
+              <div className="flex justify-between gap-4"><dt className="text-slate-500">Prepared for</dt><dd className="text-right font-semibold">{q.customerSnapshot.name}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-slate-500">Valid until</dt><dd className="text-right">{new Date(q.validUntil).toLocaleDateString('en-KE')}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-slate-500">Status</dt><dd className="capitalize">{q.status}</dd></div>
+            </dl>
+            <ul aria-label="Quoted items" className="divide-y divide-dashed divide-slate-200">
+              {q.items.map((item, i) => <li key={i} className="py-4">
+                <div className="flex justify-between gap-4"><h3 className="min-w-0 font-semibold">{item.name}</h3><span className="max-w-[55%] text-right font-semibold">{fmt(item.subtotal)}</span></div>
+                {item.description && <p className="mt-1 whitespace-pre-wrap text-slate-500">{item.description}</p>}
+                <p className="mt-1 text-slate-500">{item.quantity} × {fmt(item.unitPrice)}</p>
+              </li>)}
+            </ul>
+            <dl className="space-y-2 border-t border-dashed border-slate-300 pt-5">
+              <div className="flex justify-between gap-4"><dt>Subtotal</dt><dd>{fmt(q.subtotal)}</dd></div>
+              {q.taxAmount > 0 && <div className="flex justify-between gap-4"><dt>Tax ({q.taxRate}%)</dt><dd>{fmt(q.taxAmount)}</dd></div>}
+              <div className="flex flex-wrap justify-between gap-3 pt-3 text-lg font-bold"><dt>Total</dt><dd>{fmt(q.total)}</dd></div>
+            </dl>
+            {q.notes && <div className="mt-6 border-t border-dashed border-slate-300 pt-4"><h3 className="font-semibold">Notes</h3><p className="mt-1 whitespace-pre-wrap text-slate-500">{q.notes}</p></div>}
+            <p className="mt-7 text-center text-[10px] text-slate-500">This is a quotation, not proof of payment.</p>
+          </>}
+        </DocumentPrinter>
+        {q && !query.isError && <div className="mt-8 flex flex-wrap justify-center gap-3 print:hidden">
+          <a href={`${url}/pdf`} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-700"><Download size={16} aria-hidden="true" />Open PDF</a>
+          <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-700"><Printer size={16} aria-hidden="true" />Print</button>
+        </div>}
+        <p className="mt-8 text-center text-xs text-slate-500 print:hidden">Powered by <Link href="/" className="font-semibold text-teal-700 underline underline-offset-4">DuQana</Link></p>
+      </div>
+    </main>
+  );
 }

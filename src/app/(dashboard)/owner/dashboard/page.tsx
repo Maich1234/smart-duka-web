@@ -1,4 +1,5 @@
 'use client';
+import DataLoadError from '@/components/ui/DataLoadError';
 
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -26,7 +27,7 @@ import { useShop } from '@/hooks/useShop';
 
 export default function OwnerDashboardPage() {
   const { currency, purchasingEnabled } = useShop();
-  const { data, isLoading } = useQuery<OwnerDashboardData>({
+  const { data, isLoading, isError, refetch } = useQuery<OwnerDashboardData>({
     queryKey: ['owner-dashboard'],
     queryFn: getOwnerDashboard,
   });
@@ -36,6 +37,8 @@ export default function OwnerDashboardPage() {
 
   const brief = buildDailyBrief(data, fmt);
   const attention = useOwnerAttention(data);
+
+  if (isError) return <DataLoadError label="dashboard" onRetry={() => { void refetch(); }} />;
 
   return (
     <div className="space-y-6">

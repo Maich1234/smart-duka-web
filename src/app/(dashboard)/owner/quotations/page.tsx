@@ -15,8 +15,8 @@ const input='mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 text-sm
 export default function QuotationsPage(){
  const { shop } = useShop();
  const [customer,setCustomer]=useState<Customer|null>(null); const [products,setProducts]=useState<Record<number,Product>>({}); const [picker,setPicker]=useState<number|null>(null); const [page,setPage]=useState(1); const [selectedId,setSelectedId]=useState<string | null>(null); const [lines,setLines]=useState([0]); const [open,setOpen]=useState(false);const [err,setErr]=useState('');const qc=useQueryClient();
- const quotes=useQuery({queryKey:['quotations',page],queryFn:()=>getQuotations(undefined,page)});
- const detail=useQuery({queryKey:['quotation',selectedId],queryFn:()=>getQuotationById(selectedId!),enabled:!!selectedId});
+ const quotes=useQuery({queryKey:['quotations',page],queryFn:({signal})=>getQuotations(undefined,page,signal),retry:false,networkMode:'always'});
+ const detail=useQuery({queryKey:['quotation',selectedId],queryFn:({signal})=>getQuotationById(selectedId!,signal),enabled:!!selectedId,retry:false,networkMode:'always'});
  const save=useMutation({mutationFn:createQuotation,onSuccess:()=>{setOpen(false);setErr('');qc.invalidateQueries({queryKey:['quotations']});},onError:e=>setErr(errorMessage(e))});
  const remove=useMutation({mutationFn:deleteQuotation,onSuccess:()=>{setSelectedId(null);setErr('');qc.invalidateQueries({queryKey:['quotations']});},onError:e=>setErr(errorMessage(e))});
  const decline=useMutation({mutationFn:declineQuotation,onSuccess:()=>qc.invalidateQueries({queryKey:['quotations']}),onError:e=>setErr(errorMessage(e))});

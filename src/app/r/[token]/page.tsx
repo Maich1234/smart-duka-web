@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ShoppingCart, CheckCircle, XCircle, Star, Send, Package, Clock, Hash } from 'lucide-react';
+import { CheckCircle, Star, Send } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/config';
+import DocumentPrinter from '@/components/documents/DocumentPrinter';
 
 // Deliberately a bare axios call rather than @/lib/api: this page is public,
 // so it must never attach an Authorization header or get caught by the
@@ -35,6 +36,7 @@ export default function ReceiptPage() {
   const { token } = useParams<{ token: string }>();
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
   const [stars, setStars] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -44,22 +46,27 @@ export default function ReceiptPage() {
   const [ratingLoading, setRatingLoading] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setError(''); setReceipt(null);
     const fetchReceipt = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/public/receipt/${token}`);
-        setReceipt(res.data.data);
+        const res = await axios.get(`${API_BASE_URL}/public/receipt/${encodeURIComponent(token)}`, { timeout: 15000, signal: controller.signal });
+        if (!controller.signal.aborted) setReceipt(res.data.data);
       } catch (err) {
+        if (controller.signal.aborted) return;
         // The server distinguishes a malformed token from a sale that no
         // longer exists — a customer holding a genuine printed receipt should
         // not be told their code is invalid.
         const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
-        setError(message || 'Receipt not found or the link has expired.');
+        setError(message || 'Could not load the receipt. Check your connection and try again.');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     if (token) fetchReceipt();
-  }, [token]);
+    else { setError('This receipt link is invalid.'); setLoading(false); }
+    return () => controller.abort();
+  }, [token, attempt]);
 
   const submitRating = async () => {
     if (!stars) return;
@@ -69,7 +76,7 @@ export default function ReceiptPage() {
       await axios.post(`${API_BASE_URL}/public/receipt/${token}/rating`, {
         stars,
         comment: comment.trim() || undefined,
-      });
+      }, { timeout: 15000 });
       setRatingSubmitted(true);
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
@@ -89,35 +96,10 @@ export default function ReceiptPage() {
   const formatDate = (d: string) =>
     new Date(d).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8FAFC' }}>
-        <div className="text-center">
-          <svg className="animate-spin w-10 h-10 mx-auto mb-4" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#0F766E" strokeWidth="4" />
-            <path className="opacity-75" fill="#0F766E" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <p className="text-gray-500 text-sm">Verifying your receipt...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !receipt) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#F8FAFC' }}>
-        <div className="text-center max-w-sm">
-          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-red-500" />
-          </div>
-          <h1 className="text-xl font-bold mb-2" style={{ color: '#0F172A' }}>Receipt Not Found</h1>
-          <p className="text-gray-500 text-sm mb-6">{error || 'This receipt link is invalid or has expired.'}</p>
-          <Link href="/" className="text-sm font-medium underline" style={{ color: '#0F766E' }}>
-            Go to DuQana
-          </Link>
-        </div>
-      </div>
-    );
+  if (loading || error || !receipt) {
+    return <main className="min-h-screen bg-[#f3f5ef] px-4 py-10 sm:py-16"><div className="mx-auto max-w-md">
+      <DocumentPrinter kind="receipt" state={loading ? 'loading' : 'error'} error={error} onRetry={() => setAttempt(value => value + 1)} />
+    </div></main>;
   }
 
   // A rating already on file counts as submitted — the customer scanned twice.
@@ -125,58 +107,26 @@ export default function ReceiptPage() {
   const finalStars = receipt.rating?.stars ?? stars;
 
   return (
-    <div className="min-h-screen py-8 px-4" style={{ backgroundColor: '#F8FAFC' }}>
+    <div className="min-h-screen bg-[#f3f5ef] px-4 py-10 sm:py-16">
       <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-              <ShoppingCart className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-sm" style={{ color: '#0F766E' }}>DuQana</span>
-          </Link>
-          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-            <CheckCircle className="w-6 h-6 text-green-600" />
+        <DocumentPrinter kind="receipt" state="ready" shopName={receipt.shopName} total={formatCurrency(receipt.totalAmount)}>
+          <div className="mb-6 text-center">
+            <CheckCircle className="mx-auto mb-2 h-6 w-6 text-teal-700" aria-hidden="true" />
+            <h2 className="text-base font-bold">Receipt verified</h2>
+            <p className="mt-1 text-xs text-slate-500">Issued by {receipt.shopName}</p>
           </div>
-          <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>Receipt Verified</h1>
-          <p className="text-sm text-gray-500">This receipt is authentic and unaltered</p>
-        </div>
-
-        {/* Receipt card */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-          {/* Shop header */}
-          <div className="p-6 border-b border-gray-100 text-center" style={{ background: 'linear-gradient(135deg, #0F766E, #115E59)' }}>
-            <h2 className="text-xl font-bold text-white mb-1">{receipt.shopName}</h2>
-          </div>
-
-          {/* Meta */}
-          <div className="px-6 py-4 border-b border-gray-100 grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><Hash className="w-3 h-3" />Invoice</p>
-              <p className="text-xs font-bold" style={{ color: '#0F172A' }}>{receipt.invoiceNumber}</p>
-            </div>
-            <div className="text-center border-x border-gray-100">
-              <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><Clock className="w-3 h-3" />Date</p>
-              <p className="text-xs font-medium" style={{ color: '#0F172A' }}>{formatDate(receipt.createdAt)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1"><Package className="w-3 h-3" />Items</p>
-              <p className="text-xs font-bold" style={{ color: '#0F172A' }}>{receipt.itemCount}</p>
-            </div>
-          </div>
-
-          {/* Total */}
-          <div className="px-6 py-4" style={{ backgroundColor: '#F0FDFA' }}>
-            <div className="flex justify-between items-center">
-              <p className="font-bold" style={{ color: '#0F172A' }}>Total Amount</p>
-              <p className="text-2xl font-extrabold" style={{ color: '#0F766E' }}>{formatCurrency(receipt.totalAmount)}</p>
-            </div>
-          </div>
-        </div>
+          <dl className="space-y-3 border-y border-dashed border-slate-300 py-5">
+            <div className="flex justify-between gap-4"><dt>Invoice</dt><dd className="text-right font-semibold">{receipt.invoiceNumber}</dd></div>
+            <div className="flex justify-between gap-4"><dt>Date</dt><dd className="text-right">{formatDate(receipt.createdAt)}</dd></div>
+            <div className="flex justify-between gap-4"><dt>Items</dt><dd>{receipt.itemCount}</dd></div>
+          </dl>
+          <div className="flex flex-wrap justify-between gap-3 pt-5 text-base font-bold"><span>Total amount</span><span>{formatCurrency(receipt.totalAmount)}</span></div>
+          <p className="mt-7 text-center text-xs text-slate-500">Thank you for shopping with us.</p>
+        </DocumentPrinter>
 
         {/* Rating section */}
         {!hasRated ? (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 mt-8">
             <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Rate Your Experience</h3>
             <p className="text-sm text-gray-500 mb-5">How was your visit to {receipt.shopName}?</p>
 
@@ -231,7 +181,7 @@ export default function ReceiptPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 text-center">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 mt-8 text-center">
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>

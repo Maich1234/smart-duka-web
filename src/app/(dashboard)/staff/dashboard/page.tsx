@@ -1,4 +1,5 @@
 'use client';
+import DataLoadError from '@/components/ui/DataLoadError';
 
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart, TrendingUp, Package, Clock } from 'lucide-react';
@@ -30,13 +31,15 @@ export default function StaffDashboardPage() {
   const fmt = useMoney();
   const user = useAuthStore((s) => s.user);
 
-  const { data: stats, isLoading: statsLoading } = useQuery<StaffStats>({
+  const { data: stats, isLoading: statsLoading, isError, refetch } = useQuery<StaffStats>({
     queryKey: ['staff-dashboard-stats'],
     queryFn: async () => {
       const res = await api.get('/dashboard/staff');
       return res.data.data;
     },
   });
+
+  if (isError) return <DataLoadError label="dashboard" onRetry={() => { void refetch(); }} />;
 
   return (
     <div className="space-y-6">

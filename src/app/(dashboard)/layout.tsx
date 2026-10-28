@@ -11,6 +11,7 @@ import Header from '@/components/dashboard/Header';
 import Spinner from '@/components/ui/Spinner';
 import SessionExpiredHandler from '@/components/auth/SessionExpiredHandler';
 import ImpersonationBanner from '@/components/auth/ImpersonationBanner';
+import QueryFailureNotice from '@/components/dashboard/QueryFailureNotice';
 import NoAccessPanel from '@/components/dashboard/NoAccessPanel';
 import { canAccessRoute } from '@/lib/permissions';
 import clsx from 'clsx';
@@ -114,6 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Header onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-auto">
           <div className="mx-auto w-full max-w-[1600px] p-4 lg:p-6 xl:p-8">
+            <QueryFailureNotice />
             {canAccessRoute(user, pathname) ? (
               children
             ) : (
