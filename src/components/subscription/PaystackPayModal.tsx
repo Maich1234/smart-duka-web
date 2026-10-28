@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { CreditCard, Check, XCircle, AlertCircle } from 'lucide-react';
+import { CreditCard, XCircle, AlertCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
+import SubscriptionPaymentReceipt from './SubscriptionPaymentReceipt';
 import Button from '@/components/ui/Button';
 import { useStkPoll, type StkStatus } from '@/hooks/useStkPoll';
 import { openPaystackPopup } from '@/hooks/usePaystackInline';
@@ -104,7 +105,6 @@ export default function PaystackPayModal({
   });
 
   const stage: Stage = stk.stage === 'idle' ? 'input' : stk.stage;
-  const receipt = stk.receipt;
   const errorMessage = localError ?? stk.errorMessage;
 
   const reset = () => {
@@ -193,18 +193,7 @@ export default function PaystackPayModal({
         </div>
       )}
 
-      {stage === 'success' && (
-        <div className="flex flex-col items-center text-center py-2">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-3 bg-green-600">
-            <Check className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Payment received</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            {fmt(amount, currency)} paid{receipt ? ` · Ref ${receipt}` : ''}.<br />Your subscription is active.
-          </p>
-          <Button onClick={handleSuccess} className="w-full">Done</Button>
-        </div>
-      )}
+      {stage === 'success' && <SubscriptionPaymentReceipt paymentId={stk.id} provider="Paystack" onDone={handleSuccess} />}
 
       {isTerminalFailure && (
         <div className="flex flex-col items-center text-center py-2">
