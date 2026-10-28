@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Smartphone, Check, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { Smartphone, XCircle, Clock, AlertCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
+import SubscriptionPaymentReceipt from './SubscriptionPaymentReceipt';
 import Button from '@/components/ui/Button';
 import { useStkPoll, type StkStatus } from '@/hooks/useStkPoll';
 import {
@@ -85,7 +86,6 @@ export default function SubscriptionPayModal({
 
   // The hook owns the STK stages; 'input' and 'recover' sit either side of it.
   const stage: Stage = recoverOpen ? 'recover' : stk.stage === 'idle' ? 'input' : stk.stage;
-  const receipt = stk.receipt;
   const errorMessage = localError ?? stk.errorMessage;
 
   const backToInput = () => {
@@ -128,7 +128,7 @@ export default function SubscriptionPayModal({
       const res = await reconcileSubscriptionByMessage(smsText);
       if (res.data.status === 'success') {
         setRecoverOpen(false);
-        stk.resolveExternally({ status: 'success', receipt: res.data.receipt });
+        stk.resolveExternally({ id: res.data.paymentId, status: 'success', receipt: res.data.receipt });
       } else {
         setLocalError(res.message);
       }
@@ -187,18 +187,7 @@ export default function SubscriptionPayModal({
         </div>
       )}
 
-      {stage === 'success' && (
-        <div className="flex flex-col items-center text-center py-2">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-3 bg-green-600">
-            <Check className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>Payment received</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            {fmt(amount, currency)} paid{receipt ? ` · Receipt ${receipt}` : ''}.<br />Your subscription is active.
-          </p>
-          <Button onClick={handleSuccess} className="w-full">Done</Button>
-        </div>
-      )}
+      {stage === 'success' && <SubscriptionPaymentReceipt paymentId={stk.id} provider="M-Pesa" onDone={handleSuccess} />}
 
       {isTerminalFailure && (
         <div className="flex flex-col items-center text-center py-2">
