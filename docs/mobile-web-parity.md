@@ -13,7 +13,7 @@ Reference: `smart-duka` mobile and `smart-duka-backend`; target: `smart-duka-web
 
 ## Remaining or incomplete
 
-- Credit checkout is implemented with a customer picker and retry recovery, gated on the backend guarded-credit capability. The backend guard must be deployed and the end-to-end flow tested before it is available. Opening balances and owner reversals; permission-scoped staff access to customers/credit/quotations remain.
+- Credit checkout is implemented with a customer picker and retry recovery, gated on the backend guarded-credit capability. The backend guard must be deployed and the end-to-end flow tested before it is available. Manual opening balances and owner credit reversals now have web interfaces with retained retry keys. Legacy-sale import, custom opening-balance due dates and permission-scoped staff access to customers/credit/quotations remain.
 - Quotations: edit and conversion to a sale with full payment support; deletion is available only after the guarded backend update is deployed. Configurable products cannot yet be quoted as catalogue items; end-to-end verify catalogue pricing and customer selection.
 - Customer filters, archived-account visibility, account ledger pagination and latest-five purchase history are implemented; end-to-end verification remains.
 - Business overview: capital, sales, product and staff analysis.
@@ -33,3 +33,7 @@ Focused Node tests cover receipt HTML escaping, promotion preview and malformed/
 ## Security check follow-up
 
 The full backend test suite passes (593 tests). Web regression tests now cover session identity changes and an explicit runtime cache allowlist (16 tests total). Query caches clear on cross-tab logout, account/shop changes, and permission changes. Dashboard routes stop disallowed children from mounting before redirects. Runtime caching is limited to same-origin Next static build assets; the new worker deletes the previous default runtime caches on activation. These changes require deployment and browser activation; authenticated browser and live database tests remain outstanding.
+
+## Owner credit corrections
+
+Manual opening balances and reversals use authenticated owner-only endpoints. Requests persist their payload and idempotency key before submission, reject malformed recovery data, serialize creation across tabs with Web Locks, and stop retries after 72 hours. The owner must reconcile the ledger before clearing an uncertain request. These controls require a current HTTPS browser and do not prove live MongoDB concurrency behavior. No money transfer or refund is initiated by a ledger reversal.

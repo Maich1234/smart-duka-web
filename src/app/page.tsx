@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDown, ArrowRight, ArrowUpRight, Check, Menu, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Check } from 'lucide-react';
 import { getPublicPlans } from '@/services/publicMarketing';
 import './landing.css';
+import { SiteNav } from '@/components/marketing/SiteNav';
 
 const workflows = [
   { n:'01', label:'SELL', title:'A smoother sale, from counter to receipt.', text:'Find a product, add it to the sale and record how your customer paid. Keep the details together so the next sale is easier.', points:['Search and barcode scanning','Cash, M-PESA and configured payment methods','Receipts for completed sales'] },
@@ -15,15 +15,9 @@ const workflows = [
 ];
 
 export default function LandingPage() {
-  const [menu, setMenu] = useState(false);
   const plans = useQuery({ queryKey:['public-plans'], queryFn:getPublicPlans, staleTime:3600000, retry:1 });
   return <main className="landing">
-    <header className="landing-nav"><Link href="/" className="landing-brand" aria-label="DuQana home"><Image src="/icons/logo-mark.png" alt="" width={28} height={28}/><span>DuQana<span className="brand-dot">.</span></span></Link>
-      <nav className="landing-links" aria-label="Main navigation"><a href="#features">What it does</a><a href="#how-it-works">How it works</a><a href="#pricing">Pricing</a><Link href="/help">Help</Link></nav>
-      <div className="landing-actions"><Link href="/login" className="nav-login">Sign in</Link><Link href="/register" className="button button-dark">Get started <ArrowUpRight size={16}/></Link></div>
-      <button className="menu-toggle" onClick={()=>setMenu(!menu)} aria-label={menu?'Close menu':'Open menu'} aria-expanded={menu}>{menu?<X/>:<Menu/>}</button>
-      {menu && <nav className="mobile-menu" aria-label="Mobile navigation" onClick={()=>setMenu(false)}><a href="#features">What it does</a><a href="#how-it-works">How it works</a><a href="#pricing">Pricing</a><Link href="/help">Help</Link><Link href="/login">Sign in</Link><Link href="/register">Get started →</Link></nav>}
-    </header>
+    <SiteNav />
     <section className="hero"><div className="hero-copy"><p className="eyebrow"><span className="eyebrow-dot"/> MADE FOR THE WAY YOU TRADE</p><h1>Your shop has<br/><em>a lot going on.</em><br/>Keep it together.</h1><p className="hero-description">Sales, stock and the people behind your business—all in one place. DuQana helps you spend less time searching for answers and more time serving customers.</p><div className="hero-buttons"><Link href="/register" className="button button-dark">Start with DuQana <ArrowRight size={18}/></Link><a href="#features" className="text-link">Explore the app <ArrowDown size={16}/></a></div><p className="hero-note">For kiosks, shops and growing businesses.</p></div>
       <div className="hero-visual"><Image src="/images/shop-editorial.webp" alt="Shopkeeper checking a phone while working at a grocery counter" fill sizes="(max-width: 800px) 100vw, 50vw" priority className="hero-photo"/><div className="photo-caption"><span>BUILT FOR THE EVERYDAY</span><span>01 / 03</span></div><div className="photo-tag"><span className="tag-star">✳</span><span>Good business<br/><strong>starts here.</strong></span></div></div>
     </section>

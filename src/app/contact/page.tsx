@@ -1,4 +1,5 @@
 'use client';
+import { SiteNav } from '@/components/marketing/SiteNav';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -97,30 +98,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
       <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-                <img src="/icons/logo-mark.png" alt="" className="w-5 h-5" />
-              </div>
-              <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Home</Link>
-              <Link href="/#features" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Features</Link>
-              <Link href="/#pricing" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Pricing</Link>
-              <Link href="/about" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">About</Link>
-              <Link href="/contact" className="text-sm font-semibold transition-colors" style={{ color: '#0F766E' }}>Contact Us</Link>
-            </div>
-            <div className="hidden md:flex items-center gap-3">
-              <Link href="/login" className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors" style={{ color: '#0F766E', borderColor: '#0F766E' }}>Sign In</Link>
-              <Link href="/register" className="px-4 py-2 text-sm font-medium rounded-lg text-white" style={{ backgroundColor: '#0F766E' }}>Get Started Free</Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <SiteNav active="/contact" />
 
       {/* Hero */}
       <section className="py-16 lg:py-24" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #115E59 100%)' }}>
