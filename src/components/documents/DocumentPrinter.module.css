@@ -16,8 +16,8 @@
 .printer[data-state='ready'] .status svg { color:#8de1b2; }
 .printer[data-state='error'] .status { color:#ffd3bb; }
 .slot { height:7px; margin:17px 6px -8px; border-radius:5px; background:#0a120e; box-shadow:0 1px 0 #ffffff15; }
-.output { position:relative; z-index:1; margin:-3px 20px 0; padding-bottom:10px; filter:drop-shadow(0 12px 16px #18352b12); }
-.paper { position:relative; padding:32px clamp(16px,5vw,32px) 40px; background:#fffef9; border:1px solid #e5e7dd; border-top:0; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12px; line-height:1.7; overflow-wrap:anywhere; animation:feed .65s steps(8,end) both; }
+.output { position:relative; z-index:1; margin:-3px 20px 0; padding-bottom:10px; overflow:hidden; filter:drop-shadow(0 12px 16px #18352b12); }
+.paper { position:relative; padding:32px clamp(16px,5vw,32px) 40px; background:#fffef9; border:1px solid #e5e7dd; border-top:0; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:12px; line-height:1.7; overflow-wrap:anywhere; animation:feed 1.8s linear both; }
 .paper::after, .placeholder::after { content:''; position:absolute; bottom:-7px; left:-1px; right:-1px; height:8px; background:linear-gradient(135deg,#fffef9 25%,transparent 25%) -8px 0/16px 16px,linear-gradient(225deg,#fffef9 25%,transparent 25%) -8px 0/16px 16px; }
 .placeholder { position:relative; margin:-2px 24px 0; height:100px; padding:24px; background:#fffef9; border:1px solid #e5e7dd; }
 .placeholder i { display:block; height:5px; margin-bottom:12px; width:80%; background:#e7e9e1; animation:pulse 1.4s ease-in-out infinite alternate; }
@@ -27,8 +27,18 @@
 .failure button { display:block; width:100%; min-height:44px; margin:20px 0 12px; border:0; border-radius:10px; background:#0f766e; color:white; font:inherit; font-weight:600; cursor:pointer; }
 .failure a { display:inline-block; padding:10px; color:#0f766e; }
 .printer a:focus-visible,.printer button:focus-visible { outline:3px solid #c8932a; outline-offset:4px; }
+.printingNote { margin:8px 0 0; color:#a6bcb0; font-size:11px; line-height:1.5; }
 .spinner { animation:spin 1s linear infinite; }
-@keyframes feed { from { clip-path:inset(0 0 100%); transform:translateY(-12px); } to { clip-path:inset(0 0 -10px); transform:translateY(0); } }
+@keyframes feed {
+  0% { transform:translateY(calc(-100% - 10px)); }
+  18% { transform:translateY(-80%); }
+  21% { transform:translateY(-80%); }
+  43% { transform:translateY(-54%); }
+  46% { transform:translateY(-54%); }
+  68% { transform:translateY(-28%); }
+  71% { transform:translateY(-28%); }
+  94%,100% { transform:translateY(0); }
+}
 @keyframes pulse { to { opacity:.4; } }
 @keyframes spin { to { transform:rotate(360deg); } }
 @media(max-width:380px) { .machine { padding:12px 12px 20px; } .screen { padding:16px; } .output { margin-inline:10px; } .tag { font-size:8px; } }
