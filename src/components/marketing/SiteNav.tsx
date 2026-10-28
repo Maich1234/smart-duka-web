@@ -1,67 +1,45 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
+import styles from './SiteNav.module.css';
 
 const LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/#features', label: 'Features' },
+  { href: '/#features', label: 'What it does' },
+  { href: '/#how-it-works', label: 'How it works' },
   { href: '/#pricing', label: 'Pricing' },
   { href: '/help', label: 'Help' },
   { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact Us' },
+  { href: '/contact', label: 'Contact' },
 ];
 
-/**
- * Marketing-site header. Extracted so the Help Center, privacy policy, and
- * terms pages share one nav instead of each copying it — the previous
- * duplicates were how /privacy and /terms ended up as `href="#"` dead links
- * in the footer with no pages behind them.
- */
+/** Shared by every public marketing page. */
 export function SiteNav({ active }: { active?: string }) {
-  return (
-    <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-              <img src="/icons/logo-mark.png" alt="" className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-            {LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={
-                  active === link.href
-                    ? 'text-sm font-semibold transition-colors'
-                    : 'text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors'
-                }
-                style={active === link.href ? { color: '#0F766E' } : undefined}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
-              style={{ color: '#0F766E', borderColor: '#0F766E' }}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 text-sm font-medium rounded-lg text-white"
-              style={{ backgroundColor: '#0F766E' }}
-            >
-              Get Started Free
-            </Link>
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
+  const [open, setOpen] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setOpen(false); toggle.current?.focus(); }
+    };
+    const outside = (event: PointerEvent) => {
+      if (!header.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('keydown', key);
+    document.addEventListener('pointerdown', outside);
+    return () => { document.removeEventListener('keydown', key); document.removeEventListener('pointerdown', outside); };
+  }, [open]);
+  const links = LINKS.map(link => <Link key={link.href} href={link.href} aria-current={active === link.href ? 'page' : undefined} onClick={() => setOpen(false)}>{link.label}</Link>);
+  return <header className={styles.header} ref={header}>
+    <div className={styles.bar}>
+      <Link href="/" className={styles.brand} aria-label="DuQana home" onClick={() => setOpen(false)}><Image src="/icons/logo-mark.png" alt="" width={28} height={28} /><span>DuQana<span className={styles.dot}>.</span></span></Link>
+      <nav className={styles.links} aria-label="Main navigation">{links}</nav>
+      <div className={styles.actions}><Link href="/login">Sign in</Link><Link href="/register" className={styles.cta}>Get started <ArrowUpRight size={16} /></Link></div>
+      <button ref={toggle} type="button" className={styles.toggle} onClick={() => setOpen(value => !value)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="public-mobile-navigation">{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
+    </div>
+    {open && <nav id="public-mobile-navigation" className={styles.mobile} aria-label="Mobile navigation">{links}<Link href="/login" onClick={() => setOpen(false)}>Sign in</Link><Link href="/register" className={styles.cta} onClick={() => setOpen(false)}>Get started <ArrowUpRight size={16} /></Link></nav>}
+  </header>;
 }
