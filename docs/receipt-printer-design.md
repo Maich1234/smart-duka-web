@@ -16,3 +16,9 @@ Validation: all 26 existing Node tests, TypeScript check and production build pa
 Both M-Pesa and Paystack success panels use the same printer presentation. The receipt component mounts only at the existing server-confirmed success stage, then reads the authenticated payment-status endpoint for the settled amount, currency, reference and period end. It does not reuse the checkout estimate as proof of payment, or infer plan details/date fields the endpoint does not return. A zero-value successful payment is labelled as requiring no payment. SMS recovery passes the reconciled payment ID so the receipt belongs to the recovered transaction. A receipt read failure has a retry action and keeps Done available; it never sends another payment request.
 
 Validation: TypeScript and the 26 existing tests passed; production build passed. No real subscription charge was made. Live payment-provider and visual browser verification remain pending.
+
+## Printer feed pacing
+
+The paper now feeds from inside the slot over 1.8 seconds, with smooth movement and three brief mechanical pauses, replacing the abrupt 0.65-second stepped wipe. During this presentation stage the screen says "Printing your quotation…" (or receipt), then changes to ready on animation completion. Loading also explains that the printer is preparing the document. Reduced-motion users skip the feed; a 2.1-second presentation-only fallback settles the label if CSS animation completion is suppressed. Requests still begin immediately, and existing request recovery remains unchanged.
+
+Validation: TypeScript and production build passed. Visual timing on the deployed site remains to be reviewed after deployment.
