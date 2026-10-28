@@ -1,12 +1,13 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Download, Printer } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 import { fetchJson } from '@/lib/fetchJson';
 import DocumentPrinter from '@/components/documents/DocumentPrinter';
+import { createPublicQueryClient } from '@/lib/publicQueryClient';
 
 type PublicQuote = {
   quoteNumber: string;
@@ -27,6 +28,7 @@ type PublicQuote = {
 
 export default function PublicQuotation({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
+  const [publicClient] = useState(createPublicQueryClient);
   const url = `${API_BASE_URL}/public/quotation/${encodeURIComponent(token)}`;
   const query = useQuery({
     queryKey: ['public-quotation', token], retry: false, networkMode: 'always',
@@ -37,7 +39,7 @@ export default function PublicQuotation({ params }: { params: Promise<{ token: s
       }
       return result.data;
     },
-  });
+  }, publicClient);
   const q = query.data;
   const fmt = (n: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: q?.currency || 'KES' }).format(n);
 
