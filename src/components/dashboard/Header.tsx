@@ -16,8 +16,9 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
 
   // The badge used to be a hardcoded dot on a button that did nothing. It now
   // reflects the real unread count and links to the inbox.
-  const { data: unreadCount = 0 } = useQuery({
+  const { data: unreadCount = 0, isError: unreadError, refetch: retryUnread } = useQuery({
     queryKey: ['notifications', 'unreadCount'],
+    meta: { errorHandledLocally: true },
     queryFn: getUnreadCount,
     refetchInterval: 60_000,
     enabled: !!user,
@@ -44,10 +45,10 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
         <Link
           href={inboxHref}
           className="relative w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+          aria-label={unreadError ? 'Notifications, unread count unavailable' : unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         >
           <Bell className="w-5 h-5" />
-          {unreadCount > 0 && (
+          {!unreadError && unreadCount > 0 && (
             <span
               className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
               style={{ backgroundColor: '#C8932A' }}
@@ -57,6 +58,7 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           )}
         </Link>
 
+        {unreadError && <button type="button" onClick={() => { retryUnread(); }} className="max-w-24 text-left text-xs text-slate-500 underline" aria-label="Unread notification count unavailable. Retry">Retry unread count</button>}
         <div className="flex items-center gap-2 lg:gap-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style={{ backgroundColor: '#0F766E' }}>
             {user?.name?.charAt(0) ?? 'U'}

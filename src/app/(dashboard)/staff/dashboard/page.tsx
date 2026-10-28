@@ -33,6 +33,7 @@ export default function StaffDashboardPage() {
 
   const { data: stats, isLoading: statsLoading, isError, refetch } = useQuery<StaffStats>({
     queryKey: ['staff-dashboard-stats'],
+    meta: { errorHandledLocally: true },
     queryFn: async () => {
       const res = await api.get('/dashboard/staff');
       return res.data.data;

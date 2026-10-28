@@ -5,6 +5,8 @@ import { TimerReset } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import { getDepletionAnalytics } from '@/services/analytics';
+import { useSubscription } from '@/hooks/useSubscription';
+import axios from 'axios';
 
 /**
  * How long current stock will last at the recent rate of sale.
@@ -14,20 +16,29 @@ import { getDepletionAnalytics } from '@/services/analytics';
  * doesn't appear, the same way the AI cards handle their gate.
  */
 export default function DepletionSection({ limit = 6 }: { limit?: number }) {
-  const { data, isLoading, isError } = useQuery({
+  const { plan } = useSubscription();
+  const includedInPlan = plan?.features?.includes('advanced_analytics') ?? false;
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['depletion'],
+    enabled: includedInPlan,
+    meta: { errorHandledLocally: true },
     queryFn: getDepletionAnalytics,
     retry: false,
     staleTime: 5 * 60_000,
   });
 
+  if (!includedInPlan) return null;
+
   if (isLoading) {
     return <Card><div className="flex justify-center py-8"><Spinner /></div></Card>;
   }
 
-  // Covers the plan gate and a missing endpoint alike — neither is something
-  // the owner can act on, so neither earns a red box.
-  if (isError || !data?.items?.length) return null;
+  // The backend remains authoritative if the plan changes during a session.
+  if (isError) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) return null;
+    return <Card><div role="status" className="space-y-2 text-sm text-slate-600"><p>Stock forecast is temporarily unavailable.</p><button type="button" onClick={() => { refetch(); }} className="font-semibold text-teal-700 underline">Retry stock forecast</button></div></Card>;
+  }
+  if (!data?.items?.length) return null;
 
   const soonest = [...data.items]
     .filter((item) => item.daysUntilDepletion != null)
