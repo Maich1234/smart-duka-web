@@ -29,6 +29,7 @@ export default function OwnerDashboardPage() {
   const { currency, purchasingEnabled } = useShop();
   const { data, isLoading, isError, refetch } = useQuery<OwnerDashboardData>({
     queryKey: ['owner-dashboard'],
+    meta: { errorHandledLocally: true },
     queryFn: getOwnerDashboard,
   });
 
