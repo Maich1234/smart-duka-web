@@ -197,12 +197,14 @@ export async function initiateSubscriptionPayment(
   idempotent?: boolean;
   data: {
     paymentId: string;
+    receipt?: string | null;
+    errorMessage?: string | null;
     status: PaymentStatus;
     amount: number;
     currency: string;
     /** Paystack only — the client opens its own popup with these. Null for M-Pesa. */
     publicKey: string | null;
-    /** Null when a promo/referral discount covered the invoice in full — no provider was ever charged. */
+    /** Null until the provider reference is known, or when no provider charge is needed. */
     providerRef: string | null;
   };
   message: string;
