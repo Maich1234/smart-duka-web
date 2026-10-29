@@ -28,6 +28,9 @@ export interface PublicPlan {
   description?: string;
   billingType: 'per_staff' | 'flat';
   monthlyPrice: number;
+  monthlyCharge?: number;
+  minUsers?: number;
+  unlimitedUsers?: boolean;
   maxStaff: number;
   extraStaffPrice?: number;
   trialDays: number;
@@ -37,6 +40,6 @@ export interface PublicPlan {
 }
 
 export async function getPublicPlans(): Promise<PublicPlan[]> {
-  const res = await api.get('/public/plans');
+  const res = await api.get('/public/plans?pricing=2026-10-29');
   return res.data.data.plans;
 }

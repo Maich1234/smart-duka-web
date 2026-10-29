@@ -67,6 +67,8 @@ export default function PlanCards({
 
       <div className="grid gap-4 md:grid-cols-2">
         {plans.map((plan) => {
+          const unavailable = !plan.unlimitedUsers && staffCount > plan.maxStaff;
+          const charge = (plan.monthlyCharge ?? 0) * ({ monthly: 1, quarterly: 3, yearly: 12 }[billingCycle]);
           const isSelected = selectedSlug === plan.slug;
           const total = billingCycle === 'yearly'
             ? plan.pricing.yearlyTotal
@@ -79,8 +81,9 @@ export default function PlanCards({
             <button
               key={plan.slug}
               onClick={() => onSelect(plan.slug)}
+              disabled={unavailable}
               aria-pressed={isSelected}
-              className={`text-left rounded-2xl border-2 p-5 transition-all ${
+              className={`text-left rounded-2xl border-2 p-5 transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                 isSelected ? 'shadow-md' : 'border-gray-200 hover:border-gray-300'
               }`}
               style={isSelected ? { borderColor: '#0F766E', backgroundColor: '#F0FDFA' } : { backgroundColor: '#FFFFFF' }}
@@ -107,8 +110,10 @@ export default function PlanCards({
               </div>
               <p className="text-xs text-gray-500 mb-1">
                 For {staffCount} {staffCount === 1 ? 'person' : 'people'}
-                {plan.billingType === 'flat' ? ` · up to ${plan.maxStaff} included` : ' · per person'}
+                {plan.billingType === 'flat' ? plan.unlimitedUsers ? ` · ${plan.minUsers ?? plan.maxStaff}+ shop users` : ` · ${plan.minUsers ?? 1}–${plan.maxStaff} shop users` : ' · per person'}
               </p>
+              {charge > 0 && <p className="mb-2 text-xs text-slate-500">Includes {fmt(charge, currency)} additional charge for this billing period.</p>}
+              {unavailable && <p className="mb-2 text-xs font-semibold text-slate-600">Choose a larger tier for your team.</p>}
               {billingCycle !== 'monthly' && savings > 0 && (
                 <p className="text-xs font-semibold mb-2" style={{ color: '#15803D' }}>
                   Save {fmt(savings, currency)} {billingCycle === 'yearly' ? 'a year' : 'every 3 months'}
