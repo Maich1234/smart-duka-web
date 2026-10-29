@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Gift, Sparkles, ShieldCheck, AlertCircle, Lock, Clock, Users, CreditCard, RefreshCw, Check } from 'lucide-react';
@@ -20,6 +20,9 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import SubscriptionPayModal from '@/components/subscription/SubscriptionPayModal';
 import PaystackPayModal from '@/components/subscription/PaystackPayModal';
+import PendingCheckoutNotice from '@/components/subscription/PendingCheckoutNotice';
+import { usePendingSubscriptionCheckout } from '@/hooks/usePendingSubscriptionCheckout';
+import { readCheckout, type CheckoutProvider } from '@/lib/pendingSubscriptionCheckout';
 import PlanCards from '@/components/subscription/PlanCards';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -51,6 +54,8 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const { subscription, access, renewal, isLoading, refetch } = useSubscription();
   const invalidate = useInvalidateSubscription();
+  const { scope: checkoutOwner, pending: pendingCheckout, error: checkoutError } = usePendingSubscriptionCheckout();
+  const freeActivationRef = useRef(false);
   const [payOpen, setPayOpen] = useState<'mpesa' | 'bank' | null>(null);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
@@ -64,6 +69,14 @@ export default function SubscriptionPage() {
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoChecking, setPromoChecking] = useState(false);
 
+  const openCheckout = (provider: CheckoutProvider) => {
+    try { setPayOpen(readCheckout(checkoutOwner)?.provider ?? provider); }
+    catch { setToast({ type: 'error', message: 'Please check your previous payment with support before paying again.' }); }
+  };
+  useEffect(() => {
+    if (payOpen && pendingCheckout && payOpen !== pendingCheckout.provider) setPayOpen(pendingCheckout.provider);
+  }, [payOpen, pendingCheckout]);
+
   const plan = (subscription?.plan ?? null) as SubscriptionPlan | null;
   const state = access?.state ?? 'none';
 
@@ -75,9 +88,9 @@ export default function SubscriptionPage() {
     if (searchParams.get('pay') !== '1') return;
     const canPayNow = !!renewal && (state === 'trialing' || state === 'grace' || state === 'locked' || state === 'active');
     if (!canPayNow) return;
-    setPayOpen('mpesa');
+    try { setPayOpen(readCheckout(checkoutOwner)?.provider ?? 'mpesa'); } catch { return; }
     router.replace('/owner/subscription');
-  }, [searchParams, renewal, state, router]);
+  }, [searchParams, renewal, state, router, checkoutOwner]);
 
   // Default the picker to whatever the shop is on today, then let the owner
   // change it. The web app is the only place a plan can be switched at all now
@@ -147,7 +160,9 @@ export default function SubscriptionPage() {
   // The server independently recomputes and enforces amountDue <= 0 itself;
   // `isFreeActivation` only decides which button to render.
   const activateFree = async () => {
-    if (activating || working) return;
+    if (freeActivationRef.current || working) return;
+    if (pendingCheckout || checkoutError) { openCheckout('mpesa'); return; }
+    freeActivationRef.current = true;
     setActivating(true);
     try {
       const res = await initiateSubscriptionPayment(
@@ -162,16 +177,16 @@ export default function SubscriptionPage() {
         invalidate();
         refetch();
       } else {
-        // The server disagreed with our last preview (price moved between
-        // preview and click) — safer to ask for a fresh attempt than open a
-        // payment modal pre-loaded with a now-stale amount.
-        showToast('error', 'Pricing just changed — please try again.');
+        // A prior unfinished payment takes precedence over a new activation.
+        // Its canonical provider/ID were retained by the checkout service.
+        setPayOpen(res.data.provider === 'bank' ? 'bank' : 'mpesa');
         invalidate();
       }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       showToast('error', e.response?.data?.message ?? 'Could not activate the subscription. Try again.');
     } finally {
+      freeActivationRef.current = false;
       setActivating(false);
     }
   };
@@ -245,6 +260,8 @@ export default function SubscriptionPage() {
         <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Subscription</h1>
         <p className="text-gray-500 text-sm mt-1">Manage your DuQana plan and billing</p>
       </div>
+
+      <PendingCheckoutNotice onResume={openCheckout} />
 
       {toast && (
         <div className={`p-3 rounded-lg border text-sm ${toast.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
@@ -374,20 +391,20 @@ export default function SubscriptionPage() {
 
             {pricingUnavailable && <div className="mb-3 text-sm text-slate-600" role="status">{previewFailed ? <><p>We couldn’t confirm this price. Retry before paying.</p><button type="button" onClick={() => { retryPricing(); }} className="text-teal-700 underline">Refresh price</button></> : 'Confirming your price…'}</div>}
             {isFreeActivation ? (
-              <Button onClick={activateFree} loading={activating} className="w-full">
+              <Button onClick={activateFree} disabled={!!pendingCheckout || !!checkoutError} loading={activating} className="w-full">
                 Activate for free
               </Button>
             ) : bankAvailable ? (
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button disabled={pricingUnavailable} onClick={() => setPayOpen('mpesa')} className="flex-1">
+                <Button disabled={pricingUnavailable || !!pendingCheckout || !!checkoutError} onClick={() => openCheckout('mpesa')} className="flex-1">
                   M-Pesa · {fmt(payAmount, payCurrency)}
                 </Button>
-                <Button disabled={pricingUnavailable} onClick={() => setPayOpen('bank')} variant="outline" className="flex-1">
+                <Button disabled={pricingUnavailable || !!pendingCheckout || !!checkoutError} onClick={() => openCheckout('bank')} variant="outline" className="flex-1">
                   Card / Bank
                 </Button>
               </div>
             ) : (
-              <Button disabled={pricingUnavailable} onClick={() => setPayOpen('mpesa')} className="w-full">
+              <Button disabled={pricingUnavailable || !!pendingCheckout || !!checkoutError} onClick={() => openCheckout('mpesa')} className="w-full">
                 {state === 'active'
                   ? `Extend now · ${fmt(payAmount, payCurrency)}`
                   : `Pay with M-Pesa · ${fmt(payAmount, payCurrency)}`}
@@ -422,8 +439,8 @@ export default function SubscriptionPage() {
                 {pricePreview ? (isFreeActivation ? 'free' : fmt(payAmount, payCurrency)) : 'pricing…'}
               </p>
               <Button
-                onClick={isFreeActivation ? activateFree : () => setPayOpen('mpesa')}
-                disabled={!pricePreview}
+                onClick={isFreeActivation ? activateFree : () => openCheckout('mpesa')}
+                disabled={!pricePreview || !!pendingCheckout || !!checkoutError}
                 loading={isFreeActivation && activating}
                 className="w-full sm:w-auto"
               >
