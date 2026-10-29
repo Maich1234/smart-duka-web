@@ -21,6 +21,9 @@ export interface SubscriptionPlan {
   description: string;
   billingType: 'per_staff' | 'flat';
   monthlyPrice: number;
+  monthlyCharge?: number;
+  minUsers?: number;
+  unlimitedUsers?: boolean;
   quarterlyDiscountPercent: number;
   yearlyDiscountPercent: number;
   maxStaff: number;
@@ -113,7 +116,8 @@ export interface MySubscriptionResponse {
         at: string;
       }[];
       /** basePrice + seatCharges — what will actually be charged. */
-      amountDue: number;
+      additionalCharge?: number;
+  amountDue: number;
       staffCount: number;
       currency: string;
     } | null;
@@ -131,6 +135,7 @@ export interface PricingPreview {
   quarterlySavings: number;
   yearlySavings: number;
   promoDiscount: number;
+  additionalCharge?: number;
   amountDue: number;
   currency: string;
 }
@@ -140,6 +145,7 @@ export interface SubscriptionPaymentState {
   status: PaymentStatus;
   amount: number;
   currency: string;
+  additionalCharge?: number;
   receipt: string | null;
   periodEnd: string | null;
   errorMessage: string | null;

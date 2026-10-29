@@ -96,6 +96,13 @@ export default function SubscriptionPage() {
     staleTime: 60_000,
   });
 
+  useEffect(() => {
+    const selected = plansData?.data.plans.find(plan => plan.slug === selectedSlug);
+    if (selected && !selected.unlimitedUsers && plansData!.data.staffCount > selected.maxStaff) {
+      setSelectedSlug(plansData!.data.recommendedPlanSlug);
+    }
+  }, [plansData, selectedSlug]);
+
   const bankAvailable = plansData?.data.providers.some((p) => p.key === 'bank' && p.available) ?? false;
 
   const effectiveSlug = selectedSlug ?? renewal?.planSlug ?? null;
@@ -109,7 +116,7 @@ export default function SubscriptionPage() {
   // too — not just plan/cycle switches.
   const needsPreview = isSwitching || !!promo;
 
-  const { data: pricePreview } = useQuery({
+  const { data: pricePreview, isPending: previewPending, isError: previewFailed, refetch: retryPricing } = useQuery({
     queryKey: ['pricingPreview', effectiveSlug, effectiveCycle, promo?.code ?? null],
     queryFn: () => previewPricing({ planSlug: effectiveSlug ?? undefined, billingCycle: effectiveCycle, promoCode: promo?.code }),
     enabled: needsPreview && !!effectiveSlug,
@@ -118,22 +125,19 @@ export default function SubscriptionPage() {
 
   // Never trust a client-side total: the amount charged is always the
   // server's, whether that's the standing renewal or a fresh preview.
-  // previewPricing doesn't know about accrued seat charges (it only prices
-  // the plan itself) — those only need adding back in when the owner is
-  // still on their current plan/cycle, since switching either already
-  // resets the billing basis or is a pre-existing gap this doesn't touch.
+  // Preview prices the plan; accrued mid-period team changes still settle
+  // on this invoice, including when switching to a different tier.
+  const pricingUnavailable = needsPreview && (previewPending || previewFailed || !pricePreview);
   const seatCharges = renewal?.seatCharges ?? 0;
-  const payAmount = isSwitching
-    ? pricePreview?.data.amountDue ?? 0
-    : promo
-      ? (pricePreview?.data.amountDue ?? 0) + seatCharges
-      : renewal?.amountDue ?? 0;
+  const payAmount = needsPreview
+    ? (pricePreview?.data.amountDue ?? 0) + seatCharges
+    : renewal?.amountDue ?? 0;
   const payCurrency = (needsPreview ? pricePreview?.data.currency : renewal?.currency) ?? 'KES';
   const promoDiscount = promo ? pricePreview?.data.promoDiscount ?? 0 : 0;
   // Only meaningful once a live server preview backs it up (switching plans,
   // or a promo applied) — the plain-renewal amount already reflects any
   // banked referral credit on its own and never needs this shortcut.
-  const isFreeActivation = needsPreview && !!pricePreview && payAmount <= 0;
+  const isFreeActivation = needsPreview && !pricingUnavailable && !!pricePreview && payAmount <= 0;
   const meta = STATE_META[state];
   const StateIcon = meta.icon;
 
@@ -298,6 +302,8 @@ export default function SubscriptionPage() {
           />
         )}
 
+        {!!renewal?.additionalCharge && <p className="mb-3 text-xs text-slate-500">Includes {fmt(renewal.additionalCharge, renewal.currency)} additional charge for this billing period, before any discounts.</p>}
+
         {/* Mid-period team changes are postpaid and prorated, so an invoice
             can differ from the plan price. Itemise it rather than letting the
             owner wonder where an unexplained amount came from. */}
@@ -366,21 +372,22 @@ export default function SubscriptionPage() {
               </div>
             )}
 
+            {pricingUnavailable && <div className="mb-3 text-sm text-slate-600" role="status">{previewFailed ? <><p>We couldn’t confirm this price. Retry before paying.</p><button type="button" onClick={() => { retryPricing(); }} className="text-teal-700 underline">Refresh price</button></> : 'Confirming your price…'}</div>}
             {isFreeActivation ? (
               <Button onClick={activateFree} loading={activating} className="w-full">
                 Activate for free
               </Button>
             ) : bankAvailable ? (
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={() => setPayOpen('mpesa')} className="flex-1">
+                <Button disabled={pricingUnavailable} onClick={() => setPayOpen('mpesa')} className="flex-1">
                   M-Pesa · {fmt(payAmount, payCurrency)}
                 </Button>
-                <Button onClick={() => setPayOpen('bank')} variant="outline" className="flex-1">
+                <Button disabled={pricingUnavailable} onClick={() => setPayOpen('bank')} variant="outline" className="flex-1">
                   Card / Bank
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => setPayOpen('mpesa')} className="w-full">
+              <Button disabled={pricingUnavailable} onClick={() => setPayOpen('mpesa')} className="w-full">
                 {state === 'active'
                   ? `Extend now · ${fmt(payAmount, payCurrency)}`
                   : `Pay with M-Pesa · ${fmt(payAmount, payCurrency)}`}
