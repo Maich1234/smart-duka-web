@@ -46,6 +46,7 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [outcome, setOutcome] = useState<'confirmed' | 'pending' | 'failed'>('pending');
 
   const status = sale.status ?? 'completed';
 
@@ -67,10 +68,11 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
         ...(reason.trim() ? { reason: reason.trim() } : {}),
         ...(method ? { method } : {}),
       });
-      return res.data as { message?: string };
+      return res.data as { message?: string; data?: { status?: RefundableSale['status'] } };
     },
     onSuccess: (data) => {
-      setSuccessMessage(data.message ?? 'Refund processed.');
+      setOutcome(data.data?.status === 'refunded' ? 'confirmed' : data.data?.status === 'completed' ? 'failed' : 'pending');
+      setSuccessMessage(data.message ?? 'Refund request recorded. Check its status before refunding again.');
       setConfirming(false);
       queryClient.invalidateQueries({ queryKey: ['sales-history'] });
       queryClient.invalidateQueries({ queryKey: ['sales-stats'] });
@@ -80,15 +82,20 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Refund failed. Try again.');
+      setError(e.response?.data?.message || 'We could not confirm this refund. Refresh the sale details before trying again.');
+      queryClient.invalidateQueries({ queryKey: ['sales-history'] });
+      queryClient.invalidateQueries({ queryKey: ['my-sales'] });
     },
   });
 
   if (successMessage) {
+    const palette = outcome === 'confirmed' ? 'bg-green-50 border-green-200 text-green-700'
+      : outcome === 'failed' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-700';
+    const Icon = outcome === 'confirmed' ? CheckCircle : outcome === 'failed' ? AlertTriangle : Clock;
     return (
-      <div className="p-3 rounded-xl border flex items-start gap-2" style={{ backgroundColor: '#F0FDF4', borderColor: 'rgba(21,128,61,0.25)' }}>
-        <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: '#15803D' }} />
-        <p className="text-xs font-medium" style={{ color: '#15803D' }}>{successMessage}</p>
+      <div className={`p-3 rounded-xl border flex items-start gap-2 ${palette}`} role={outcome === 'failed' ? 'alert' : 'status'}>
+        <Icon className="w-4 h-4 mt-0.5 shrink-0" />
+        <p className="text-xs font-medium">{successMessage}</p>
       </div>
     );
   }
@@ -110,7 +117,7 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
       <div className="p-3 rounded-xl border flex items-start gap-2 bg-amber-50 border-amber-200">
         <Clock className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
         <p className="text-xs font-medium text-amber-700">
-          M-Pesa is returning {fmt(sale.refund?.amount ?? sale.totalAmount)} to the customer. Stock is restored once the refund completes.
+          Awaiting confirmation of the {fmt(sale.refund?.amount ?? sale.totalAmount)} M-Pesa refund. Stock will be restored after confirmation. Do not refund again while this is pending.
         </p>
       </div>
     );
@@ -138,7 +145,7 @@ export default function RefundSaleSection({ sale, canRefund, onDone }: {
             Refund {fmt(sale.totalAmount)} for #{sale.invoiceNumber}?
           </p>
           <p className="text-xs text-gray-500">
-            The sale is removed from your revenue totals and its stock is restored. This cannot be undone.
+            A completed refund removes the sale from revenue totals and restores stock. M-Pesa refunds require confirmation first. This cannot be undone.
           </p>
           <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300}
             placeholder="Reason (optional)"
