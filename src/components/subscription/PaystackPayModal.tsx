@@ -112,8 +112,10 @@ export default function PaystackPayModal({
     setLocalError(null);
   };
   const handleClose = () => {
+    const confirmed = stage === 'success';
     reset();
-    onClose();
+    if (confirmed) onSuccess();
+    else onClose();
   };
   const handleSuccess = () => {
     reset();
@@ -204,17 +206,17 @@ export default function PaystackPayModal({
             {stage === 'cancelled' ? 'Payment cancelled' : stage === 'timeout' ? 'Taking longer than expected' : 'Payment failed'}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
-            {errorMessage ?? (stage === 'cancelled' ? 'The payment window was closed.' : 'The payment did not go through. No money was taken.')}
+            {errorMessage ?? (stage === 'cancelled' ? 'The payment window was closed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
           </p>
           <Button onClick={reset} className="w-full">Try again</Button>
-          {stage === 'timeout' && (
+          {stk.id && (
             <button
               onClick={recheck}
               disabled={rechecking}
               className="mt-3 text-sm font-semibold hover:underline disabled:opacity-50"
               style={{ color: '#0F766E' }}
             >
-              {rechecking ? 'Checking…' : 'I already paid: check again'}
+              {rechecking ? 'Checking…' : 'Check payment status'}
             </button>
           )}
           <button onClick={handleClose} className="mt-2 text-sm text-gray-500 hover:text-gray-700">Close</button>
