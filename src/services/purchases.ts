@@ -91,7 +91,8 @@ export interface CreatePurchaseData {
 
 export interface PurchaseStats {
   purchaseCount: number;
-  totalSpend: number;
+  // Omitted when purchase-price visibility is not granted.
+  totalSpend?: number;
   productsPurchased: number;
   suppliersUsed: number;
   recentPurchases: Purchase[];

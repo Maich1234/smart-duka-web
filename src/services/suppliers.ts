@@ -20,14 +20,15 @@ export interface Supplier {
 
 export interface SupplierStats {
   purchaseCount: number;
-  totalSpend: number;
-  averagePurchaseCost: number;
+  // Omitted from supplier summaries without purchase-price permission.
+  totalSpend?: number;
+  averagePurchaseCost?: number;
   lastPurchaseDate: string | null;
 }
 
 export interface SupplierDetail extends Supplier {
   stats: SupplierStats;
-  recentPurchases: { _id: string; grandTotal: number; createdAt: string; status: string }[];
+  recentPurchases: { _id: string; grandTotal?: number; createdAt: string; status: string }[];
 }
 
 export interface SupplierPayload {
