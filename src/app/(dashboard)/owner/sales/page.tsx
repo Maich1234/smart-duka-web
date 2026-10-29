@@ -341,12 +341,13 @@ function ReceiptSuccessModal({ sale, shopName, shopConfig, onClose, onNewSale }:
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function SalesPage() {
+  const [tab, setTab] = useState<Tab>('new');
   const fmt = useMoney();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const shopName = user?.shop?.name ?? 'DuQana';
 
-  const { shop: shopData, refetch: refetchShop } = useShop();
+  const { shop: shopData, refetch: refetchShop } = useShop({ live: tab === 'new' });
   const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
   const shopConfig = {
     phone: shopData?.phone,
@@ -360,7 +361,6 @@ export default function SalesPage() {
   const shopCreatedDate = shopData?.createdAt ? String(shopData.createdAt).slice(0, 10) : undefined;
   const todayDate = new Date().toISOString().slice(0, 10);
 
-  const [tab, setTab] = useState<Tab>('new');
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>(CASH_METHOD_KEY);
@@ -443,20 +443,10 @@ export default function SalesPage() {
 
   // If the selected button is removed or switched off, fall back to the first.
   useEffect(() => {
-    if (saleMethods.length > 0 && !saleMethods.some((m) => m.key === paymentMethod)) {
-      setPaymentMethod(saleMethods[0].key);
+    if (!saleMethods.some((m) => m.key === paymentMethod)) {
+      setPaymentMethod(saleMethods[0]?.key ?? '');
     }
   }, [saleMethods, paymentMethod]);
-
-  // Till buttons are owner-edited from another tab/device, and useShop()'s
-  // 5-minute staleTime means this page wouldn't otherwise notice a removal
-  // until the next window-focus refetch. Poll while actively selling so a
-  // removed method disappears from the till without needing a tab switch.
-  useEffect(() => {
-    if (tab !== 'new') return;
-    const id = setInterval(() => refetchShop(), 30_000);
-    return () => clearInterval(id);
-  }, [tab, refetchShop]);
 
   // Sale mutation
   const createSaleMutation = useMutation({
@@ -542,6 +532,7 @@ export default function SalesPage() {
   );
 
   const proceedCheckout = () => {
+    if (!saleMethods.some(method => method.key === paymentMethod)) return;
     setShowStockConfirm(false);
     // STK Push is the only flow with a precondition, and only where the shop
     // has connected M-Pesa Business. Everything else records and prints.
@@ -854,7 +845,7 @@ export default function SalesPage() {
                   )}
 
                   <button onClick={handleCheckout}
-                    disabled={createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
+                    disabled={!shopData || !saleMethods.some(method => method.key === paymentMethod) || createSaleMutation.isPending || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white transition-all disabled:opacity-60"
                     style={{ backgroundColor: '#0F766E' }}>
                     {createSaleMutation.isPending

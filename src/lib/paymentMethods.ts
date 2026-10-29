@@ -64,14 +64,11 @@ export const resolveSaleMethods = (
   methods?: ShopPaymentMethod[] | null,
   credit?: { enabled: boolean; permitted: boolean }
 ): ShopPaymentMethod[] => {
-  const list = methods?.length ? methods : DEFAULT_SALE_METHODS;
+  const list = Array.isArray(methods) ? methods : DEFAULT_SALE_METHODS;
   const visible = list
     .filter((m) => m.enabled !== false && !(credit?.enabled && !credit.permitted && m.key === CREDIT_METHOD_KEY))
     .slice()
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  if (credit?.enabled && credit.permitted && !visible.some((m) => m.key === CREDIT_METHOD_KEY)) {
-    visible.push({ key: CREDIT_METHOD_KEY, label: 'Credit', icon: 'clock' });
-  }
   return visible;
 };
 

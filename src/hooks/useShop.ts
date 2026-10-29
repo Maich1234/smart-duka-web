@@ -19,14 +19,18 @@ export const SHOP_QUERY_KEY = ['shop'] as const;
  * one raw fetch, which meant toggling AI in one place left the other copies
  * stale until a reload.
  */
-export const useShop = () => {
+export const useShop = ({ live = false }: { live?: boolean } = {}) => {
   const user = useAuthStore((s) => s.user);
 
   const query = useQuery({
     queryKey: SHOP_QUERY_KEY,
     queryFn: getShopConfig,
     enabled: !!user,
-    staleTime: 5 * 60_000,
+    staleTime: live ? 0 : 5 * 60_000,
+    refetchInterval: live ? 15_000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnMount: live ? 'always' : true,
+    refetchOnWindowFocus: live ? 'always' : true,
   });
 
   const shop: Shop | undefined = query.data;
@@ -34,6 +38,7 @@ export const useShop = () => {
   return {
     shop,
     isLoading: query.isLoading,
+    isError: query.isError,
     refetch: query.refetch,
     // Flags, pre-defaulted so callers don't repeat `?? false` everywhere.
     shiftManagementEnabled: shop?.shiftManagementEnabled ?? false,

@@ -307,7 +307,7 @@ export default function StaffSalesPage() {
   const canRefund = hasAnyPermission(user, ['refund_own_sales', 'refund_all_sales']);
   const canVoid = hasPermission(user, 'void_sale');
 
-  const { shop: shopData, refetch: refetchShop } = useShop();
+  const { shop: shopData, refetch: refetchShop } = useShop({ live: true });
   const preloadedLogoUrl = usePreloadedLogo(shopData?.logoUrl);
   const shopConfig = {
     phone: shopData?.phone,
@@ -397,8 +397,8 @@ export default function StaffSalesPage() {
 
   // If the selected button is removed or switched off, fall back to the first.
   useEffect(() => {
-    if (saleMethods.length > 0 && !saleMethods.some((m) => m.key === paymentMethod)) {
-      setPaymentMethod(saleMethods[0].key);
+    if (!saleMethods.some((m) => m.key === paymentMethod)) {
+      setPaymentMethod(saleMethods[0]?.key ?? '');
     }
   }, [saleMethods, paymentMethod]);
 
@@ -496,6 +496,7 @@ export default function StaffSalesPage() {
   );
 
   const proceedCheckout = () => {
+    if (!saleMethods.some(method => method.key === paymentMethod)) return;
     setShowStockConfirm(false);
     // STK Push is the only flow with a precondition, and only where the shop
     // has connected M-Pesa Business. Everything else records and prints.
@@ -722,7 +723,7 @@ export default function StaffSalesPage() {
                     {(createSaleMutation.error as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Sale failed. Try again.'}
                   </div>
                 )}
-                <button onClick={handleCheckout} disabled={!shopData || createSaleMutation.isPending || !!creditAttempt || creditStorageError || !creditStorageReady || (paymentMethod === CREDIT_METHOD_KEY && creditEnabled && !creditCustomer) || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
+                <button onClick={handleCheckout} disabled={!shopData || !saleMethods.some(method => method.key === paymentMethod) || createSaleMutation.isPending || !!creditAttempt || creditStorageError || !creditStorageReady || (paymentMethod === CREDIT_METHOD_KEY && creditEnabled && !creditCustomer) || (paymentMethod === MPESA_METHOD_KEY && mpesaEnabled && !isValidPhone)}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-control font-semibold text-white disabled:opacity-60" style={{ backgroundColor: '#0F766E' }}>
                   {createSaleMutation.isPending
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
