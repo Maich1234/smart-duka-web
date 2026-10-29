@@ -2,46 +2,28 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/**
- * The M-PESA STK Push state machine: send the prompt, poll until the customer
- * responds, settle.
- *
- * Written once here because it existed three times — the till's payment
- * modal, the subscription payment modal, and the retired seat-payment path —
- * with the same interval handling, deadline, network-jitter tolerance and
- * terminal mapping copied between them. Only the endpoints and payload shapes
- * differed, so those are injected.
- */
-
 export type StkStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
 export type StkStage = 'idle' | 'initiating' | StkStatus;
 
-/** What a poll tells us. Adapters normalise each endpoint's own field names. */
 export interface StkPollResult {
   status: StkStatus;
   receipt?: string | null;
   errorMessage?: string | null;
 }
 
-/** What initiating tells us, plus the id later polls are keyed on. */
 export interface StkInitiateResult extends StkPollResult {
   id: string;
 }
 
 interface UseStkPollOptions {
-  /**
-   * Send the STK push. The key is fresh per attempt, so a retry is a genuinely
-   * new prompt rather than a replay of the previous response.
-   */
   initiate: (idempotencyKey: string) => Promise<StkInitiateResult>;
   poll: (id: string) => Promise<StkPollResult>;
   intervalMs?: number;
-  /** Give up after this long. Safaricom's own prompt expires around 60s. */
+  /** Stop waiting locally; this does not establish the provider's outcome. */
   timeoutMs?: number;
+  /** Subscription retries recover the original intent and original payload. */
+  protectUnconfirmedAttempts?: boolean;
 }
-
-const DEFAULT_INTERVAL_MS = 3000;
-const DEFAULT_TIMEOUT_MS = 90_000;
 
 const newKey = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -51,127 +33,164 @@ const newKey = () =>
 export function useStkPoll({
   initiate,
   poll,
-  intervalMs = DEFAULT_INTERVAL_MS,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
+  intervalMs = 3000,
+  timeoutMs = 90_000,
+  protectUnconfirmedAttempts = false,
 }: UseStkPollOptions) {
   const [stage, setStage] = useState<StkStage>('idle');
   const [id, setId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const deadlineRef = useRef(0);
-
-  // Callers pass inline arrow functions, which change identity every render.
-  // Holding them in refs keeps `start` stable so it can't restart the flow.
+  const [initiationUncertain, setInitiationUncertain] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+  const busyRef = useRef(false);
+  const generationRef = useRef(0);
+  const idRef = useRef<string | null>(null);
+  const intentRef = useRef<{ key: string; initiate: typeof initiate } | null>(null);
   const initiateRef = useRef(initiate);
   const pollRef = useRef(poll);
   initiateRef.current = initiate;
   pollRef.current = poll;
 
   const stopPolling = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
   }, []);
 
-  const settle = useCallback(
-    (result: StkPollResult) => {
-      stopPolling();
-      setReceipt(result.receipt ?? null);
-      setErrorMessage(result.errorMessage ?? null);
-      setStage(result.status);
-    },
-    [stopPolling]
-  );
+  const settle = useCallback((result: StkPollResult) => {
+    if (!mountedRef.current) return;
+    stopPolling();
+    generationRef.current++;
+    busyRef.current = false;
+    if (result.status !== 'timeout') intentRef.current = null;
+    setInitiationUncertain(false);
+    setReceipt(result.receipt ?? null);
+    setErrorMessage(result.errorMessage ?? null);
+    setStage(result.status);
+  }, [stopPolling]);
 
-  const beginPolling = useCallback(
-    (transactionId: string) => {
-      stopPolling();
-      deadlineRef.current = Date.now() + timeoutMs;
-      timerRef.current = setInterval(async () => {
-        if (Date.now() > deadlineRef.current) {
-          stopPolling();
-          setStage('timeout');
+  const beginPolling = useCallback((transactionId: string) => {
+    stopPolling();
+    const generation = ++generationRef.current;
+    const deadline = Date.now() + timeoutMs;
+    busyRef.current = true;
+    const current = () => mountedRef.current && generation === generationRef.current;
+    const tick = async () => {
+      if (!current()) return;
+      if (Date.now() >= deadline) {
+        stopPolling();
+        busyRef.current = false;
+        generationRef.current++;
+        setStage('timeout');
+        return;
+      }
+      try {
+        const result = await pollRef.current(transactionId);
+        if (!current()) return;
+        if (result.status !== 'pending') {
+          settle(result);
           return;
         }
-        try {
-          const result = await pollRef.current(transactionId);
-          if (result.status !== 'pending') settle(result);
-        } catch {
-          // A failed poll says nothing about the payment — the customer may
-          // still be typing their PIN. Keep going until the deadline.
-        }
-      }, intervalMs);
-    },
-    [intervalMs, timeoutMs, settle, stopPolling]
-  );
+        setErrorMessage(result.errorMessage ?? null);
+      } catch {
+        // Connection loss says nothing about whether money was received.
+      }
+      if (current()) timerRef.current = setTimeout(tick, intervalMs);
+    };
+    // Schedule after the previous request finishes: slow polls never overlap.
+    timerRef.current = setTimeout(tick, intervalMs);
+  }, [intervalMs, timeoutMs, settle, stopPolling]);
 
   const start = useCallback(async () => {
+    // Ref guard also covers taps in the same render, before disabled UI paints.
+    if (!mountedRef.current || busyRef.current) return;
+    if (protectUnconfirmedAttempts && intentRef.current && idRef.current) {
+      setStage('pending');
+      beginPolling(idRef.current);
+      return;
+    }
+    busyRef.current = true;
     stopPolling();
+    const generation = ++generationRef.current;
+    const attempt = protectUnconfirmedAttempts && intentRef.current
+      ? intentRef.current
+      : { key: newKey(), initiate: initiateRef.current };
+    intentRef.current = attempt;
+    idRef.current = null;
     setStage('initiating');
     setId(null);
     setReceipt(null);
     setErrorMessage(null);
-
     try {
-      const result = await initiateRef.current(newKey());
+      const result = await attempt.initiate(attempt.key);
+      if (!mountedRef.current || generation !== generationRef.current) return;
+      idRef.current = result.id;
       setId(result.id);
-
-      // Already decided — an idempotent replay of a settled attempt, or a
-      // failure the server caught before the prompt went out.
+      setInitiationUncertain(false);
       if (result.status !== 'pending') {
         settle(result);
         return;
       }
-
+      setErrorMessage(result.errorMessage ?? null);
       setStage('pending');
       beginPolling(result.id);
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      setErrorMessage(
-        e.response?.data?.message || e.message || 'Could not send the payment request.'
-      );
+      if (!mountedRef.current || generation !== generationRef.current) return;
+      const e = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      const uncertain = !e.response?.status || e.response.status >= 500;
+      if (!uncertain) intentRef.current = null;
+      busyRef.current = false;
+      setInitiationUncertain(uncertain);
+      setErrorMessage(uncertain && protectUnconfirmedAttempts
+        ? 'We could not confirm the request. Recover this attempt before starting another payment.'
+        : e.response?.data?.message || e.message || 'Could not send the payment request.');
       setStage('failed');
     }
-  }, [beginPolling, settle, stopPolling]);
+  }, [beginPolling, settle, stopPolling, protectUnconfirmedAttempts]);
 
   const reset = useCallback(() => {
     stopPolling();
+    generationRef.current++;
+    busyRef.current = false;
+    idRef.current = null;
+    intentRef.current = null;
     setStage('idle');
     setId(null);
     setReceipt(null);
     setErrorMessage(null);
+    setInitiationUncertain(false);
   }, [stopPolling]);
 
-  /**
-   * Adopt a result confirmed some other way — verifying an M-Pesa receipt
-   * code, or reconciling a pasted confirmation SMS. `id` is optional because
-   * those paths don't always surface one.
-   */
-  const resolveExternally = useCallback(
-    (result: StkPollResult & { id?: string }) => {
-      if (result.id) setId(result.id);
+  const resolveExternally = useCallback((result: StkPollResult & { id?: string }) => {
+    if (!mountedRef.current) return;
+    if (result.id) {
+      idRef.current = result.id;
+      setId(result.id);
+    }
+    if (result.status === 'pending' && idRef.current) {
+      setErrorMessage(result.errorMessage ?? null);
+      setStage('pending');
+      beginPolling(idRef.current);
+    } else {
       settle(result);
-    },
-    [settle]
-  );
+    }
+  }, [beginPolling, settle]);
 
-  useEffect(() => stopPolling, [stopPolling]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stopPolling();
+    };
+  }, [stopPolling]);
 
   const isTerminal = stage === 'failed' || stage === 'cancelled' || stage === 'timeout';
-
   return {
-    stage,
-    id,
-    receipt,
-    errorMessage,
-    /** In a terminal *unsuccessful* state — the retry/recover affordances. */
+    stage, id, receipt, errorMessage, initiationUncertain,
+    isUnconfirmed: initiationUncertain || stage === 'pending' || stage === 'initiating' || stage === 'timeout',
     isTerminal,
     isSettled: isTerminal || stage === 'success',
-    start,
-    reset,
-    resolveExternally,
+    start, reset, resolveExternally,
   };
 }
