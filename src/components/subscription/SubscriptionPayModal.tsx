@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import SubscriptionPaymentReceipt from './SubscriptionPaymentReceipt';
 import Button from '@/components/ui/Button';
 import { useStkPoll, type StkStatus } from '@/hooks/useStkPoll';
+import { useRestoreSubscriptionCheckout } from '@/hooks/usePendingSubscriptionCheckout';
 import {
   initiateSubscriptionPayment,
   getSubscriptionPaymentStatus,
@@ -87,6 +88,8 @@ export default function SubscriptionPayModal({
     timeoutMs: POLL_TIMEOUT_MS,
     protectUnconfirmedAttempts: true,
   });
+
+  useRestoreSubscriptionCheckout(isOpen, 'mpesa', stk);
 
   // The hook owns the STK stages; 'input' and 'recover' sit either side of it.
   const stage: Stage = recoverOpen ? 'recover' : stk.stage === 'idle' ? 'input' : stk.stage;

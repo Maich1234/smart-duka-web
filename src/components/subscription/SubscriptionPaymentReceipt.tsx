@@ -27,6 +27,7 @@ export default function SubscriptionPaymentReceipt({ paymentId, provider, onDone
     },
   });
   const payment = query.data;
+  const confirmedProvider = payment?.provider === 'mpesa' ? 'M-Pesa' : payment?.provider === 'bank' ? 'Paystack' : provider;
   const amount = payment ? new Intl.NumberFormat('en-KE', { style: 'currency', currency: payment.currency }).format(payment.amount) : undefined;
   return <div>
     <p className="mb-5 text-center text-sm text-slate-600" role="status">Your subscription payment was confirmed.</p>
@@ -37,7 +38,7 @@ export default function SubscriptionPaymentReceipt({ paymentId, provider, onDone
       {payment && <>
         <header className="mb-5 text-center"><p className="text-[10px] tracking-widest text-slate-500">SUBSCRIPTION</p><h2 className="mt-1 text-base font-bold">{payment.amount === 0 ? 'No payment required' : 'Payment received'}</h2></header>
         <dl className="space-y-3 border-y border-dashed border-slate-300 py-5">
-          <div className="flex justify-between gap-4"><dt>{payment.amount === 0 ? 'Covered by' : 'Paid via'}</dt><dd className="text-right">{payment.amount === 0 ? 'Subscription discount' : provider}</dd></div>
+          <div className="flex justify-between gap-4"><dt>{payment.amount === 0 ? 'Covered by' : 'Paid via'}</dt><dd className="text-right">{payment.amount === 0 ? 'Subscription discount' : confirmedProvider}</dd></div>
           <div className="flex justify-between gap-4"><dt>Reference</dt><dd className="min-w-0 text-right">{payment.receipt || payment.paymentId}</dd></div>
           {payment.periodEnd && <div className="flex justify-between gap-4"><dt>Period ends</dt><dd className="text-right">{new Date(payment.periodEnd).toLocaleDateString('en-KE', { dateStyle: 'medium' })}</dd></div>}
         </dl>

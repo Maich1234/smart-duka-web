@@ -138,12 +138,12 @@ export function useStkPoll({
     } catch (err: unknown) {
       if (!mountedRef.current || generation !== generationRef.current) return;
       const e = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
-      const uncertain = !e.response?.status || e.response.status >= 500;
+      const uncertain = !e.response?.status || e.response.status >= 500 || [408, 409, 425, 429].includes(e.response.status);
       if (!uncertain) intentRef.current = null;
       busyRef.current = false;
       setInitiationUncertain(uncertain);
       setErrorMessage(uncertain && protectUnconfirmedAttempts
-        ? 'We could not confirm the request. Recover this attempt before starting another payment.'
+        ? e.response?.data?.message || 'We could not confirm the request. Recover this attempt before starting another payment.'
         : e.response?.data?.message || e.message || 'Could not send the payment request.');
       setStage('failed');
     }
@@ -177,6 +177,21 @@ export function useStkPoll({
     }
   }, [beginPolling, settle]);
 
+  const restoreUnconfirmed = useCallback((paymentId?: string) => {
+    reset();
+    if (paymentId) {
+      idRef.current = paymentId;
+      setId(paymentId);
+      setStage('pending');
+      setErrorMessage('Checking your previous payment. Please wait for confirmation.');
+      beginPolling(paymentId);
+    } else {
+      setInitiationUncertain(true);
+      setStage('failed');
+      setErrorMessage('Recover your previous payment request before starting another.');
+    }
+  }, [reset, beginPolling]);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -191,6 +206,6 @@ export function useStkPoll({
     isUnconfirmed: initiationUncertain || stage === 'pending' || stage === 'initiating' || stage === 'timeout',
     isTerminal,
     isSettled: isTerminal || stage === 'success',
-    start, reset, resolveExternally,
+    start, reset, resolveExternally, restoreUnconfirmed,
   };
 }

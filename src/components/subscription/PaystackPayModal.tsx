@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import SubscriptionPaymentReceipt from './SubscriptionPaymentReceipt';
 import Button from '@/components/ui/Button';
 import { useStkPoll, type StkStatus } from '@/hooks/useStkPoll';
+import { useRestoreSubscriptionCheckout } from '@/hooks/usePendingSubscriptionCheckout';
 import { openPaystackPopup } from '@/hooks/usePaystackInline';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -70,6 +71,9 @@ export default function PaystackPayModal({
       if (status !== 'pending') {
         return { id: paymentId, status: status as StkStatus };
       }
+      if (res.data.provider && !['bank', 'free'].includes(res.data.provider)) {
+        return { id: paymentId, status: 'pending', errorMessage: 'Please continue checking your existing M-Pesa payment.' };
+      }
       if (!publicKey || !providerRef) {
         return { id: paymentId, status: 'pending', errorMessage: 'Payment recorded. Check its status before starting another payment.' };
       }
@@ -111,6 +115,8 @@ export default function PaystackPayModal({
     timeoutMs: POLL_TIMEOUT_MS,
     protectUnconfirmedAttempts: true,
   });
+
+  useRestoreSubscriptionCheckout(isOpen, 'bank', stk);
 
   const stage: Stage = stk.stage === 'idle' ? 'input' : stk.stage;
   const errorMessage = localError ?? stk.errorMessage;
