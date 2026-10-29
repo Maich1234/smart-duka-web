@@ -99,8 +99,10 @@ export default function SubscriptionPayModal({
     setSmsText('');
   };
   const handleClose = () => {
+    const confirmed = stage === 'success';
     reset();
-    onClose();
+    if (confirmed) onSuccess();
+    else onClose();
   };
   const handleSuccess = () => {
     reset();
@@ -198,7 +200,7 @@ export default function SubscriptionPayModal({
             {stage === 'cancelled' ? 'Payment cancelled' : stage === 'timeout' ? 'Request timed out' : 'Payment failed'}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
-            {errorMessage ?? (stage === 'cancelled' ? 'The M-Pesa prompt was dismissed.' : 'The payment did not go through. No money was taken.')}
+            {errorMessage ?? (stage === 'cancelled' ? 'The M-Pesa prompt was dismissed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
           </p>
           <Button onClick={backToInput} className="w-full">Try again</Button>
           {/* The failure that actually strands people is a Safaricom callback
