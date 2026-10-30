@@ -2,35 +2,66 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { createPublicQueryClient } from '@/lib/publicQueryClient';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDown, ArrowRight, ArrowUpRight, Check } from 'lucide-react';
+import { ArrowDown, ArrowRight, Check } from 'lucide-react';
+import { createPublicQueryClient } from '@/lib/publicQueryClient';
 import { getPublicPlans } from '@/services/publicMarketing';
-import '@/app/landing.css';
 import { SiteNav } from '@/components/marketing/SiteNav';
+import { SiteFooter } from '@/components/marketing/SiteFooter';
+import '@/app/landing.css';
 
 const workflows = [
-  { n:'01', label:'SELL', title:'A smoother sale, from counter to receipt.', text:'Find a product, add it to the sale and record how your customer paid. Keep the details together so the next sale is easier.', points:['Search and barcode scanning','Cash, M-PESA and configured payment methods','Receipts for completed sales'] },
-  { n:'02', label:'STOCK', title:'Know what is on your shelves.', text:'Bring products, quantities and purchasing into one place. Spot what needs attention before the shelf is empty.', points:['Product and stock records','Low-stock alerts','Purchases and suppliers'] },
-  { n:'03', label:'UNDERSTAND', title:'Make sense of the day.', text:'See your sales, review business reports and give your team access to the work they need to do.', points:['Sales history and reports','Staff roles and permissions','Business insights'] },
+  { label: 'AT THE COUNTER', title: 'Record what the customer bought.', text: 'Search or scan a product, enter the quantity and choose how the customer paid. The sale updates stock and gives you a receipt to share.', points: ['Product search and barcode scanning', 'Cash, M-Pesa and your other payment methods', 'Receipts with a verification QR code'], href: '/help/recording-sales', link: 'See the checkout steps' },
+  { label: 'WHEN YOU RESTOCK', title: 'Check quantities before you buy.', text: 'Look up the stock left for each product. Record purchases and suppliers so incoming stock is accounted for alongside your sales.', points: ['Product quantities and low-stock alerts', 'Purchases and supplier records', 'Different sizes, units and product types'], href: '/help/managing-stock', link: 'Read the stock guide' },
+  { label: 'AT THE END OF THE DAY', title: 'Go back through the day’s sales.', text: 'Check what sold, which payment methods were used and who recorded each sale. Review customer balances without going through separate notebooks.', points: ['Sales history and reports', 'Staff accounts with permissions you control', 'Customer credit and repayments'], href: '/help/sales-reports', link: 'See the available reports' },
+];
+const steps = [
+  ['Create your shop account', 'Add your shop details and choose the currency you use.'],
+  ['Enter your products', 'Add prices and the quantities currently in stock.'],
+  ['Record a sale', 'Choose a product, enter the quantity and record the payment.'],
 ];
 
 export default function LandingPage() {
   const [publicClient] = useState(createPublicQueryClient);
-  const plans = useQuery({ queryKey:['public-plans'], queryFn:getPublicPlans, staleTime:3600000, retry:1 }, publicClient);
-  return <main className="landing">
+  const plans = useQuery({ queryKey: ['public-plans'], queryFn: getPublicPlans, staleTime: 60_000, refetchOnMount: 'always', refetchOnWindowFocus: 'always', refetchInterval: 60_000, refetchIntervalInBackground: false, retry: 1 }, publicClient);
+  return <div className="landing">
     <SiteNav />
-    <section className="hero"><div className="hero-copy"><p className="eyebrow"><span className="eyebrow-dot"/> MADE FOR THE WAY YOU TRADE</p><h1>Run your shop.<br/><em>Know your stock.</em><br/>See every sale.</h1><p className="hero-description">DuQana brings sales, inventory, M-Pesa payments and your team into one place. Spend less time checking records and more time serving customers.</p><div className="hero-buttons"><Link href="/register" className="button button-dark">Start with DuQana <ArrowRight size={18}/></Link><a href="#features" className="text-link">Explore the app <ArrowDown size={16}/></a></div><p className="hero-note">POS software for Kenyan kiosks, retail shops and growing businesses.</p></div>
-      <div className="hero-visual"><Image src="/images/shop-editorial.webp" alt="Shopkeeper checking a phone while working at a grocery counter" fill sizes="(max-width: 800px) 100vw, 50vw" priority className="hero-photo"/><div className="photo-caption"><span>BUILT FOR THE EVERYDAY</span><span>01 / 03</span></div><div className="photo-tag"><span className="tag-star">✳</span><span>Good business<br/><strong>starts here.</strong></span></div></div>
-    </section>
-    <div className="ticker"><span>ONE PLACE FOR YOUR BUSINESS</span><span>✳</span><span>SALES</span><span>✳</span><span>STOCK</span><span>✳</span><span>YOUR TEAM</span><span>✳</span><span>BETTER DECISIONS</span></div>
-    <section id="features" className="feature-section"><div className="section-heading"><div><p className="eyebrow">THE EVERYDAY, MADE CLEARER</p><h2>Everything has<br/><em>its place.</em></h2></div><p>From the first customer to the last stock check, DuQana brings the moving parts of your day together.</p></div>
-      <div className="workflow-list">{workflows.map(w=><article className="workflow" key={w.n}><span className="workflow-number">{w.n} <span>/</span> {w.label}</span><div><h3>{w.title}</h3><p>{w.text}</p></div><ul>{w.points.map(p=><li key={p}><Check size={16}/>{p}</li>)}</ul><ArrowUpRight className="workflow-arrow" size={24}/></article>)}</div>
-    </section>
-    <section id="how-it-works" className="how-section"><div className="how-intro"><p className="eyebrow">A SIMPLE WAY TO BEGIN</p><h2>Less setup.<br/><em>More selling.</em></h2><p>Start with the basics, then make DuQana work for your shop.</p><Link href="/register" className="button button-light">Create your account <ArrowRight size={17}/></Link></div><div className="steps">{[['01','Set up your shop','Create an account and tell us about your business.'],['02','Add what you sell','Create your product list and set your prices.'],['03','Make your first sale','Find an item, add it to the basket and record the payment.']].map(([n,title,text])=><div className="step" key={n}><span>{n}</span><div><h3>{title}</h3><p>{text}</p></div></div>)}</div></section>
-    <section id="pricing" className="pricing-section"><div className="section-heading"><div><p className="eyebrow">PRICING</p><h2>A plan for<br/><em>your business.</em></h2></div><p>Choose the plan that fits your team. Current plans and pricing are shown below.</p></div>{plans.isPending?<p className="plan-status" role="status">Loading current plans…</p>:plans.isError?<div className="plan-status" role="alert">We couldn’t load pricing right now. <button onClick={()=>plans.refetch()}>Try again</button> or <Link href="/contact">contact us</Link>.</div>:!plans.data?.length?<p className="plan-status">Plans are currently unavailable. <Link href="/contact">Contact us for details.</Link></p>:<div className="plans">{plans.data.map(plan=><article className="plan" key={plan.slug}><div className="plan-top"><span>{plan.name}</span>{plan.badge&&<small>{plan.badge}</small>}</div><p>{plan.tagline || plan.description}</p><div className="plan-price">{plan.currency} {(plan.monthlyPrice + (plan.monthlyCharge ?? 0)).toLocaleString()} <span>/ month{plan.billingType==='per_staff'?' per staff':''}</span></div>{plan.billingType==='flat'&&<p>{plan.unlimitedUsers ? `${plan.minUsers ?? plan.maxStaff}+ shop users` : `${plan.minUsers ?? 1}–${plan.maxStaff} shop users`}, including the owner.</p>}{!!plan.monthlyCharge&&<p>{plan.currency} {plan.monthlyPrice.toLocaleString()} + {plan.currency} {plan.monthlyCharge} monthly charge.</p>}{plan.trialDays>0&&<p className="trial">{plan.trialDays}-day trial</p>}<ul>{plan.highlights.map(item=><li key={item}><Check size={16}/>{item}</li>)}</ul><Link href="/register" className="button button-dark">Get started <ArrowRight size={16}/></Link></article>)}</div>}</section>
-    <section className="closing"><p className="eyebrow">READY WHEN YOU ARE</p><h2>Your next chapter<br/><em>starts at the counter.</em></h2><Link href="/register" className="button button-light">Get started <ArrowRight size={17}/></Link></section>
-    <footer className="landing-footer"><div><Link href="/" className="footer-brand">DuQana<span>.</span></Link><p>Made for the people<br/>behind the counter.</p></div><div><span>EXPLORE</span><a href="#features">Features</a><a href="#pricing">Pricing</a><Link href="/about">About</Link></div><div><span>SUPPORT</span><Link href="/help">Help centre</Link><Link href="/contact">Contact</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/delete-account">Delete account</Link></div><small>© {new Date().getFullYear()} DuQana</small></footer>
-  </main>;
+    <main>
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="eyebrow">POS SOFTWARE FOR KENYAN SHOPS</p>
+          <h1>Record a sale.<br />Keep stock up to date.</h1>
+          <p className="hero-description">Ring up products, record Cash or M-Pesa, and check what is left in stock. Give staff their own logins and review the day’s sales from your phone.</p>
+          <div className="hero-buttons"><Link href="/register" className="button button-dark">Create an account <ArrowRight size={18} aria-hidden="true" /></Link><a href="#features" className="text-link">See how it works <ArrowDown size={16} aria-hidden="true" /></a></div>
+          <p className="hero-note">Already using DuQana? <Link href="/login">Sign in to your shop</Link>.</p>
+        </div>
+        <figure className="hero-photo-panel"><div className="hero-visual"><Image src="/images/nairobi-shopfront.jpg" alt="Customers at a Nairobi shopfront stocked with drinks and household goods" fill sizes="(max-width: 800px) 100vw, 50vw" priority className="hero-photo" /></div><figcaption>Nairobi shopfront. Photo by <a href="https://www.pexels.com/photo/small-shopfront-in-busy-urban-setting-28505434/" target="_blank" rel="noopener noreferrer">Natalia Msungu / Pexels</a>.</figcaption></figure>
+      </section>
+      <section id="features" className="feature-section">
+        <div className="section-heading"><div><p className="eyebrow">SALES, STOCK AND CUSTOMER RECORDS</p><h2>What you can do<br />with DuQana.</h2></div><p>Use the same records when serving a customer, restocking or checking the day’s takings.</p></div>
+        <div className="workflow-list">{workflows.map(workflow => <article className="workflow" key={workflow.label}>
+          <p className="workflow-number">{workflow.label}</p><div><h3>{workflow.title}</h3><p>{workflow.text}</p><Link href={workflow.href} className="workflow-link">{workflow.link} <ArrowRight size={15} aria-hidden="true" /></Link></div><ul>{workflow.points.map(point => <li key={point}><Check size={16} aria-hidden="true" />{point}</li>)}</ul>
+        </article>)}</div>
+      </section>
+      <section id="how-it-works" className="how-section">
+        <div className="how-intro"><p className="eyebrow">GETTING STARTED</p><h2>Set up the records<br />you sell from.</h2><p>You will need your shop details, product prices and opening stock quantities. You can add staff and set their permissions after creating the shop.</p><Link href="/help/getting-started" className="text-link">Read the setup guide <ArrowRight size={17} aria-hidden="true" /></Link></div>
+        <ol className="steps">{steps.map(([title, text], index) => <li className="step" key={title}><span aria-hidden="true">{index + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
+      </section>
+      <section id="pricing" className="pricing-section">
+        <div className="section-heading"><div><p className="eyebrow">PRICING</p><h2>Choose your shop’s plan.</h2></div><p>Compare the monthly total and the number of shop users included.</p></div>
+        {plans.isPending ? <p className="plan-status" role="status">Loading current plans…</p> : plans.isError ? <div className="plan-status" role="alert">We couldn’t load pricing. <button onClick={() => plans.refetch()}>Try again</button> or <Link href="/contact">ask us about plans</Link>.</div> : !plans.data?.length ? <p className="plan-status">Plans are currently unavailable. <Link href="/contact">Ask us about pricing</Link>.</p> : <div className="plans">{plans.data.map(plan => <article className="plan" key={plan.slug}>
+          <h3 className="plan-top">{plan.name}</h3>
+          <div className="plan-price">{plan.currency} {(plan.monthlyPrice + (plan.monthlyCharge ?? 0)).toLocaleString()} <span>/ month{plan.billingType === 'per_staff' ? ' per staff' : ''}</span></div>
+          {plan.billingType === 'flat' && <p>{plan.unlimitedUsers ? `${plan.minUsers ?? plan.maxStaff}+ shop users` : `${plan.minUsers ?? 1} to ${plan.maxStaff} shop users`}, including the owner.</p>}
+          {!!plan.monthlyCharge && <p>{plan.currency} {plan.monthlyPrice.toLocaleString()} + {plan.currency} {plan.monthlyCharge} monthly charge.</p>}
+          {plan.trialDays > 0 && <p className="trial">{plan.trialDays}-day trial</p>}
+          <ul>{plan.highlights.map(item => <li key={item}><Check size={16} aria-hidden="true" />{item}</li>)}</ul>
+          <Link href="/register" className="button button-dark">Create an account <ArrowRight size={16} aria-hidden="true" /></Link>
+        </article>)}</div>}
+      </section>
+      <section className="closing"><div><h2>Need help setting up?</h2><p>Tell us what you sell and how many people will use your shop account.</p></div><Link href="/contact" className="button button-light">Talk to the team <ArrowRight size={17} aria-hidden="true" /></Link></section>
+    </main>
+    <SiteFooter />
+  </div>;
 }

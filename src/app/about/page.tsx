@@ -1,15 +1,16 @@
 import Link from 'next/link';
 import { ArrowRight, BarChart3, Package, Receipt, ShieldCheck } from 'lucide-react';
+import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { publicMetadata } from '@/lib/seo';
 
 export const metadata = publicMetadata('About DuQana | POS Built for Kenyan Shops', 'DuQana helps Kenyan shop owners manage sales, stock, M-Pesa payments and staff in one place. Learn how it supports the work behind your counter.', '/about');
 
 const everyday = [
-  { icon: Receipt, title: 'Record each sale', text: 'Find products, record how the customer paid and share a receipt. Prepare quotations when a customer needs a price before buying.', href: '/help', link: 'Explore sales guides' },
-  { icon: Package, title: 'Keep track of stock', text: 'Manage products, quantities, purchases and suppliers. Check stock levels before deciding what to restock.', href: '/help', link: 'Learn about inventory' },
-  { icon: ShieldCheck, title: 'Give your team the right access', text: 'Set staff permissions so each person can do their work while the owner keeps control of business settings.', href: '/help', link: 'Read staff guides' },
-  { icon: BarChart3, title: 'Understand your business', text: 'Review sales history, customer balances and business reports. Keep the records you need for daily decisions.', href: '/help', link: 'Browse reporting guides' },
+  { icon: Receipt, title: 'Record each sale', text: 'Find products, record how the customer paid and share a receipt. Prepare quotations when a customer needs a price before buying.', href: '/help/recording-sales', link: 'Explore sales guides' },
+  { icon: Package, title: 'Keep track of stock', text: 'Manage products, quantities, purchases and suppliers. Check stock levels before deciding what to restock.', href: '/help/managing-stock', link: 'Learn about inventory' },
+  { icon: ShieldCheck, title: 'Give your team the right access', text: 'Set staff permissions so each person can do their work while the owner keeps control of business settings.', href: '/help/staff-permissions', link: 'Read staff guides' },
+  { icon: BarChart3, title: 'Understand your business', text: 'Review sales history, customer balances and business reports. Keep the records you need for daily decisions.', href: '/help/sales-reports', link: 'Browse reporting guides' },
 ];
 
 export default function AboutPage() {
@@ -32,6 +33,6 @@ export default function AboutPage() {
       <section className="bg-white px-5 py-16"><div className="mx-auto max-w-6xl"><h2 className="mb-10 text-3xl font-bold text-slate-900">Keep the essentials together.</h2><div className="grid gap-6 md:grid-cols-2">{everyday.map(({ icon: Icon, ...item }) => <article key={item.title} className="rounded-2xl border border-slate-200 p-7"><Icon className="mb-5 text-teal-700" size={28} aria-hidden="true" /><h3 className="mb-3 text-xl font-bold text-slate-900">{item.title}</h3><p className="mb-5 leading-relaxed text-slate-600">{item.text}</p><Link href={item.href} className="font-semibold text-teal-700 underline underline-offset-4">{item.link}</Link></article>)}</div></div></section>
       <section className="mx-auto max-w-4xl px-5 py-20 text-center"><h2 className="mb-5 text-3xl font-bold text-slate-900">Start with what your shop needs today.</h2><p className="mb-8 text-lg text-slate-600">Explore the plans or talk to us about setting up your business.</p><div className="flex flex-wrap justify-center gap-4"><Link href="/#pricing" className="rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white">See plans and pricing</Link><Link href="/contact" className="rounded-xl border border-teal-700 px-6 py-3 font-semibold text-teal-700">Talk to the team</Link></div></section>
     </main>
-    <footer className="border-t border-slate-200 bg-white px-5 py-8"><nav aria-label="Footer" className="mx-auto flex max-w-6xl flex-wrap gap-6 text-sm text-slate-600"><Link href="/">DuQana</Link><Link href="/help">Help centre</Link><Link href="/contact">Contact</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav></footer>
+    <SiteFooter />
   </div>;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ShoppingCart, TrendingUp, Shield, Smartphone } from 'lucide-react';
+import Image from 'next/image';
+import { TrendingUp, Shield, Smartphone } from 'lucide-react';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -8,15 +9,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen flex">
       {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #115E59 100%)' }}>
-        {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #14B8A6, transparent)', transform: 'translate(30%, -30%)' }} />
-        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #C8932A, transparent)', transform: 'translate(-30%, 30%)' }} />
-
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden" style={{ backgroundColor: '#103D38' }}>
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <ShoppingCart className="w-6 h-6 text-white" />
+              <Image src="/icons/logo-mark.png" alt="" width={28} height={28} />
             </div>
             <span className="text-2xl font-extrabold text-white">DuQana</span>
           </Link>
@@ -24,8 +21,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative z-10">
           <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
-            The Smartest Way
-            <br />to Run Your Shop
+            Your shop’s sales
+            <br />and stock records
           </h2>
           <p className="text-white/80 text-lg mb-10 leading-relaxed">
             Keep sales, stock, M-Pesa payments and your team together with DuQana.
@@ -33,9 +30,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           <div className="space-y-4">
             {[
-              { icon: TrendingUp, text: 'Real-time sales analytics and reports' },
-              { icon: Smartphone, text: 'Accept M-Pesa payments instantly' },
-              { icon: Shield, text: 'Secure role-based access for your staff' },
+              { icon: TrendingUp, text: 'Review sales history and reports' },
+              { icon: Smartphone, text: 'Record M-Pesa and other payment methods' },
+              { icon: Shield, text: 'Choose what each staff account can access' },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -48,18 +45,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="relative z-10">
-          <div className="flex -space-x-3">
-            {['J', 'P', 'F', 'M', 'A'].map((l, i) => (
-              <div
-                key={i}
-                className="w-9 h-9 rounded-full border-2 border-white/50 flex items-center justify-center text-xs font-bold text-white"
-                style={{ backgroundColor: ['#0F766E','#C8932A','#115E59','#14B8A6','#0F766E'][i] }}
-              >
-                {l}
-              </div>
-            ))}
-          </div>
-          <p className="text-white/70 text-sm mt-2">5,000+ shop owners trust DuQana</p>
+          <p className="text-sm text-white/80">Need help with your account?</p>
+          <div className="mt-3 flex gap-5 text-sm"><Link href="/help" className="underline underline-offset-4 text-white">Help centre</Link><Link href="/contact" className="underline underline-offset-4 text-white">Contact us</Link></div>
         </div>
       </div>
 
@@ -69,7 +56,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
-              <ShoppingCart className="w-5 h-5 text-white" />
+              <Image src="/icons/logo-mark.png" alt="" width={24} height={24} />
             </div>
             <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
           </div>

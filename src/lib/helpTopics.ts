@@ -482,9 +482,9 @@ export const HELP_TOPICS: HelpTopic[] = [
     keywords: ['faq', 'frequently asked questions', 'free', 'offline', 'mpesa', 'staff', 'security', 'data'],
     sections: [
       {
-        heading: 'Is DuQana free to use?',
+        heading: 'Where can I check subscription prices?',
         paragraphs: [
-          'Yes. The Free plan lets you get started with up to 50 products and 1 staff account at no cost. Upgrade when you need more.',
+          'Check the current plans in the pricing section of the DuQana home page. Each plan shows the number of shop users included, any trial period and the monthly total.',
         ],
       },
       {
@@ -502,13 +502,13 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Can multiple staff use DuQana at the same time?',
         paragraphs: [
-          'Yes. Each staff member gets their own login with customisable permissions, and the owner sees all activity in real time.',
+          'Each staff member has their own login. The owner chooses the tasks they can access and can review the sales they record.',
         ],
       },
       {
         heading: 'Is my data secure?',
         paragraphs: [
-          'Yes. All data is encrypted in transit and at rest, M-Pesa credentials are encrypted, and your data is backed up regularly.',
+          'Shop accounts use sign-in and staff permissions. Only give each person the access they need, and do not share passwords, verification codes or M-Pesa credentials. Read the Privacy Policy for how business data is handled.',
         ],
       },
     ],
