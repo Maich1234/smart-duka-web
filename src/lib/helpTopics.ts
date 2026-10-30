@@ -40,6 +40,68 @@ export const HELP_CATEGORIES = [
 
 export const HELP_TOPICS: HelpTopic[] = [
   {
+    slug: 'bulk-product-import',
+    title: 'Import Products from Excel',
+    category: 'Products & Inventory',
+    summary: 'Prepare your Excel product list, check errors, and safely add products in bulk.',
+    keywords: ['excel', 'xlsx', 'import', 'bulk upload', 'spreadsheet', 'template', 'products', 'validation', 'rejected rows'],
+    sections: [
+      {
+        paragraphs: [
+          'Preparing a clean spreadsheet before importing products saves time and avoids incorrect prices or stock levels. Use the template provided on the product import screen when available. Keep its column headings unchanged.',
+        ],
+      },
+      {
+        heading: 'Before you upload',
+        bullets: [
+          'Download the current product template from your shop’s product import screen rather than using a template from another system.',
+          'Use one product per row. Keep the header row, and do not merge cells.',
+          'Enter product names clearly. Enter monetary amounts as numbers in KES, not text such as “KES 100”.',
+          'Use non-negative numbers for stock quantities and cost prices. Selling prices must be valid for the chosen product type.',
+          'Keep barcodes or SKUs as text to preserve leading zeroes. Avoid duplicate identifiers.',
+          'Save as .xlsx if the import screen accepts Excel workbooks. Do not rename a .csv file to .xlsx.',
+        ],
+      },
+      {
+        heading: 'Check products with risky prices',
+        bullets: [
+          'Check that a selling price is not accidentally zero, especially if the item is intended for sale.',
+          'Review selling prices below purchase cost. For example, an item bought at KES 120 and priced at KES 100 has a KES 20 negative unit margin before other expenses.',
+          'Check whether a zero stock quantity is intentional.',
+          'Fix unexpected blank product names, negative prices, invalid numbers, and duplicate product identifiers before import.',
+        ],
+      },
+      {
+        heading: 'Upload and review',
+        bullets: [
+          'Open your shop’s Products or Inventory area and look for the bulk import option.',
+          'Select the completed file and read the validation results before confirming any changes.',
+          'If the importer offers a preview, check the totals and a sample of your products before confirming.',
+          'If it offers an error report, fix the named rows and columns in your workbook, then retry. Avoid uploading an already-imported file a second time without checking for duplicates.',
+        ],
+      },
+      {
+        heading: 'Understand rejection messages',
+        bullets: [
+          'Missing product name: enter a name in the indicated row.',
+          'Invalid selling or cost price: enter a valid number and remove currency symbols or unsupported formulas.',
+          'Duplicate barcode or SKU: correct the conflicting identifier rather than silently replacing an existing product.',
+          'Unsupported file type or damaged workbook: export a fresh workbook in the format the importer requests.',
+          'Permission denied: ask the owner to grant permission to create products.',
+          'Upload interrupted: check your connection and import history before trying again to avoid duplicate records.',
+        ],
+      },
+      {
+        heading: 'When importing fails',
+        paragraphs: [
+          'Keep the original workbook. Note the row number, field, and rejection reason. If the upload stops unexpectedly, verify which products were actually created before retrying. Contact support if a row is rejected without a clear explanation.',
+        ],
+      },
+    ],
+    relatedSlugs: ['adding-products', 'managing-stock', 'product-types'],
+  },
+
+  {
     slug: 'getting-started',
     title: 'Getting Started with DuQana',
     category: 'Getting Started',
@@ -176,7 +238,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
     ],
-    relatedSlugs: ['product-types', 'managing-stock', 'bundles-recipes'],
+    relatedSlugs: ['product-types', 'managing-stock', 'bundles-recipes', 'bulk-product-import'],
   },
   {
     slug: 'managing-stock',
