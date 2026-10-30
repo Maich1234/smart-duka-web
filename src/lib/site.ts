@@ -5,8 +5,8 @@
  * one: Next.js `metadataBase` (which resolves every `alternates.canonical` and
  * Open Graph URL), the sitemap, and robots.txt.
  *
- * `NEXT_PUBLIC_SITE_URL` wins so preview deployments describe themselves
- * correctly instead of claiming to be production. Vercel injects
+ * Canonical URLs always identify the production site, including in previews.
+ * `NEXT_PUBLIC_SITE_URL` accepts a custom HTTPS production domain. Vercel injects
  * `VERCEL_PROJECT_PRODUCTION_URL` automatically, which keeps this right if the
  * project later moves to a custom domain without anyone remembering to update
  * a constant.
@@ -17,12 +17,14 @@ import { isLocalUrl } from './isLocalUrl';
 // .env copied into the wrong Vercel project) must never leak into canonical
 // tags, the sitemap, or robots.txt on a real deployment.
 function resolveSiteUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit && !isLocalUrl(explicit)) return explicit.replace(/\/+$/, '');
-
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (vercel) return `https://${vercel}`;
-
+  for (const value of [process.env.NEXT_PUBLIC_SITE_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]) {
+    if (!value) continue;
+    try {
+      const url = new URL(value.includes('://') ? value : `https://${value}`);
+      if (url.protocol !== 'https:' || isLocalUrl(url.origin) || url.hostname.endsWith('.vercel.app') || url.username || url.password) continue;
+      return url.origin;
+    } catch { /* Ignore invalid deployment configuration. */ }
+  }
   return 'https://duqana.co.ke';
 }
 

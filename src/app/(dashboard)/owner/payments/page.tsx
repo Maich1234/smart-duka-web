@@ -162,7 +162,7 @@ export default function PaymentsPage() {
     {
       key: 'mpesaReceiptNumber',
       header: 'Receipt',
-      render: (tx) => (tx.mpesaReceiptNumber ? <span className="font-mono text-xs">{tx.mpesaReceiptNumber}</span> : '—'),
+      render: (tx) => (tx.mpesaReceiptNumber ? <span className="font-mono text-xs">{tx.mpesaReceiptNumber}</span> : 'Not available'),
     },
     { key: 'createdAt', header: 'Date', render: (tx) => format(new Date(tx.createdAt), 'dd MMM yyyy, HH:mm') },
     {
@@ -183,7 +183,7 @@ export default function PaymentsPage() {
         );
       },
     },
-    { key: 'invoice', header: 'Invoice', render: (tx) => (tx.saleId ? `#${tx.saleId.invoiceNumber}` : '—') },
+    { key: 'invoice', header: 'Invoice', render: (tx) => (tx.saleId ? `#${tx.saleId.invoiceNumber}` : 'Not available') },
   ];
 
   return (

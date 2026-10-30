@@ -80,7 +80,7 @@ function QuantityModal({ product, inCart, onConfirm, onClose }: {
     ? `Enter at least ${step}${isWeighted ? ` ${product.unitOfMeasure}` : ''}.`
     : '';
   const qtyWarning = !belowMin && overStock
-    ? `Only ${max} ${product.unitOfMeasure} available${inCart(variantId || undefined) > 0 ? ' after what is already in the cart' : ''} — this will take stock ${qty - max} negative.`
+    ? `Only ${max} ${product.unitOfMeasure} available${inCart(variantId || undefined) > 0 ? ' after what is already in the cart' : ''}, this will take stock ${qty - max} negative.`
     : '';
   const canOverride = product.productType === 'variable' || (product.productType === 'service' && product.allowPriceOverride);
   return (

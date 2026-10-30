@@ -1,15 +1,10 @@
-import type { Metadata } from 'next';
+import { publicMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { AlertTriangle, Smartphone, Mail, Users } from 'lucide-react';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { SUPPORT_EMAIL } from '@/lib/site';
 
-export const metadata: Metadata = {
-  title: 'Delete your DuQana account',
-  description:
-    'How to permanently close your DuQana account and what happens to your data, including the 14-day cancellation window.',
-  alternates: { canonical: '/delete-account' },
-};
+export const metadata = publicMetadata('Delete your DuQana account', 'How to permanently close your DuQana account and what happens to your data, including the 14-day cancellation window.', '/delete-account');
 
 /**
  * The public account-deletion page.
