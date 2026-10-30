@@ -1,0 +1,9 @@
+'use client';
+import { useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+export default function VerifyDocument() {
+  const { token } = useParams<{ token: string }>();
+  const result = useQuery({ queryKey: ['verifyDocument', token], queryFn: async () => (await api.get(`/public/books/verify/${encodeURIComponent(token)}`)).data.data as { documentId: string; title: string; shopName: string; generatedAt: string; currency: string; totals: Record<string, number> }, retry: false, meta: { errorHandledLocally: true } });
+  return <main className="mx-auto max-w-xl space-y-5 px-5 py-12"><h1 className="text-2xl font-bold">Verify a DuQana document</h1>{result.isPending ? <p role="status">Checking the document code…</p> : result.isError ? <div role="alert"><p>We could not verify this code. It may be invalid, or the service could not be reached.</p><button className="mt-4 underline" onClick={() => result.refetch()}>Try again</button></div> : result.data && <><p className="rounded-lg bg-teal-50 p-4 font-semibold text-teal-900">Signed summary verified</p><h2 className="text-xl font-semibold">{result.data.title}</h2><p>{result.data.shopName}</p><p>Document {result.data.documentId}</p><p>Generated {new Date(result.data.generatedAt).toLocaleString()}</p><p>Currency: {result.data.currency ?? 'KES'}</p><dl className="divide-y">{Object.entries(result.data.totals).map(([key, value]) => <div key={key} className="flex justify-between gap-5 py-3"><dt>{key.replace(/([A-Z])/g, ' $1')}</dt><dd className="font-semibold">{value.toLocaleString()}</dd></div>)}</dl><p className="text-sm text-slate-600">Compare these signed summary figures with the PDF you received. The code confirms DuQana issued this summary. It does not validate every line in a separately edited PDF or provide an independent audit.</p></>}</main>;
+}

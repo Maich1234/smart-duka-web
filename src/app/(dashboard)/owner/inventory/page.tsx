@@ -1,4 +1,5 @@
 'use client';
+import { PriceAlertCard } from '@/components/inventory/PriceAlerts';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -113,6 +114,7 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
+      <Link href="/owner/inventory/import" className="inline-flex rounded-lg border border-teal-700 px-4 py-2 font-semibold text-teal-800">Import products from Excel</Link><PriceAlertCard />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold" style={{ color: '#0F172A' }}>Inventory</h1>
