@@ -67,7 +67,7 @@ export default function ShiftsPage() {
         shift.summary ? (
           <span className="text-sm font-semibold tabular-nums" style={{ color: '#0F172A' }}>{fmt(shift.summary.grossSales)}</span>
         ) : (
-          '—'
+          'Not available'
         ),
     },
     {

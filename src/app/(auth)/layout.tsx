@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShoppingCart, TrendingUp, Shield, Smartphone } from 'lucide-react';
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +28,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <br />to Run Your Shop
           </h2>
           <p className="text-white/80 text-lg mb-10 leading-relaxed">
-            Join 5,000+ Kenyan businesses using DuQana to sell faster, manage inventory, and grow their revenue.
+            Keep sales, stock, M-Pesa payments and your team together with DuQana.
           </p>
 
           <div className="space-y-4">

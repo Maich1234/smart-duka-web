@@ -9,6 +9,13 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === 'development',
 });
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  async headers() {
+    const sources = process.env.VERCEL_ENV === 'preview'
+      ? ['/:path*']
+      : ['/owner/:path*', '/staff/:path*', '/admin/:path*', '/onboarding/:path*', '/embed/:path*', '/r/:path*', '/q/:path*', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+    return sources.map((source) => ({ source, headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }));
+  },
+};
 
 export default withSerwist(nextConfig);

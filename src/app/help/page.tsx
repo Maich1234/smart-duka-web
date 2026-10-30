@@ -1,15 +1,10 @@
-import type { Metadata } from 'next';
+import { publicMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { ChevronRight, LifeBuoy, Sparkles } from 'lucide-react';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { HELP_CATEGORIES, HELP_TOPICS } from '@/lib/helpTopics';
 
-export const metadata: Metadata = {
-  title: 'Help & Learning Center – DuQana',
-  description:
-    'Plain-language guides for running your shop with DuQana: products and stock, sales and checkout, staff permissions, M-Pesa payments, reports, and receipts.',
-  alternates: { canonical: '/help' },
-};
+export const metadata = publicMetadata('Help & Learning Center – DuQana', 'Plain-language guides for running your shop with DuQana: products and stock, sales and checkout, staff permissions, M-Pesa payments, reports, and receipts.', '/help');
 
 /**
  * The Help & Learning Center index.

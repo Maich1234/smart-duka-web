@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Providers from './providers';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
+import { SOCIAL_IMAGE } from '@/lib/seo';
 import './globals.css';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -23,14 +24,16 @@ export const metadata: Metadata = {
   // time — which publishes wrong canonical tags and breaks the SEO value the
   // help articles exist for.
   metadataBase: new URL(SITE_URL),
-  title: 'DuQana – POS System for Kenyan Businesses',
+  title: 'DuQana | POS and Inventory Software for Kenyan Shops',
   description:
-    'DuQana is a powerful Point-of-Sale system built for Kenyan dukas and retail shops. Manage inventory, accept M-Pesa, and grow your business.',
+    'Manage shop sales, inventory, M-Pesa payments, staff and customer credit with DuQana, built for Kenyan retail businesses.',
   openGraph: {
     siteName: SITE_NAME,
     type: 'website',
     locale: 'en_KE',
+    images: [SOCIAL_IMAGE],
   },
+  twitter: { card: 'summary_large_image', images: [SOCIAL_IMAGE.url] },
   icons: {
     icon: [
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },

@@ -1,14 +1,9 @@
-import type { Metadata } from 'next';
+import { publicMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { SUPPORT_EMAIL } from '@/lib/site';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy – DuQana',
-  description:
-    'How DuQana collects, uses, shares, and retains your data, including business data sent to Google Gemini for AI insights, and what happens when you close your account.',
-  alternates: { canonical: '/privacy' },
-};
+export const metadata = publicMetadata('Privacy Policy – DuQana', 'How DuQana collects, uses, shares, and retains your data, including business data sent to Google Gemini for AI insights, and what happens when you close your account.', '/privacy');
 
 const LAST_UPDATED = '26 July 2026';
 

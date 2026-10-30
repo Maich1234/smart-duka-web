@@ -1,14 +1,9 @@
-import type { Metadata } from 'next';
+import { publicMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { SUPPORT_EMAIL } from '@/lib/site';
 
-export const metadata: Metadata = {
-  title: 'Terms of Service – DuQana',
-  description:
-    'The agreement covering your use of DuQana: subscriptions and billing, staff seats, your data, availability, and how either side can end the agreement.',
-  alternates: { canonical: '/terms' },
-};
+export const metadata = publicMetadata('Terms of Service – DuQana', 'The agreement covering your use of DuQana: subscriptions and billing, staff seats, your data, availability, and how either side can end the agreement.', '/terms');
 
 const LAST_UPDATED = '26 July 2026';
 

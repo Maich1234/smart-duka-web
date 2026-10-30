@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { publicMetadata } from '@/lib/seo';
+import { JsonLd } from '@/components/marketing/JsonLd';
+import { SITE_URL } from '@/lib/site';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { HELP_TOPICS, getHelpTopic } from '@/lib/helpTopics';
 
@@ -18,17 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const topic = getHelpTopic(slug);
   if (!topic) return { title: 'Help – DuQana' };
 
-  return {
-    title: `${topic.title} – DuQana Help`,
-    description: topic.summary,
-    keywords: topic.keywords,
-    alternates: { canonical: `/help/${topic.slug}` },
-    openGraph: {
-      title: topic.title,
-      description: topic.summary,
-      type: 'article',
-    },
-  };
+  return publicMetadata(`${topic.title} | DuQana Help`, topic.summary, `/help/${topic.slug}`, 'article');
 }
 
 export default async function HelpTopicPage({ params }: { params: Promise<Params> }) {
@@ -42,6 +35,11 @@ export default async function HelpTopicPage({ params }: { params: Promise<Params
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'DuQana', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Help centre', item: `${SITE_URL}/help` },
+        { '@type': 'ListItem', position: 3, name: topic.title, item: `${SITE_URL}/help/${topic.slug}` },
+      ] }} />
       <SiteNav active="/help" />
 
       <main className="max-w-3xl mx-auto px-4 py-10 lg:py-14">

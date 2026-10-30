@@ -13,23 +13,20 @@ import { SITE_URL } from '@/lib/site';
  * authenticated and have nothing to offer a search engine.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
   const staticPages: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`, lastModified: now, changeFrequency: 'weekly', priority: 1 },
-    { url: `${SITE_URL}/help`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${SITE_URL}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
-    { url: `${SITE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
+    { url: `${SITE_URL}/`, changeFrequency: 'weekly', priority: 1 },
+    { url: `${SITE_URL}/help`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/contact`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.4 },
+    { url: `${SITE_URL}/terms`, changeFrequency: 'yearly', priority: 0.4 },
     // Listed on purpose: Google Play requires this URL to be publicly
     // reachable, and a user looking for it should be able to find it.
-    { url: `${SITE_URL}/delete-account`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${SITE_URL}/delete-account`, changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   const helpArticles: MetadataRoute.Sitemap = HELP_TOPICS.map((topic) => ({
     url: `${SITE_URL}/help/${topic.slug}`,
-    lastModified: now,
     changeFrequency: 'monthly',
     priority: 0.7,
   }));
