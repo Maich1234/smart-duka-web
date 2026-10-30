@@ -29,6 +29,8 @@ export default function NewProductPage() {
     mutationFn: () => createProduct(toPayload(form)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['priceHealth'] });
+      queryClient.invalidateQueries({ queryKey: ['aiInsight'] });
       router.push('/owner/inventory');
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {

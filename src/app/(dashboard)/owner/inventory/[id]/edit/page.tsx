@@ -47,6 +47,8 @@ export default function EditProductPage() {
     mutationFn: () => updateProduct(id, toPayload(form)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['priceHealth'] });
+      queryClient.invalidateQueries({ queryKey: ['aiInsight'] });
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       router.push('/owner/inventory');
     },
