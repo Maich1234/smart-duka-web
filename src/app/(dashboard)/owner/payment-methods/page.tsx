@@ -78,7 +78,9 @@ export default function PaymentMethodsPage() {
           order: i,
         })),
       }),
-    onSuccess: () => {
+    onSuccess: async (savedShop) => {
+      await queryClient.cancelQueries({ queryKey: SHOP_QUERY_KEY });
+      queryClient.setQueryData(SHOP_QUERY_KEY, savedShop);
       setDirty(false);
       setError('');
       setSaved(true);
@@ -151,6 +153,13 @@ export default function PaymentMethodsPage() {
           These are the buttons your cashier sees when finishing a sale. Every one of them records the
           sale and prints a receipt.
         </p>
+      </div>
+
+      <div className="sticky top-20 z-10 flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+        <p className="text-sm text-gray-600" role="status">{dirty ? 'Unsaved changes. Save to update the till buttons.' : 'Payment buttons are saved.'}</p>
+        <Button onClick={handleSave} loading={saveMutation.isPending} disabled={!dirty || saveMutation.isPending}>
+          {dirty ? 'Save changes' : 'Saved'}
+        </Button>
       </div>
 
       {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>}
@@ -307,12 +316,6 @@ export default function PaymentMethodsPage() {
           setConfigToken(token);
         }}
       />
-
-      <div className="flex justify-end">
-        <Button onClick={handleSave} loading={saveMutation.isPending} disabled={!dirty || saveMutation.isPending}>
-          {dirty ? 'Save changes' : 'Saved'}
-        </Button>
-      </div>
     </div>
   );
 }
