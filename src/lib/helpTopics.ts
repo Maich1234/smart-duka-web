@@ -13,6 +13,9 @@
 
 export interface HelpSection {
   heading?: string;
+  id?: string;
+  table?: { columns: string[]; rows: string[][] };
+  links?: { href: string; label: string }[];
   paragraphs?: string[];
   bullets?: string[];
   example?: string;
@@ -39,68 +42,274 @@ export const HELP_CATEGORIES = [
 ] as const;
 
 export const HELP_TOPICS: HelpTopic[] = [
-  {
-    slug: 'bulk-product-import',
-    title: 'Import Products from Excel',
-    category: 'Products & Inventory',
-    summary: 'Prepare your Excel product list, check errors, and safely add products in bulk.',
-    keywords: ['excel', 'xlsx', 'import', 'bulk upload', 'spreadsheet', 'template', 'products', 'validation', 'rejected rows'],
-    sections: [
-      {
-        paragraphs: [
-          'Preparing a clean spreadsheet before importing products saves time and avoids incorrect prices or stock levels. Use the template provided on the product import screen when available. Keep its column headings unchanged.',
+{
+  "slug": "excel-product-import",
+  "title": "Add products using Excel",
+  "category": "Products & Inventory",
+  "summary": "Fill the DuQana Excel template, check rejected rows, review prices and safely add a large product list on the web.",
+  "keywords": [
+    "excel",
+    "xls",
+    "xlsx",
+    "spreadsheet",
+    "bulk import",
+    "upload products",
+    "template",
+    "rejected rows",
+    "import status"
+  ],
+  "relatedSlugs": [
+    "adding-products",
+    "product-types",
+    "bundles-recipes",
+    "managing-stock"
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "heading": "1. Open the importer and download a template",
+      "paragraphs": [
+        "Sign in as the shop owner on the DuQana website. Open Inventory, then Import products from Excel. Staff accounts cannot use this uploader.",
+        "Choose the XLSX template for most spreadsheet apps, or XLS for older Excel versions. You can fill it in Excel, Google Sheets or another spreadsheet app. Export back to .xlsx or .xls before uploading. Changing a file extension does not convert the file."
+      ],
+      "links": [
+        {
+          "href": "/owner/inventory/import",
+          "label": "Open the product importer"
+        }
+      ]
+    },
+    {
+      "heading": "2. Keep the workbook structure",
+      "bullets": [
+        "Products: one parent product per row. Start entering products on row 2; row 1 contains the headings.",
+        "Variants: only for configurable products, such as sizes or colours. Each variant has its own price and stock.",
+        "Bundles: list each component and the quantity used in a bundle.",
+        "Instructions: a reminder of the rules. Leave unused Variants and Bundles sheets empty.",
+        "Keep the sheet names and column headings exactly as downloaded. Do not add extra sheets or formulas.",
+        "Maximum: 5 MB per file, 2,000 products and 2,000 rows on each supporting sheet. Split larger catalogues into separate files. Empty formatting beyond row 2001 can also exceed the limit."
+      ]
+    },
+    {
+      "heading": "3. Fill the Products sheet",
+      "table": {
+        "columns": [
+          "Column",
+          "What to enter"
         ],
-      },
-      {
-        heading: 'Before you upload',
-        bullets: [
-          'Download the current product template from your shop’s product import screen rather than using a template from another system.',
-          'Use one product per row. Keep the header row, and do not merge cells.',
-          'Enter product names clearly. Enter monetary amounts as numbers in KES, not text such as “KES 100”.',
-          'Use non-negative numbers for stock quantities and cost prices. Selling prices must be valid for the chosen product type.',
-          'Keep barcodes or SKUs as text to preserve leading zeroes. Avoid duplicate identifiers.',
-          'Save as .xlsx if the import screen accepts Excel workbooks. Do not rename a .csv file to .xlsx.',
+        "rows": [
+          [
+            "name",
+            "A clear product name, unique within your shop. Maximum 160 characters."
+          ],
+          [
+            "category",
+            "For example groceries, drinks or clothing. Maximum 100 characters."
+          ],
+          [
+            "sellingPrice",
+            "The selling price for one unit, or the whole bundle. Use a positive number. A configurable parent may use 0 because its variants hold the prices."
+          ],
+          [
+            "costPrice",
+            "Your purchase cost per unit. Positive for ordinary stock. Services, bundles and configurable parents may use 0. Bundle review uses the costs of its components."
+          ],
+          [
+            "quantity",
+            "Stock currently available, or 0 if none. Do not put currency symbols or words in number cells. Bundles use component stock and configurable products use variant stock."
+          ],
+          [
+            "sku / barcode",
+            "Keep as text, especially values like 001234. These must be unique within the shop, including variants. A SKU is required to link configurable or bundle parents."
+          ],
+          [
+            "productType",
+            "Leave blank for standard, or use variable, weighted, refillable, service, bundle or configurable."
+          ],
+          [
+            "unitOfMeasure",
+            "For example unit, kg, g, l or ml. Keep price, cost and quantity in the same unit."
+          ],
+          [
+            "trackInventory / creditEligible",
+            "Optional true or false. Use false for a service whose stock is not tracked."
+          ],
+          [
+            "minPrice / maxPrice",
+            "Optional allowed prices for variable products. Maximum cannot be below minimum."
+          ],
+          [
+            "allowPriceOverride",
+            "Optional true or false for services only."
+          ]
+        ]
+      }
+    },
+    {
+      "heading": "A small example",
+      "paragraphs": [
+        "These are examples only. Enter your own products and actual purchase costs. Prices use your shop currency.",
+        "The oil pack below uses two units of Cooking oil. Its review cost is 400, calculated from the component cost of 200 each. The parent cost placeholder of 0 is not used to estimate its margin."
+      ],
+      "table": {
+        "columns": [
+          "name",
+          "category",
+          "productType",
+          "sellingPrice",
+          "costPrice",
+          "quantity",
+          "sku"
         ],
-      },
-      {
-        heading: 'Check products with risky prices',
-        bullets: [
-          'Check that a selling price is not accidentally zero, especially if the item is intended for sale.',
-          'Review selling prices below purchase cost. For example, an item bought at KES 120 and priced at KES 100 has a KES 20 negative unit margin before other expenses.',
-          'Check whether a zero stock quantity is intentional.',
-          'Fix unexpected blank product names, negative prices, invalid numbers, and duplicate product identifiers before import.',
+        "rows": [
+          [
+            "Cooking oil",
+            "groceries",
+            "standard",
+            "250",
+            "200",
+            "20",
+            "OIL-1"
+          ],
+          [
+            "T-shirt",
+            "clothing",
+            "configurable",
+            "0",
+            "0",
+            "0",
+            "TSHIRT"
+          ],
+          [
+            "Oil pack",
+            "groceries",
+            "bundle",
+            "450",
+            "0",
+            "0",
+            "OIL-PACK"
+          ],
+          [
+            "Local delivery",
+            "services",
+            "service",
+            "100",
+            "0",
+            "0",
+            "DELIVERY"
+          ]
+        ]
+      }
+    },
+    {
+      "heading": "4. Add variants or bundle components",
+      "paragraphs": [
+        "Give each parent a unique SKU on Products first. Match that SKU exactly in parentSku on the supporting sheet. A variant SKU and barcode must also be unique.",
+        "On Variants, enter parentSku, name, sellingPrice, costPrice and quantity. Purchase cost is required. A zero selling price or zero purchase cost requires your review before saving.",
+        "On Bundles, enter parentSku, componentSku and quantity. Components must be standard, weighted or refillable products already in the shop or included in this same file. A missing or ambiguous component SKU is rejected."
+      ],
+      "table": {
+        "columns": [
+          "Sheet",
+          "Example values"
         ],
-      },
-      {
-        heading: 'Upload and review',
-        bullets: [
-          'Open your shop’s Products or Inventory area and look for the bulk import option.',
-          'Select the completed file and read the validation results before confirming any changes.',
-          'If the importer offers a preview, check the totals and a sample of your products before confirming.',
-          'If it offers an error report, fix the named rows and columns in your workbook, then retry. Avoid uploading an already-imported file a second time without checking for duplicates.',
+        "rows": [
+          [
+            "Variants",
+            "parentSku: TSHIRT; name: Small; sellingPrice: 700; costPrice: 500; quantity: 6; sku: TSHIRT-S"
+          ],
+          [
+            "Bundles",
+            "parentSku: OIL-PACK; componentSku: OIL-1; quantity: 2"
+          ]
+        ]
+      }
+    },
+    {
+      "heading": "5. Preview and correct errors",
+      "paragraphs": [
+        "Choose one file and select Preview products. Uploading and checking does not add products to inventory.",
+        "The preview identifies the row and the reason for each rejection. Use Show only rows with errors to find the entries that need correction. Fix them in the spreadsheet, save it and upload again. The complete batch must pass; valid rows are not silently imported on their own.",
+        "Open Review variants or Review components to inspect their prices, costs and stock. Review every price warning before ticking the acknowledgement. Below-cost prices may be intentional, but do not acknowledge an unknown purchase cost as accurate."
+      ]
+    },
+    {
+      "id": "rejections",
+      "heading": "Why was my file or row rejected?",
+      "table": {
+        "columns": [
+          "Reason",
+          "How to fix it"
         ],
-      },
-      {
-        heading: 'Understand rejection messages',
-        bullets: [
-          'Missing product name: enter a name in the indicated row.',
-          'Invalid selling or cost price: enter a valid number and remove currency symbols or unsupported formulas.',
-          'Duplicate barcode or SKU: correct the conflicting identifier rather than silently replacing an existing product.',
-          'Unsupported file type or damaged workbook: export a fresh workbook in the format the importer requests.',
-          'Permission denied: ask the owner to grant permission to create products.',
-          'Upload interrupted: check your connection and import history before trying again to avoid duplicate records.',
-        ],
-      },
-      {
-        heading: 'When importing fails',
-        paragraphs: [
-          'Keep the original workbook. Note the row number, field, and rejection reason. If the upload stops unexpectedly, verify which products were actually created before retrying. Contact support if a row is rejected without a clear explanation.',
-        ],
-      },
-    ],
-    relatedSlugs: ['adding-products', 'managing-stock', 'product-types'],
-  },
-
+        "rows": [
+          [
+            "Unsupported, empty or unreadable file",
+            "Save a non-empty .xls or .xlsx workbook. Remove password protection. Do not upload a PDF, CSV or image, or simply rename one."
+          ],
+          [
+            "File or row limit exceeded",
+            "Keep the file under 5 MB and each data sheet within 2,000 rows. Remove unused formatted rows beyond the template area or split the list. Extremely compressed files exceeding 25 MB when expanded are rejected."
+          ],
+          [
+            "Formula, macro or unsupported sheet",
+            "Paste calculated results as values. Remove macros and extra sheets, or copy your values into a fresh template."
+          ],
+          [
+            "Unknown or repeated heading",
+            "Restore the exact headings from the template. Do not rename sellingPrice or costPrice."
+          ],
+          [
+            "Missing or invalid number",
+            "Enter a number without KES, commas stored as text or units. Ordinary selling prices and purchase costs must be positive. Stock cannot be negative."
+          ],
+          [
+            "Duplicate name, SKU or barcode",
+            "The identifier is already used in this file or shop, including case-only differences. Choose a unique identifier. To change an existing product, edit it in Inventory instead."
+          ],
+          [
+            "Missing variant or component",
+            "Check the parent SKU, component SKU and product type. Add the required supporting rows. Resolve duplicate component SKUs in inventory first."
+          ],
+          [
+            "Catalogue changed since preview",
+            "Another edit, purchase or import affected the products or bundle costs. Upload again to review the current catalogue."
+          ],
+          [
+            "Preview expired or unavailable",
+            "Previews last up to 24 hours. Check inventory before uploading again, especially after an interrupted save."
+          ],
+          [
+            "Too many import attempts",
+            "Wait one minute before retrying. Use the same preview when checking an interrupted save."
+          ],
+          [
+            "Access or subscription restriction",
+            "Sign in as the shop owner. If the shop subscription has ended, renew it before saving new products."
+          ]
+        ]
+      }
+    },
+    {
+      "heading": "6. Save and confirm the result",
+      "paragraphs": [
+        "Select Add products after correcting all errors and acknowledging any intentional price warnings. The button shows that saving is in progress and the page confirms the number added on success.",
+        "If the connection drops during saving, the app may not know whether the server finished. Use Check save status or Retry this save safely on the same preview. Do not assume the save failed and start a second upload. Retrying the same preview does not add duplicates.",
+        "The browser remembers the preview identity for up to 24 hours when session storage is available. Reopening the importer in the same tab can restore it. The remembered identity contains no product prices; the owner must be signed in to read the preview.",
+        "This importer adds new products only. It does not update or delete existing products. After success, open Inventory to check your products and any price alerts."
+      ],
+      "links": [
+        {
+          "href": "/owner/inventory/import",
+          "label": "Add products from Excel"
+        },
+        {
+          "href": "/owner/inventory",
+          "label": "View inventory"
+        }
+      ]
+    }
+  ]
+},
   {
     slug: 'getting-started',
     title: 'Getting Started with DuQana',
@@ -217,7 +426,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           'Name and Category: how the product appears in your list and on the sales screen',
           'Product Type: pick from the types explained in "Understanding Product Types"',
           'Cost Price: what you paid to get the item (used to work out profit)',
-          'Selling Price: what the customer pays (not used for Bundles or Variants, which price their parts/variants instead)',
+          'Selling Price: what the customer pays per unit, or for the whole bundle. Configurable products use the prices saved on their variants.',
         ],
       },
       {
@@ -238,7 +447,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
     ],
-    relatedSlugs: ['product-types', 'managing-stock', 'bundles-recipes', 'bulk-product-import'],
+    relatedSlugs: ['excel-product-import', 'product-types', 'managing-stock', 'bundles-recipes'],
   },
   {
     slug: 'managing-stock',
@@ -544,9 +753,9 @@ export const HELP_TOPICS: HelpTopic[] = [
     keywords: ['faq', 'frequently asked questions', 'free', 'offline', 'mpesa', 'staff', 'security', 'data'],
     sections: [
       {
-        heading: 'Is DuQana free to use?',
+        heading: 'Where can I check subscription prices?',
         paragraphs: [
-          'Yes. The Free plan lets you get started with up to 50 products and 1 staff account at no cost. Upgrade when you need more.',
+          'Check the current plans in the pricing section of the DuQana home page. Each plan shows the number of shop users included, any trial period and the monthly total.',
         ],
       },
       {
@@ -564,13 +773,13 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         heading: 'Can multiple staff use DuQana at the same time?',
         paragraphs: [
-          'Yes. Each staff member gets their own login with customisable permissions, and the owner sees all activity in real time.',
+          'Each staff member has their own login. The owner chooses the tasks they can access and can review the sales they record.',
         ],
       },
       {
         heading: 'Is my data secure?',
         paragraphs: [
-          'Yes. All data is encrypted in transit and at rest, M-Pesa credentials are encrypted, and your data is backed up regularly.',
+          'Shop accounts use sign-in and staff permissions. Only give each person the access they need, and do not share passwords, verification codes or M-Pesa credentials. Read the Privacy Policy for how business data is handled.',
         ],
       },
     ],

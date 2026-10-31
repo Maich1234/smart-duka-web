@@ -1,4 +1,4 @@
-.header{position:sticky;top:0;z-index:50;background:#f7f6f0;color:#182b26;border-bottom:1px solid #d8ded8;font-family:Arial,sans-serif}
+.header{position:sticky;top:0;z-index:50;background:#f7f6f0;color:#182b26;border-bottom:1px solid #d8ded8;font-family:var(--font-plus-jakarta-sans),sans-serif}
 .bar{height:76px;max-width:1600px;margin:0 auto;padding:0 5%;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .header a{text-decoration:none;color:#182b26}
 .brand{display:inline-flex;align-items:center;gap:9px;font-size:24px;font-weight:800;letter-spacing:-1px;flex-shrink:0}

@@ -64,7 +64,7 @@ export default async function HelpTopicPage({ params }: { params: Promise<Params
 
         <article className="bg-white rounded-2xl border border-gray-100 p-6 lg:p-8">
           {topic.sections.map((section, index) => (
-            <section key={index} className={index > 0 ? 'mt-8' : undefined}>
+            <section id={section.id} key={index} className={`scroll-mt-28 ${index > 0 ? 'mt-8' : ''}`}>
               {section.heading && (
                 <h2 className="text-lg font-bold mb-3" style={{ color: '#0F172A' }}>
                   {section.heading}
@@ -87,6 +87,9 @@ export default async function HelpTopicPage({ params }: { params: Promise<Params
                   ))}
                 </ul>
               )}
+
+              {section.table && <div className="my-4 overflow-x-auto rounded-lg border border-slate-200"><table className="w-full text-left text-sm"><caption className="sr-only">{section.heading ?? 'Import example'}</caption><thead className="bg-slate-100"><tr>{section.table.columns.map(column => <th scope="col" key={column} className="px-4 py-3 font-semibold">{column}</th>)}</tr></thead><tbody>{section.table.rows.map((row, i) => <tr key={i} className="border-t border-slate-200">{row.map((cell, j) => <td key={j} className="px-4 py-3 align-top leading-relaxed text-slate-700">{cell}</td>)}</tr>)}</tbody></table></div>}
+              {!!section.links?.length && <div className="mt-4 flex flex-wrap gap-4">{section.links.map(link => <Link key={link.href} href={link.href} className="font-semibold text-teal-800 underline">{link.label}</Link>)}</div>}
 
               {section.example && (
                 <div

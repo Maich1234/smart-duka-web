@@ -1,4 +1,5 @@
 'use client';
+import { PriceAlertCard } from '@/components/inventory/PriceAlerts';
 
 import { useQuery } from '@tanstack/react-query';
 import { getAiInsight } from '@/services/aiInsight';
@@ -24,7 +25,9 @@ export default function InsightsPage() {
     queryKey: ['aiInsight'],
     queryFn: getAiInsight,
     enabled: hasAiInsights,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
   });
 
   const insight = data?.data.insight;
@@ -37,6 +40,7 @@ export default function InsightsPage() {
         <p className="text-gray-500 text-sm mt-1">Your business, explained</p>
       </div>
 
+      <PriceAlertCard />
       {isSubscriptionLoading || (hasAiInsights && isLoading) ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : !hasAiInsights ? (

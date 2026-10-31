@@ -40,6 +40,6 @@ export interface PublicPlan {
 }
 
 export async function getPublicPlans(): Promise<PublicPlan[]> {
-  const res = await api.get('/public/plans?pricing=2026-10-29');
+  const res = await api.get('/public/plans?pricing=shop-user-bands-2026-10-30');
   return res.data.data.plans;
 }

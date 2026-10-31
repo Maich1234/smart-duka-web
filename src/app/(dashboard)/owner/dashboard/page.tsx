@@ -1,4 +1,5 @@
 'use client';
+import { PriceAlertCard } from '@/components/inventory/PriceAlerts';
 import DataLoadError from '@/components/ui/DataLoadError';
 
 import { useQuery } from '@tanstack/react-query';
@@ -80,6 +81,7 @@ export default function OwnerDashboardPage() {
         </div>
       )}
 
+      <PriceAlertCard />
       <NeedsAttention items={attention} />
 
       <div className="grid lg:grid-cols-3 gap-6">

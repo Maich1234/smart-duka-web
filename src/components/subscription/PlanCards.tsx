@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Sparkles } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { BillingCycle, SubscriptionPlan } from '@/services/subscription';
 
 interface PlanCardsProps {
@@ -91,17 +91,7 @@ export default function PlanCards({
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>{plan.name}</h3>
-                  {plan.tagline && <p className="text-sm text-gray-500">{plan.tagline}</p>}
                 </div>
-                {plan.badge && (
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full shrink-0"
-                    style={{ backgroundColor: '#FBF1DD', color: '#9C6F1E' }}
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    {plan.badge}
-                  </span>
-                )}
               </div>
 
               <div className="mb-1">
@@ -110,7 +100,7 @@ export default function PlanCards({
               </div>
               <p className="text-xs text-gray-500 mb-1">
                 For {staffCount} {staffCount === 1 ? 'person' : 'people'}
-                {plan.billingType === 'flat' ? plan.unlimitedUsers ? ` · ${plan.minUsers ?? plan.maxStaff}+ shop users` : ` · ${plan.minUsers ?? 1}–${plan.maxStaff} shop users` : ' · per person'}
+                {plan.billingType === 'flat' ? plan.unlimitedUsers ? ` · ${plan.minUsers ?? plan.maxStaff}+ shop users` : ` · ${plan.minUsers ?? 1} to ${plan.maxStaff} shop users` : ' · per person'}
               </p>
               {charge > 0 && <p className="mb-2 text-xs text-slate-500">Includes {fmt(charge, currency)} additional charge for this billing period.</p>}
               {unavailable && <p className="mb-2 text-xs font-semibold text-slate-600">Choose a larger tier for your team.</p>}
@@ -119,9 +109,7 @@ export default function PlanCards({
                   Save {fmt(savings, currency)} {billingCycle === 'yearly' ? 'a year' : 'every 3 months'}
                 </p>
               )}
-              {plan.priceComparison && (
-                <p className="text-xs text-gray-400 italic mb-3">{plan.priceComparison}</p>
-              )}
+
 
               <ul className="space-y-1.5 mt-3">
                 {plan.highlights.slice(0, 6).map((highlight) => (
