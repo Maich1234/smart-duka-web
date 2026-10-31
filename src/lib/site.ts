@@ -22,10 +22,13 @@ function resolveSiteUrl(): string {
     try {
       const url = new URL(value.includes('://') ? value : `https://${value}`);
       if (url.protocol !== 'https:' || isLocalUrl(url.origin) || url.hostname.endsWith('.vercel.app') || url.username || url.password) continue;
+      // The apex permanently redirects to www in Vercel. Publish the final
+      // destination in canonical tags, structured data and the sitemap.
+      if (url.hostname === 'duqana.co.ke') url.hostname = 'www.duqana.co.ke';
       return url.origin;
     } catch { /* Ignore invalid deployment configuration. */ }
   }
-  return 'https://duqana.co.ke';
+  return 'https://www.duqana.co.ke';
 }
 
 /** No trailing slash — callers append paths beginning with "/". */
