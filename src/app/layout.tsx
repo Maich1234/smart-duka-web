@@ -27,6 +27,11 @@ export const metadata: Metadata = {
   title: 'DuQana | POS and Inventory Software for Kenyan Shops',
   description:
     'Manage shop sales, inventory, M-Pesa payments, staff and customer credit with DuQana, built for Kenyan retail businesses.',
+  verification: {
+    // Use only Google's supplied token(s), never a placeholder or full HTML
+    // tag. Comma-separated values retain verification for multiple owners.
+    google: process.env.GOOGLE_SITE_VERIFICATION?.split(',').map(token => token.trim()).filter(Boolean),
+  },
   openGraph: {
     siteName: SITE_NAME,
     type: 'website',

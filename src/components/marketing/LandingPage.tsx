@@ -30,9 +30,9 @@ export default function LandingPage() {
     <main>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">POS SOFTWARE FOR KENYAN SHOPS</p>
+          <p className="eyebrow">DUQANA POS FOR KENYAN SHOPS</p>
           <h1>Record a sale.<br />Keep stock up to date.</h1>
-          <p className="hero-description">Ring up products, record Cash or M-Pesa, and check what is left in stock. Give staff their own logins and review the day’s sales from your phone.</p>
+          <p className="hero-description">DuQana brings your shop’s sales, inventory and customer records together. Record Cash or M-Pesa, give staff their own logins and review the day’s sales from your phone.</p>
           <div className="hero-buttons"><Link href="/register" className="button button-dark">Create an account <ArrowRight size={18} aria-hidden="true" /></Link><a href="#features" className="text-link">See how it works <ArrowDown size={16} aria-hidden="true" /></a></div>
           <p className="hero-note">Already using DuQana? <Link href="/login">Sign in to your shop</Link>.</p>
         </div>
