@@ -10,6 +10,13 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [{
+      source: '/help/bulk-product-import',
+      destination: '/help/excel-product-import',
+      permanent: true,
+    }];
+  },
   async headers() {
     const sources = process.env.VERCEL_ENV === 'preview'
       ? ['/:path*']
