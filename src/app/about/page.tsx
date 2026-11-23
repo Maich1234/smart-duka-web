@@ -23,7 +23,6 @@ export default function AboutPage() {
           <h1 className="mb-6 max-w-3xl text-4xl font-extrabold leading-tight lg:text-6xl">Less paperwork.<br />A clearer picture of your shop.</h1>
           <p className="max-w-2xl text-lg leading-relaxed text-teal-50">Running a shop means keeping up with customers, stock, payments and your team. DuQana brings those records together so you can see what needs your attention.</p>
           <p className="mt-8 text-sm text-teal-100">Built for Kenyan kiosks, retail shops and growing businesses.</p>
-          <p className="mt-4 text-sm text-teal-100"><strong className="text-white">500+</strong> shops.</p>
         </div>
       </section>
       <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:gap-20">
