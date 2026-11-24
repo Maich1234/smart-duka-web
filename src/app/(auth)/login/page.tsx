@@ -62,11 +62,11 @@ export default function LoginPage() {
     setExpiryNotice('');
     try {
       const res = await api.post('/auth/login', { ...data, device: getDeviceInfo() });
-      const userData = res.data.data;
+      const { token, refreshToken, ...userData } = res.data.data;
       // The refresh token is what keeps this session alive past the access
       // token's one hour. Dropping it here was why web users were signed out
       // hourly.
-      login(userData, userData.token, userData.refreshToken);
+      login(userData, token, refreshToken);
       showToast('Signed in successfully', 'success');
       if (userData.role !== 'owner') {
         router.push('/staff/dashboard');

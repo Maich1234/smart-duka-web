@@ -74,7 +74,11 @@ function readUser(): User | null {
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as User;
+    const { token, refreshToken, ...user } = JSON.parse(raw) as User & { token?: unknown; refreshToken?: unknown };
+    if (token !== undefined || refreshToken !== undefined) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
+    return user;
   } catch {
     localStorage.removeItem(USER_KEY);
     return null;

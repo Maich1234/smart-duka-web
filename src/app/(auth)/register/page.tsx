@@ -17,7 +17,7 @@ const schema = z.object({
   shopName: z.string().min(2, 'Shop name must be at least 2 characters'),
   referralCode: z.string().max(40, 'Referral code is too long').optional(),
   acceptedTerms: z.literal(true, {
-    errorMap: () => ({ message: 'Please accept the Terms and Privacy Policy to continue' }),
+    error: 'Please accept the Terms and Privacy Policy to continue',
   }),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Passwords don't match",

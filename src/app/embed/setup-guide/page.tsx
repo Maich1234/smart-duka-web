@@ -9,7 +9,7 @@ import { API_BASE_URL } from '@/lib/config';
 
 // Deliberately a bare axios call, same reasoning as /r/[token]/page.tsx: this
 // page has no login of its own and must never attach the normal session
-// Authorization header. The webview token in the URL *is* the auth — it's
+// Authorization header. Only the scoped setup-guide token is sent. It is
 // short-lived and single-purpose (see backend utils/webviewToken.js) — and
 // nothing else on the page needs the regular @/lib/api client.
 
@@ -66,23 +66,24 @@ function postToApp(message: { type: 'navigate'; route: string }) {
 
 function SetupGuideContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const legacyToken = searchParams.get('token');
   const [status, setStatus] = useState<SetupStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const token = new URLSearchParams(window.location.hash.slice(1)).get('token') || legacyToken;
     if (!token) {
       setError('Missing link. Reopen the Setup Guide from the app.');
       return;
     }
     axios
-      .get(`${API_BASE_URL}/setup/status`, { params: { token } })
+      .get(`${API_BASE_URL}/setup/status`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setStatus(res.data.data))
       .catch((err) => {
         const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
         setError(message || 'Could not load your setup status. Reopen the Setup Guide from the app.');
       });
-  }, [token]);
+  }, [legacyToken]);
 
   if (error) {
     return (
