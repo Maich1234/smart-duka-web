@@ -152,10 +152,10 @@ export interface SubscriptionPaymentState {
   receipt: string | null;
   periodEnd: string | null;
   errorMessage: string | null;
-}
-
   checkoutReleased?: boolean;
   duplicateOf?: string;
+}
+
 export async function getPlans(): Promise<PlansResponse> {
   const res = await api.get('/subscriptions/plans');
   return res.data;
