@@ -10,7 +10,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getDeviceInfo } from '@/utils/deviceId';
-import { hasCompletedOnboarding } from '@/store/onboardingStore';
+import { signedInDestination } from '@/lib/signedInDestination';
 import { useToast } from '@/components/ui/Toast';
 
 const schema = z.object({
@@ -35,6 +35,11 @@ const EXPIRY_NOTICES: Record<string, string> = {
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const signedInUser = useAuthStore((s) => s.isAuthenticated ? s.user : null);
+
+  useEffect(() => {
+    if (signedInUser) router.replace(signedInDestination(signedInUser));
+  }, [router, signedInUser]);
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -68,16 +73,6 @@ export default function LoginPage() {
       // hourly.
       login(userData, token, refreshToken);
       showToast('Signed in successfully', 'success');
-      if (userData.role !== 'owner') {
-        router.push('/staff/dashboard');
-        return;
-      }
-      // Registration returns no token — email verification comes first — so
-      // onboarding can't run post-register. It runs on an owner's first
-      // sign-in instead, and only once. A shop with no country set has never
-      // been through setup, which covers signing in on a new browser.
-      const needsOnboarding = !hasCompletedOnboarding() && !userData.shop?.country;
-      router.push(needsOnboarding ? '/onboarding/setup' : '/owner/dashboard');
     } catch (err: unknown) {
       const error = err as {
         response?: { data?: { message?: string; fieldErrors?: { field: string; message: string }[] } };
@@ -102,6 +97,10 @@ export default function LoginPage() {
       }
     }
   };
+
+  if (signedInUser) {
+    return <p role="status" className="text-sm text-gray-600">Opening DuQana…</p>;
+  }
 
   return (
     <div>
