@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X, ArrowUpRight } from 'lucide-react';
+import { signedInDestination } from '@/lib/signedInDestination';
+import { useAuthStore } from '@/store/authStore';
 import styles from './SiteNav.module.css';
 
 const LINKS = [
@@ -18,6 +20,9 @@ const LINKS = [
 /** Shared by every public marketing page. */
 export function SiteNav({ active }: { active?: string }) {
   const [open, setOpen] = useState(false);
+  const signedInUser = useAuthStore((s) => s.isAuthenticated ? s.user : null);
+  const appHref = signedInUser ? signedInDestination(signedInUser) : '/login';
+  const appLabel = signedInUser ? 'Open DuQana' : 'Sign in';
   const toggle = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -37,9 +42,9 @@ export function SiteNav({ active }: { active?: string }) {
     <div className={styles.bar}>
       <Link href="/" className={styles.brand} aria-label="DuQana home" onClick={() => setOpen(false)}><Image src="/icons/logo-mark.png" alt="" width={28} height={28} /><span>DuQana<span className={styles.dot}>.</span></span></Link>
       <nav className={styles.links} aria-label="Main navigation">{links}</nav>
-      <div className={styles.actions}><Link href="/login">Sign in</Link><Link href="/register" className={styles.cta}>Get started <ArrowUpRight size={16} /></Link></div>
+      <div className={styles.actions}><Link href={appHref}>{appLabel}</Link><Link href="/register" className={styles.cta}>Get started <ArrowUpRight size={16} /></Link></div>
       <button ref={toggle} type="button" className={styles.toggle} onClick={() => setOpen(value => !value)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="public-mobile-navigation">{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
     </div>
-    {open && <nav id="public-mobile-navigation" className={styles.mobile} aria-label="Mobile navigation">{links}<Link href="/login" onClick={() => setOpen(false)}>Sign in</Link><Link href="/register" className={styles.cta} onClick={() => setOpen(false)}>Get started <ArrowUpRight size={16} /></Link></nav>}
+    {open && <nav id="public-mobile-navigation" className={styles.mobile} aria-label="Mobile navigation">{links}<Link href={appHref} onClick={() => setOpen(false)}>{appLabel}</Link><Link href="/register" className={styles.cta} onClick={() => setOpen(false)}>Get started <ArrowUpRight size={16} /></Link></nav>}
   </header>;
 }
