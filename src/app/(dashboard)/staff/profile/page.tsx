@@ -12,6 +12,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ContactChangeForm from '@/components/dashboard/ContactChangeForm';
 import Card from '@/components/ui/Card';
 
 const profileSchema = z.object({
@@ -41,7 +42,7 @@ export default function StaffProfilePage() {
   const passwordForm = useForm<PasswordData>({ resolver: zodResolver(passwordSchema) });
 
   const profileMutation = useMutation({
-    mutationFn: (data: ProfileData) => api.put('/auth/profile', data),
+    mutationFn: (data: ProfileData) => api.put('/auth/profile', { name: data.name }),
     onSuccess: (res) => {
       const token = localStorage.getItem('token') || '';
       login(res.data.data, token);
@@ -98,11 +99,13 @@ export default function StaffProfilePage() {
 
         <form onSubmit={profileForm.handleSubmit((d) => profileMutation.mutate(d))} className="space-y-4">
           <Input label="Full Name" {...profileForm.register('name')} error={profileForm.formState.errors.name?.message} />
-          <Input label="Email" type="email" {...profileForm.register('email')} error={profileForm.formState.errors.email?.message} />
+          <Input label="Email" type="email" {...profileForm.register('email')} readOnly />
+
           <div className="flex justify-end">
             <Button type="submit" loading={profileMutation.isPending}>Save Changes</Button>
           </div>
         </form>
+        <ContactChangeForm />
       </Card>
 
       {/* Change Password */}

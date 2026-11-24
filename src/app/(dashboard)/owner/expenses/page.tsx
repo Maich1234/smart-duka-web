@@ -97,7 +97,7 @@ export default function ExpensesPage() {
     },
   });
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<z.input<typeof schema>, unknown, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { paymentMethod: 'cash' },
   });

@@ -15,6 +15,7 @@ import { usePresets } from '@/hooks/usePresets';
 import { updateShopConfig, uploadShopLogo } from '@/services/shop';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ContactChangeForm from '@/components/dashboard/ContactChangeForm';
 import Card from '@/components/ui/Card';
 import { DukanaAiCard } from '@/components/profile/DukanaAiCard';
 import ShopFeaturesCard from '@/components/profile/ShopFeaturesCard';
@@ -105,7 +106,7 @@ export default function ProfilePage() {
   const passwordForm = useForm<PasswordData>({ resolver: zodResolver(passwordSchema) });
 
   const profileMutation = useMutation({
-    mutationFn: (data: ProfileData) => api.put('/auth/profile', data),
+    mutationFn: (data: ProfileData) => api.put('/auth/profile', { name: data.name }),
     onSuccess: (res) => {
       const token = localStorage.getItem('token') || '';
       login(res.data.data, token);
@@ -212,11 +213,13 @@ export default function ProfilePage() {
 
         <form onSubmit={profileForm.handleSubmit((d) => profileMutation.mutate(d))} className="space-y-4">
           <Input label="Full Name" {...profileForm.register('name')} error={profileForm.formState.errors.name?.message} />
-          <Input label="Email Address" type="email" {...profileForm.register('email')} error={profileForm.formState.errors.email?.message} />
+          <Input label="Email Address" type="email" {...profileForm.register('email')} readOnly />
+
           <div className="flex justify-end">
             <Button type="submit" loading={profileMutation.isPending}>Save Changes</Button>
           </div>
         </form>
+        <ContactChangeForm />
       </Card>
 
       {/* Shop Info */}
