@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type StkStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+export type StkStatus = 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'expired';
 export type StkStage = 'idle' | 'initiating' | StkStatus;
 
 export interface StkPollResult {
@@ -200,7 +200,7 @@ export function useStkPoll({
     };
   }, [stopPolling]);
 
-  const isTerminal = stage === 'failed' || stage === 'cancelled' || stage === 'timeout';
+  const isTerminal = stage === 'failed' || stage === 'cancelled' || stage === 'timeout' || stage === 'expired';
   return {
     stage, id, receipt, errorMessage, initiationUncertain,
     isUnconfirmed: initiationUncertain || stage === 'pending' || stage === 'initiating' || stage === 'timeout',

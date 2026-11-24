@@ -19,7 +19,7 @@ import {
  * The STK stages come from useStkPoll; 'input' and 'recover' are this
  * screen's own steps either side of it.
  */
-type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'recover';
+type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'expired' | 'recover';
 
 interface SubscriptionPayModalProps {
   isOpen: boolean;
@@ -74,12 +74,12 @@ export default function SubscriptionPayModal({
         { phoneNumber: `+254${digits}`, billingCycle, planSlug, promoCode },
         idempotencyKey
       );
-      return { id: res.data.paymentId, status: res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage };
+      return { id: res.data.paymentId, status: res.data.checkoutReleased ? 'expired' : res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage };
     },
     poll: async (paymentId) => {
       const res = await getSubscriptionPaymentStatus(paymentId);
       return {
-        status: res.data.status as StkStatus,
+        status: res.data.checkoutReleased ? 'expired' : res.data.status as StkStatus,
         receipt: res.data.receipt,
         errorMessage: res.data.errorMessage,
       };
@@ -159,7 +159,10 @@ export default function SubscriptionPayModal({
     setLocalError(null);
     try {
       const res = await recheckSubscriptionPayment(stk.id);
-      stk.resolveExternally({ id: res.data.paymentId, status: res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage });
+      stk.resolveExternally({ id: res.data.paymentId, status: res.data.checkoutReleased ? 'expired' : res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage });
+      if (res.data.status === 'pending' && !res.data.errorMessage) {
+        setLocalError('This payment is still pending. You can leave checkout and check again from the subscription page.');
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setLocalError(e.response?.data?.message ?? 'We could not check this payment. Please try checking again.');
@@ -170,10 +173,10 @@ export default function SubscriptionPayModal({
   };
 
   const isBusy = stage === 'initiating' || stage === 'pending';
-  const isTerminalFailure = stage === 'failed' || stage === 'cancelled' || stage === 'timeout';
+  const isTerminalFailure = stage === 'failed' || stage === 'cancelled' || stage === 'timeout' || stage === 'expired';
 
   return (
-    <Modal isOpen={isOpen} onClose={isBusy || rechecking || recovering ? () => {} : handleClose} title="Pay with M-Pesa">
+    <Modal isOpen={isOpen} onClose={stage === 'initiating' || rechecking || recovering ? () => {} : handleClose} title="Pay with M-Pesa">
       {stage === 'input' && (
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: '#0F766E' }}>
@@ -220,13 +223,19 @@ export default function SubscriptionPayModal({
 
       {stage === 'success' && <SubscriptionPaymentReceipt paymentId={stk.id} provider="M-Pesa" onDone={handleSuccess} />}
 
+          {stage === 'pending' && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-600">To cancel, dismiss the M-Pesa prompt on your phone, then check the payment status here.</p>
+              <button type="button" onClick={handleClose} disabled={rechecking} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
+            </div>
+          )}
       {isTerminalFailure && (
         <div className="flex flex-col items-center text-center py-2" role={stk.isUnconfirmed ? 'status' : 'alert'}>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${stk.isUnconfirmed ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
             {stage === 'cancelled' ? <XCircle className="w-8 h-8" /> : stage === 'timeout' ? <Clock className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
           </div>
           <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>
-            {stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
+            {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             {errorMessage ?? (stage === 'cancelled' ? 'The M-Pesa prompt was dismissed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
@@ -236,7 +245,7 @@ export default function SubscriptionPayModal({
           ) : stk.initiationUncertain ? (
             <Button onClick={() => { setLocalError(null); stk.start(); }} className="w-full">Recover payment request</Button>
           ) : null}
-          {!stk.isUnconfirmed && <Button onClick={backToInput} disabled={rechecking} className="w-full mt-3">Start another payment</Button>}
+          {!stk.isUnconfirmed && <Button onClick={backToInput} disabled={rechecking} className="w-full mt-3">Try again</Button>}
           {/* The failure that actually strands people is a Safaricom callback
               that never arrives: money left the till but the subscription
               stayed locked. This is the way out. */}
@@ -248,7 +257,7 @@ export default function SubscriptionPayModal({
           >
             I already paid: verify my payment
           </button>
-          <button onClick={handleClose} disabled={rechecking} className="mt-2 text-sm text-gray-500 hover:text-gray-700">Close</button>
+          <button onClick={handleClose} disabled={rechecking} className="mt-2 text-sm text-gray-500 hover:text-gray-700">{stk.isUnconfirmed ? 'Leave checkout' : 'Close'}</button>
         </div>
       )}
 

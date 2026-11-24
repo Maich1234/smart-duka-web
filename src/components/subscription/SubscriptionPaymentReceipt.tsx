@@ -30,7 +30,7 @@ export default function SubscriptionPaymentReceipt({ paymentId, provider, onDone
   const confirmedProvider = payment?.provider === 'mpesa' ? 'M-Pesa' : payment?.provider === 'bank' ? 'Paystack' : provider;
   const amount = payment ? new Intl.NumberFormat('en-KE', { style: 'currency', currency: payment.currency }).format(payment.amount) : undefined;
   return <div>
-    <p className="mb-5 text-center text-sm text-slate-600" role="status">Your subscription payment was confirmed.</p>
+    <p className="mb-5 text-center text-sm text-slate-600" role="status">{payment?.duplicateOf ? payment.errorMessage : 'Your subscription payment was confirmed.'}</p>
     <DocumentPrinter kind="receipt" state={!paymentId || query.isError ? 'error' : query.isPending ? 'loading' : 'ready'}
       shopName="DuQana subscription" total={amount}
       error={!paymentId ? 'Receipt details are unavailable. You can still continue to your subscription.' : query.error?.message}
