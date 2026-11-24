@@ -16,7 +16,7 @@ import {
   type BillingCycle,
 } from '@/services/subscription';
 
-type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+type Stage = 'input' | 'initiating' | 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout' | 'expired';
 
 interface PaystackPayModalProps {
   isOpen: boolean;
@@ -69,7 +69,7 @@ export default function PaystackPayModal({
       );
       const { paymentId, status, publicKey, providerRef, amount: amt, currency: cur } = res.data;
       if (status !== 'pending') {
-        return { id: paymentId, status: status as StkStatus };
+        return { id: paymentId, status: res.data.checkoutReleased ? 'expired' : status as StkStatus, errorMessage: res.data.errorMessage };
       }
       if (res.data.provider && !['bank', 'free'].includes(res.data.provider)) {
         return { id: paymentId, status: 'pending', errorMessage: 'Please continue checking your existing M-Pesa payment.' };
@@ -106,7 +106,7 @@ export default function PaystackPayModal({
     poll: async (paymentId) => {
       const res = await getSubscriptionPaymentStatus(paymentId);
       return {
-        status: res.data.status as StkStatus,
+        status: res.data.checkoutReleased ? 'expired' : res.data.status as StkStatus,
         receipt: res.data.receipt,
         errorMessage: res.data.errorMessage,
       };
@@ -149,7 +149,10 @@ export default function PaystackPayModal({
     setLocalError(null);
     try {
       const res = await recheckSubscriptionPayment(stk.id);
-      stk.resolveExternally({ id: res.data.paymentId, status: res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage });
+      stk.resolveExternally({ id: res.data.paymentId, status: res.data.checkoutReleased ? 'expired' : res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage });
+      if (res.data.status === 'pending' && !res.data.errorMessage) {
+        setLocalError('This payment is still pending. You can leave checkout and check again from the subscription page.');
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setLocalError(e.response?.data?.message ?? 'Could not check the payment status.');
@@ -160,10 +163,10 @@ export default function PaystackPayModal({
   };
 
   const isBusy = stage === 'initiating' || stage === 'pending';
-  const isTerminalFailure = stage === 'failed' || stage === 'cancelled' || stage === 'timeout';
+  const isTerminalFailure = stage === 'failed' || stage === 'cancelled' || stage === 'timeout' || stage === 'expired';
 
   return (
-    <Modal isOpen={isOpen} onClose={isBusy || rechecking ? () => {} : handleClose} title="Pay with card or bank">
+    <Modal isOpen={isOpen} onClose={stage === 'initiating' || rechecking ? () => {} : handleClose} title="Pay with card or bank">
       {stage === 'input' && (
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: '#0F766E' }}>
@@ -203,6 +206,12 @@ export default function PaystackPayModal({
             </button>
           )}
           {errorMessage && <p className="mt-3 text-xs text-amber-700" role="status">{errorMessage}</p>}
+          {stage === 'pending' && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-600">If you want to stop, close Paystack checkout and check the payment status here.</p>
+              <button type="button" onClick={handleClose} disabled={rechecking} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -214,7 +223,7 @@ export default function PaystackPayModal({
             {stage === 'cancelled' ? <XCircle className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
           </div>
           <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>
-            {stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
+            {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             {errorMessage ?? (stage === 'cancelled' ? 'The payment window was closed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
@@ -224,8 +233,8 @@ export default function PaystackPayModal({
           ) : stk.initiationUncertain ? (
             <Button onClick={() => { setLocalError(null); stk.start(); }} className="w-full">Recover payment request</Button>
           ) : null}
-          {!stk.isUnconfirmed && <Button onClick={reset} disabled={rechecking} className="w-full mt-3">Start another payment</Button>}
-          <button onClick={handleClose} disabled={rechecking} className="mt-2 text-sm text-gray-500 hover:text-gray-700">Close</button>
+          {!stk.isUnconfirmed && <Button onClick={reset} disabled={rechecking} className="w-full mt-3">Try again</Button>}
+          <button onClick={handleClose} disabled={rechecking} className="mt-2 text-sm text-gray-500 hover:text-gray-700">{stk.isUnconfirmed ? 'Leave checkout' : 'Close'}</button>
         </div>
       )}
     </Modal>

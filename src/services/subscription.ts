@@ -152,6 +152,8 @@ export interface SubscriptionPaymentState {
   receipt: string | null;
   periodEnd: string | null;
   errorMessage: string | null;
+  checkoutReleased?: boolean;
+  duplicateOf?: string;
 }
 
 export async function getPlans(): Promise<PlansResponse> {
@@ -205,6 +207,7 @@ export async function initiateSubscriptionPayment(
     status: PaymentStatus;
     provider?: PaymentProvider | 'free';
     amount: number;
+    checkoutReleased?: boolean;
     currency: string;
     /** Paystack only — the client opens its own popup with these. Null for M-Pesa. */
     publicKey: string | null;
@@ -221,7 +224,7 @@ export async function initiateSubscriptionPayment(
   }
   try {
     const res = await api.post('/subscriptions/pay', attempt.params, { headers: { 'X-Idempotency-Key': attempt.key } });
-    recordCheckout(scope, attempt.key, res.data.data);
+    recordCheckout(scope, attempt.key, { ...res.data.data, status: res.data.data.checkoutReleased ? 'expired' : res.data.data.status });
     return res.data;
   } catch (err) {
     const status = (err as { response?: { status?: number } }).response?.status;
@@ -238,7 +241,7 @@ export async function getSubscriptionPaymentStatus(
 ): Promise<{ success: boolean; data: SubscriptionPaymentState }> {
   const scope = checkoutScope(useAuthStore.getState().user);
   const res = await api.get(`/subscriptions/pay/${paymentId}`);
-  recordCheckoutStatus(scope, res.data.data.paymentId, res.data.data.status);
+  recordCheckoutStatus(scope, res.data.data.paymentId, res.data.data.checkoutReleased ? 'expired' : res.data.data.status);
   return res.data;
 }
 
@@ -256,7 +259,7 @@ export async function recheckSubscriptionPayment(
 ): Promise<{ success: boolean; data: SubscriptionPaymentState }> {
   const scope = checkoutScope(useAuthStore.getState().user);
   const res = await api.post(`/subscriptions/pay/${paymentId}/recheck`);
-  recordCheckoutStatus(scope, res.data.data.paymentId, res.data.data.status);
+  recordCheckoutStatus(scope, res.data.data.paymentId, res.data.data.checkoutReleased ? 'expired' : res.data.data.status);
   return res.data;
 }
 
@@ -274,14 +277,17 @@ export async function reconcileSubscriptionByMessage(
 ): Promise<{ success: boolean; data: SubscriptionPaymentState; message: string }> {
   const scope = checkoutScope(useAuthStore.getState().user);
   const res = await api.post('/subscriptions/reconcile', { message });
-  recordCheckoutStatus(scope, res.data.data.paymentId, res.data.data.status);
+  recordCheckoutStatus(scope, res.data.data.paymentId, res.data.data.checkoutReleased ? 'expired' : res.data.data.status);
   return res.data;
 }
 
 
 export async function getUnfinishedSubscriptionCheckout(): Promise<{
   success: boolean;
-  data: { checkout: { paymentId: string; provider?: PaymentProvider | 'free'; billingCycle?: BillingCycle } | null };
+  data: {
+    checkout: { paymentId: string; provider?: PaymentProvider | 'free'; billingCycle?: BillingCycle } | null;
+    olderPayment?: { paymentId: string; reference: string; checkoutReleased?: boolean; duplicateOf?: string; errorMessage: string | null } | null;
+  };
 }> {
   const res = await api.get('/subscriptions/checkout');
   return res.data;

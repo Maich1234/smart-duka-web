@@ -75,12 +75,12 @@ export function recordCheckout(scope: string, key: string, data: { paymentId: st
   const provider = data.provider === 'bank' ? 'bank' : data.provider === 'mpesa' ? 'mpesa' : entry.provider;
   const updated = { ...entry, provider, paymentId: data.paymentId };
   // Only a fresh server response decides completion; stored data is not proof.
-  writeCheckout(scope, ['success', 'failed', 'cancelled'].includes(data.status) ? null : updated);
+  writeCheckout(scope, ['success', 'failed', 'cancelled', 'expired'].includes(data.status) ? null : updated);
 }
 
 export function recordCheckoutStatus(scope: string, paymentId: string, status: string) {
   const entry = readCheckout(scope);
-  if (entry?.paymentId === paymentId && ['success', 'failed', 'cancelled'].includes(status)) writeCheckout(scope, null);
+  if (entry?.paymentId === paymentId && ['success', 'failed', 'cancelled', 'expired'].includes(status)) writeCheckout(scope, null);
 }
 
 export function rememberServerCheckout(scope: string, data: { paymentId: string; provider?: string; billingCycle?: BillingCycle }) {
