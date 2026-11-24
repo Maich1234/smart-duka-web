@@ -218,17 +218,17 @@ export default function SubscriptionPayModal({
               : errorMessage ?? 'If an M-Pesa prompt appears, enter your PIN. We will confirm the payment here.'}
           </p>
           {stk.id && <Button onClick={recheck} disabled={rechecking} className="w-full mt-4">{rechecking ? 'Checking…' : 'Check payment status'}</Button>}
-        </div>
-      )}
-
-      {stage === 'success' && <SubscriptionPaymentReceipt paymentId={stk.id} provider="M-Pesa" onDone={handleSuccess} />}
-
           {stage === 'pending' && (
             <div className="mt-4 space-y-2">
               <p className="text-sm text-gray-600">To cancel, dismiss the M-Pesa prompt on your phone, then check the payment status here.</p>
               <button type="button" onClick={handleClose} disabled={rechecking} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
             </div>
           )}
+        </div>
+      )}
+
+      {stage === 'success' && <SubscriptionPaymentReceipt paymentId={stk.id} provider="M-Pesa" onDone={handleSuccess} />}
+
       {isTerminalFailure && (
         <div className="flex flex-col items-center text-center py-2" role={stk.isUnconfirmed ? 'status' : 'alert'}>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${stk.isUnconfirmed ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>

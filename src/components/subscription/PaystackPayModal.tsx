@@ -206,6 +206,12 @@ export default function PaystackPayModal({
             </button>
           )}
           {errorMessage && <p className="mt-3 text-xs text-amber-700" role="status">{errorMessage}</p>}
+          {stage === 'pending' && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-gray-600">If you want to stop, close Paystack checkout and check the payment status here.</p>
+              <button type="button" onClick={handleClose} disabled={rechecking} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -219,12 +225,6 @@ export default function PaystackPayModal({
           <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>
             {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
           </h3>
-          {stage === 'pending' && (
-            <div className="mt-4 space-y-2">
-              <p className="text-sm text-gray-600">If you want to stop, close Paystack checkout and check the payment status here.</p>
-              <button type="button" onClick={handleClose} disabled={rechecking} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
-            </div>
-          )}
           <p className="text-sm text-gray-500 mb-4">
             {errorMessage ?? (stage === 'cancelled' ? 'The payment window was closed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
           </p>
