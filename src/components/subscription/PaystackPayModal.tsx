@@ -59,7 +59,7 @@ export default function PaystackPayModal({
   const email = useAuthStore((s) => s.user?.email);
   const [localError, setLocalError] = useState<string | null>(null);
   const [rechecking, setRechecking] = useState(false);
-  const recheckRef = useRef(false);
+  const recheckRef = useRef<symbol | null>(null);
 
   const stk = useStkPoll({
     initiate: async (idempotencyKey) => {
@@ -127,8 +127,9 @@ export default function PaystackPayModal({
   };
   const handleClose = () => {
     const confirmed = stage === 'success';
-    if (!stk.isUnconfirmed) reset();
-    else setLocalError(null);
+    recheckRef.current = null;
+    setRechecking(false);
+    reset();
     if (confirmed) onSuccess();
     else onClose();
   };
@@ -144,21 +145,26 @@ export default function PaystackPayModal({
 
   const recheck = async () => {
     if (!stk.id || recheckRef.current) return;
-    recheckRef.current = true;
+    const request = Symbol();
+    recheckRef.current = request;
     setRechecking(true);
     setLocalError(null);
     try {
       const res = await recheckSubscriptionPayment(stk.id);
+      if (recheckRef.current !== request) return;
       stk.resolveExternally({ id: res.data.paymentId, status: res.data.checkoutReleased ? 'expired' : res.data.status as StkStatus, receipt: res.data.receipt, errorMessage: res.data.errorMessage });
       if (res.data.status === 'pending' && !res.data.errorMessage) {
         setLocalError('This payment is still pending. You can leave checkout and check again from the subscription page.');
       }
     } catch (err: unknown) {
+      if (recheckRef.current !== request) return;
       const e = err as { response?: { data?: { message?: string } } };
       setLocalError(e.response?.data?.message ?? 'Could not check the payment status.');
     } finally {
-      recheckRef.current = false;
-      setRechecking(false);
+      if (recheckRef.current === request) {
+        recheckRef.current = null;
+        setRechecking(false);
+      }
     }
   };
 
@@ -166,7 +172,7 @@ export default function PaystackPayModal({
   const isTerminalFailure = stage === 'failed' || stage === 'cancelled' || stage === 'timeout' || stage === 'expired';
 
   return (
-    <Modal isOpen={isOpen} onClose={stage === 'initiating' || rechecking ? () => {} : handleClose} title="Pay with card or bank">
+    <Modal isOpen={isOpen} onClose={stage === 'initiating' ? () => {} : handleClose} title="Pay with card or bank">
       {stage === 'input' && (
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: '#0F766E' }}>
@@ -209,7 +215,7 @@ export default function PaystackPayModal({
           {stage === 'pending' && (
             <div className="mt-4 space-y-2">
               <p className="text-sm text-gray-600">If you want to stop, close Paystack checkout and check the payment status here.</p>
-              <button type="button" onClick={handleClose} disabled={rechecking} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
+              <button type="button" onClick={handleClose} className="text-sm font-semibold text-teal-700 hover:underline disabled:opacity-50">Leave checkout</button>
             </div>
           )}
         </div>
@@ -234,7 +240,7 @@ export default function PaystackPayModal({
             <Button onClick={() => { setLocalError(null); stk.start(); }} className="w-full">Recover payment request</Button>
           ) : null}
           {!stk.isUnconfirmed && <Button onClick={reset} disabled={rechecking} className="w-full mt-3">Try again</Button>}
-          <button onClick={handleClose} disabled={rechecking} className="mt-2 text-sm text-gray-500 hover:text-gray-700">{stk.isUnconfirmed ? 'Leave checkout' : 'Close'}</button>
+          <button onClick={handleClose} className="mt-2 text-sm text-gray-500 hover:text-gray-700">{stk.isUnconfirmed ? 'Leave checkout' : 'Close'}</button>
         </div>
       )}
     </Modal>
