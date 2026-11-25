@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import Button from '@/components/ui/Button';
 import { usePendingSubscriptionCheckout } from '@/hooks/usePendingSubscriptionCheckout';
 import { recordCheckoutStatus, rememberServerCheckout, type CheckoutProvider } from '@/lib/pendingSubscriptionCheckout';
-import { getUnfinishedSubscriptionCheckout, recheckSubscriptionPayment } from '@/services/subscription';
+import { getSubscriptionPaymentStatus, getUnfinishedSubscriptionCheckout, recheckSubscriptionPayment } from '@/services/subscription';
 
 export default function PendingCheckoutNotice({ onResume }: { onResume: (provider: CheckoutProvider) => void }) {
   const { scope, pending, error } = usePendingSubscriptionCheckout();
@@ -17,6 +17,15 @@ export default function PendingCheckoutNotice({ onResume }: { onResume: (provide
     retry: false,
     refetchInterval: pending ? 30_000 : false,
   });
+  const paymentId = pending?.paymentId;
+  useQuery({
+    queryKey: ['pending-subscription-payment-status', scope, paymentId],
+    enabled: Boolean(scope && paymentId),
+    queryFn: () => getSubscriptionPaymentStatus(paymentId!),
+    refetchInterval: 10_000,
+    retry: false,
+  });
+
   const olderPayment = query.data?.data.olderPayment;
   const recheck = useMutation({
     mutationFn: recheckSubscriptionPayment,
@@ -36,8 +45,13 @@ export default function PendingCheckoutNotice({ onResume }: { onResume: (provide
   }, [query.data, query.isFetchedAfterMount, query.isFetching, query.isError, scope, olderPayment]);
   if (error) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">{error}</div>;
   if (pending) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
-    <p className="text-sm text-amber-900">You have an unfinished {pending.provider === 'bank' ? 'bank' : 'M-Pesa'} payment. Check it before starting another.</p>
-    <Button type="button" onClick={() => onResume(pending.provider)} className="mt-3">Continue payment check</Button>
+    <p className="text-sm font-semibold text-amber-900">Your {pending.provider === 'bank' ? 'Paystack' : 'M-Pesa'} payment is still being checked.</p>
+    <p className="mt-1 text-sm text-amber-900">You can leave this page. If the payment fails or the checkout window expires, you can try again here.</p>
+    <div className="mt-3 flex flex-wrap gap-2">
+      {paymentId && <Button type="button" loading={recheck.isPending} onClick={() => recheck.mutate(paymentId)}>Check payment now</Button>}
+      <Button type="button" variant={paymentId ? 'outline' : undefined} onClick={() => onResume(pending.provider)}>View payment status</Button>
+    </div>
+    {recheck.isError && <p className="mt-2 text-sm" role="alert">Could not check the payment. Try again.</p>}
   </div>;
   if (query.isError) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
     <p>We could not check your previous payment.</p>

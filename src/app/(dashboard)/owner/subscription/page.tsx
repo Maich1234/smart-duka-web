@@ -74,8 +74,10 @@ export default function SubscriptionPage() {
     catch { setToast({ type: 'error', message: 'Please check your previous payment with support before paying again.' }); }
   };
   useEffect(() => {
-    if (payOpen && pendingCheckout && payOpen !== pendingCheckout.provider) setPayOpen(pendingCheckout.provider);
-  }, [payOpen, pendingCheckout]);
+    if (pendingCheckout) {
+      setPayOpen(current => current && pendingCheckout.provider);
+    }
+  }, [pendingCheckout]);
 
   const plan = (subscription?.plan ?? null) as SubscriptionPlan | null;
   const state = access?.state ?? 'none';
