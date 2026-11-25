@@ -38,7 +38,7 @@ interface SubscriptionPayModalProps {
 }
 
 const POLL_INTERVAL_MS = 3500;
-const POLL_TIMEOUT_MS = 120_000;
+const POLL_TIMEOUT_MS = 180_000;
 
 const fmt = (amount: number, currency: string) => `${currency} ${amount.toLocaleString()}`;
 
@@ -84,6 +84,14 @@ export default function SubscriptionPayModal({
         errorMessage: res.data.errorMessage,
       };
     },
+    reconcile: async (paymentId) => {
+      const { data } = await recheckSubscriptionPayment(paymentId);
+      return {
+        status: data.checkoutReleased ? 'expired' : data.status as StkStatus,
+        receipt: data.receipt,
+        errorMessage: data.errorMessage,
+      };
+    },
     intervalMs: POLL_INTERVAL_MS,
     timeoutMs: POLL_TIMEOUT_MS,
     protectUnconfirmedAttempts: true,
@@ -93,7 +101,8 @@ export default function SubscriptionPayModal({
 
   // The hook owns the STK stages; 'input' and 'recover' sit either side of it.
   const stage: Stage = recoverOpen ? 'recover' : stk.stage === 'idle' ? 'input' : stk.stage;
-  const errorMessage = localError ?? stk.errorMessage;
+  const errorMessage = ['failed', 'cancelled', 'expired'].includes(stage)
+    ? stk.errorMessage ?? localError : localError ?? stk.errorMessage;
 
   const backToInput = () => {
     stk.reset();
@@ -235,7 +244,7 @@ export default function SubscriptionPayModal({
             {stage === 'cancelled' ? <XCircle className="w-8 h-8" /> : stage === 'timeout' ? <Clock className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
           </div>
           <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>
-            {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
+            {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Payment status unconfirmed' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             {errorMessage ?? (stage === 'cancelled' ? 'The M-Pesa prompt was dismissed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
