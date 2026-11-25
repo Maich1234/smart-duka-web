@@ -18,6 +18,7 @@ export interface StkInitiateResult extends StkPollResult {
 interface UseStkPollOptions {
   initiate: (idempotencyKey: string) => Promise<StkInitiateResult>;
   poll: (id: string) => Promise<StkPollResult>;
+  reconcile?: (id: string) => Promise<StkPollResult>;
   intervalMs?: number;
   /** Stop waiting locally; this does not establish the provider's outcome. */
   timeoutMs?: number;
@@ -33,6 +34,7 @@ const newKey = () =>
 export function useStkPoll({
   initiate,
   poll,
+  reconcile,
   intervalMs = 3000,
   timeoutMs = 90_000,
   protectUnconfirmedAttempts = false,
@@ -43,6 +45,8 @@ export function useStkPoll({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [initiationUncertain, setInitiationUncertain] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deadlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deadlineRef = useRef<{ id: string; at: number } | null>(null);
   const mountedRef = useRef(true);
   const busyRef = useRef(false);
   const generationRef = useRef(0);
@@ -50,12 +54,17 @@ export function useStkPoll({
   const intentRef = useRef<{ key: string; initiate: typeof initiate } | null>(null);
   const initiateRef = useRef(initiate);
   const pollRef = useRef(poll);
+  const reconcileRef = useRef(reconcile);
+  const lastReconcileRef = useRef<{ id: string; at: number } | null>(null);
+  reconcileRef.current = reconcile;
   initiateRef.current = initiate;
   pollRef.current = poll;
 
   const stopPolling = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = null;
+    if (deadlineTimerRef.current) clearTimeout(deadlineTimerRef.current);
+    deadlineTimerRef.current = null;
   }, []);
 
   const settle = useCallback((result: StkPollResult) => {
@@ -73,20 +82,30 @@ export function useStkPoll({
   const beginPolling = useCallback((transactionId: string) => {
     stopPolling();
     const generation = ++generationRef.current;
-    const deadline = Date.now() + timeoutMs;
+    if (deadlineRef.current?.id !== transactionId) {
+      deadlineRef.current = { id: transactionId, at: Date.now() + timeoutMs };
+    }
+    const deadline = deadlineRef.current.at;
     busyRef.current = true;
     const current = () => mountedRef.current && generation === generationRef.current;
+    const expire = () => {
+      if (!current()) return;
+      stopPolling();
+      busyRef.current = false;
+      generationRef.current++;
+      setStage('timeout');
+    };
+    deadlineTimerRef.current = setTimeout(expire, Math.max(0, deadline - Date.now()));
     const tick = async () => {
       if (!current()) return;
-      if (Date.now() >= deadline) {
-        stopPolling();
-        busyRef.current = false;
-        generationRef.current++;
-        setStage('timeout');
-        return;
-      }
       try {
-        const result = await pollRef.current(transactionId);
+        let result = await pollRef.current(transactionId);
+        if (!current()) return;
+        if (result.status === 'pending' && reconcileRef.current &&
+          (lastReconcileRef.current?.id !== transactionId || Date.now() - lastReconcileRef.current.at >= 30_000)) {
+          lastReconcileRef.current = { id: transactionId, at: Date.now() };
+          result = await reconcileRef.current(transactionId);
+        }
         if (!current()) return;
         if (result.status !== 'pending') {
           settle(result);
@@ -155,6 +174,7 @@ export function useStkPoll({
     busyRef.current = false;
     idRef.current = null;
     intentRef.current = null;
+    deadlineRef.current = null;
     setStage('idle');
     setId(null);
     setReceipt(null);
