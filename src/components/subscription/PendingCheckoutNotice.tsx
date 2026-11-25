@@ -46,7 +46,7 @@ export default function PendingCheckoutNotice({ onResume }: { onResume: (provide
   if (error) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">{error}</div>;
   if (pending) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
     <p className="text-sm font-semibold text-amber-900">Your {pending.provider === 'bank' ? 'Paystack' : 'M-Pesa'} payment is still being checked.</p>
-    <p className="mt-1 text-sm text-amber-900">You can leave this page. If the payment fails or the checkout window expires, you can try again here.</p>
+    <p className="mt-1 text-sm text-amber-900">You can leave this page. If the payment fails or remains unconfirmed for three minutes, you can try again here.</p>
     <div className="mt-3 flex flex-wrap gap-2">
       {paymentId && <Button type="button" loading={recheck.isPending} onClick={() => recheck.mutate(paymentId)}>Check payment now</Button>}
       <Button type="button" variant={paymentId ? 'outline' : undefined} onClick={() => onResume(pending.provider)}>View payment status</Button>
