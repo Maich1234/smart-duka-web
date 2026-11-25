@@ -111,6 +111,14 @@ export default function PaystackPayModal({
         errorMessage: res.data.errorMessage,
       };
     },
+    reconcile: async (paymentId) => {
+      const { data } = await recheckSubscriptionPayment(paymentId);
+      return {
+        status: data.checkoutReleased ? 'expired' : data.status as StkStatus,
+        receipt: data.receipt,
+        errorMessage: data.errorMessage,
+      };
+    },
     intervalMs: POLL_INTERVAL_MS,
     timeoutMs: POLL_TIMEOUT_MS,
     protectUnconfirmedAttempts: true,
@@ -119,7 +127,8 @@ export default function PaystackPayModal({
   useRestoreSubscriptionCheckout(isOpen, 'bank', stk);
 
   const stage: Stage = stk.stage === 'idle' ? 'input' : stk.stage;
-  const errorMessage = localError ?? stk.errorMessage;
+  const errorMessage = ['failed', 'cancelled', 'expired'].includes(stage)
+    ? stk.errorMessage ?? localError : localError ?? stk.errorMessage;
 
   const reset = () => {
     stk.reset();
@@ -229,7 +238,7 @@ export default function PaystackPayModal({
             {stage === 'cancelled' ? <XCircle className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
           </div>
           <h3 className="font-bold mb-1" style={{ color: '#0F172A' }}>
-            {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Still awaiting confirmation' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
+            {stage === 'expired' ? 'Payment still unconfirmed' : stk.isUnconfirmed ? 'Payment status unconfirmed' : stage === 'cancelled' ? 'Payment cancelled' : 'Payment failed'}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             {errorMessage ?? (stage === 'cancelled' ? 'The payment window was closed.' : 'We could not confirm this payment. If you were charged, check its status before trying again.')}
