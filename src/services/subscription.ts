@@ -292,3 +292,11 @@ export async function getUnfinishedSubscriptionCheckout(): Promise<{
   const res = await api.get('/subscriptions/checkout');
   return res.data;
 }
+
+export async function getSubscriptionPaymentHistory(before?: string) {
+  const res = await api.get<{ data: { next: string | null; items: {
+    paymentId: string; reference: string; createdAt: string; amount: number; currency: string;
+    purpose: 'subscription' | 'seat_addition'; provider: PaymentProvider | 'free'; status: PaymentStatus | 'review';
+  }[] } }>('/subscriptions/history', { params: { before } });
+  return res.data.data;
+}

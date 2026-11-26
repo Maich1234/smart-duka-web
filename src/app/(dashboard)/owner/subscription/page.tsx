@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Gift, Sparkles, ShieldCheck, AlertCircle, Lock, Clock, Users, CreditCard, RefreshCw, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSubscription, useInvalidateSubscription } from '@/hooks/useSubscription';
@@ -20,6 +20,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import SubscriptionPayModal from '@/components/subscription/SubscriptionPayModal';
 import PaystackPayModal from '@/components/subscription/PaystackPayModal';
+import SubscriptionPaymentHistory from '@/components/subscription/SubscriptionPaymentHistory';
 import PendingCheckoutNotice from '@/components/subscription/PendingCheckoutNotice';
 import { usePendingSubscriptionCheckout } from '@/hooks/usePendingSubscriptionCheckout';
 import { readCheckout, type CheckoutProvider } from '@/lib/pendingSubscriptionCheckout';
@@ -52,6 +53,7 @@ export default function SubscriptionPage() {
   const user = useAuthStore((s) => s.user);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { subscription, access, renewal, isLoading, refetch } = useSubscription();
   const invalidate = useInvalidateSubscription();
   const { scope: checkoutOwner, pending: pendingCheckout, error: checkoutError } = usePendingSubscriptionCheckout();
@@ -453,6 +455,8 @@ export default function SubscriptionPage() {
         </div>
       )}
 
+      <SubscriptionPaymentHistory />
+
       {subscription && subscription.status !== 'cancelled' && state !== 'locked' && (
         <button onClick={() => setConfirmCancelOpen(true)} className="w-full text-center py-3 text-sm font-semibold text-red-500 hover:text-red-600">
           Cancel subscription
@@ -469,6 +473,7 @@ export default function SubscriptionPage() {
         defaultPhone={user?.shop?.phone}
         onClose={() => setPayOpen(null)}
         onSuccess={() => {
+          void queryClient.invalidateQueries({ queryKey: ['subscription-payment-history'] });
           setPayOpen(null);
           removePromo();
           invalidate();
@@ -485,6 +490,7 @@ export default function SubscriptionPage() {
         promoCode={promo?.code}
         onClose={() => setPayOpen(null)}
         onSuccess={() => {
+          void queryClient.invalidateQueries({ queryKey: ['subscription-payment-history'] });
           setPayOpen(null);
           removePromo();
           invalidate();
