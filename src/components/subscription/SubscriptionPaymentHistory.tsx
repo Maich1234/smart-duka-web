@@ -80,7 +80,3 @@ export default function SubscriptionPaymentHistory() {
     </section>
   );
 }
-
-
-  return res.data;
-}
