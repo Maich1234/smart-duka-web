@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import localFont from 'next/font/local';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Providers from './providers';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
@@ -10,6 +11,14 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-plus-jakarta-sans',
   display: 'swap',
+});
+
+const gegola = localFont({
+  src: './fonts/gegola.otf',
+  variable: '--font-duqana-wordmark',
+  weight: '400',
+  display: 'swap',
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -41,6 +50,7 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', images: [SOCIAL_IMAGE.url] },
   icons: {
     icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
     ],
@@ -55,7 +65,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={plusJakartaSans.variable}>
+    <html lang="en" className={`${plusJakartaSans.variable} ${gegola.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

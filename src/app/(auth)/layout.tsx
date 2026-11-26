@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <Image src="/icons/logo-mark.png" alt="" width={28} height={28} />
             </div>
-            <span className="text-2xl font-extrabold text-white">DuQana</span>
+            <span className="text-2xl font-extrabold text-white" data-duqana-wordmark>DuQana</span>
           </Link>
         </div>
 
@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0F766E' }}>
               <Image src="/icons/logo-mark.png" alt="" width={24} height={24} />
             </div>
-            <span className="text-xl font-bold" style={{ color: '#0F172A' }}>DuQana</span>
+            <span className="text-xl font-bold" data-duqana-wordmark style={{ color: '#0F172A' }}>DuQana</span>
           </div>
           {children}
         </div>

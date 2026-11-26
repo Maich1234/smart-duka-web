@@ -40,7 +40,7 @@ export function SiteNav({ active }: { active?: string }) {
   const links = LINKS.map(link => <Link key={link.href} href={link.href} aria-current={active === link.href ? 'page' : undefined} onClick={() => setOpen(false)}>{link.label}</Link>);
   return <header className={styles.header} ref={header}>
     <div className={styles.bar}>
-      <Link href="/" className={styles.brand} aria-label="DuQana home" onClick={() => setOpen(false)}><Image src="/icons/logo-mark.png" alt="" width={28} height={28} /><span>DuQana<span className={styles.dot}>.</span></span></Link>
+      <Link href="/" className={styles.brand} aria-label="DuQana home" onClick={() => setOpen(false)}><Image src="/icons/logo-mark.png" alt="" width={28} height={28} /><span data-duqana-wordmark>DuQana<span className={styles.dot}>.</span></span></Link>
       <nav className={styles.links} aria-label="Main navigation">{links}</nav>
       <div className={styles.actions}><Link href={appHref}>{appLabel}</Link><Link href="/register" className={styles.cta}>Get started <ArrowUpRight size={16} /></Link></div>
       <button ref={toggle} type="button" className={styles.toggle} onClick={() => setOpen(value => !value)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="public-mobile-navigation">{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>

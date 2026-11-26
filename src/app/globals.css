@@ -64,3 +64,9 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+[data-duqana-wordmark] {
+  font-family: var(--font-duqana-wordmark), var(--font-plus-jakarta-sans), sans-serif;
+  font-weight: 400;
+  letter-spacing: normal;
+}
