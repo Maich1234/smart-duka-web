@@ -169,8 +169,7 @@
 .landing-till input { accent-color: #0c625a; }
 .landing-till .button { width: 100%; cursor: pointer; }
 .landing-receipt { min-height: 54px; margin-top: 10px; padding: 8px; border: 1px dashed #819c90; border-radius: 6px; color: #435e55; font-size: 13px; }
-.landing-receipt[data-recorded="true"] { background: #e4f2e5; color: #193e2b; font-weight: 700; animation: landing-receipt-in 190ms cubic-bezier(.23, 1, .32, 1); }
-@keyframes landing-receipt-in { from { opacity: .7; transform: translateY(4px); } }
+.landing-receipt[data-recorded="true"] { background: #e4f2e5; color: #193e2b; font-weight: 700; }
 .landing-info { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(28px, 6vw, 96px); padding: clamp(54px, 8vw, 106px) 8%; }
 .landing-info h2 { font: 400 clamp(38px, 5vw, 64px)/1.05 Georgia, serif; letter-spacing: -.04em; }
 .landing-info p, .landing-info dd { margin-top: 8px; line-height: 1.65; color: #435e55; }

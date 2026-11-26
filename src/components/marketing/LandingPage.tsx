@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { gsap } from 'gsap';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowRight, Check } from 'lucide-react';
@@ -88,6 +89,25 @@ function CheckoutDemo() {
   const [payment, setPayment] = useState('M-Pesa');
   const [recorded, setRecorded] = useState(false);
   const total = (quantity + 1) * 65;
+  const receiptRef = useRef<HTMLParagraphElement>(null);
+  const animateReceipt = useRef(false);
+
+  useEffect(() => {
+    const receipt = receiptRef.current;
+    if (!recorded || !animateReceipt.current || !receipt) return;
+
+    const motion = gsap.matchMedia();
+    motion.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.from(receipt, {
+        y: 7,
+        opacity: 0.72,
+        duration: 0.23,
+        ease: 'power3.out',
+        clearProps: 'transform,opacity',
+      });
+    });
+    return () => motion.revert();
+  }, [recorded]);
 
   return (
     <section className="landing-till" aria-labelledby="checkout-heading">
@@ -111,8 +131,11 @@ function CheckoutDemo() {
             }} /> {method}
           </label>)}
         </fieldset>
-        <button className="button button-dark" type="button" onClick={() => setRecorded(true)}>Record demo sale</button>
-        <p className="landing-receipt" data-recorded={recorded} role="status">
+        <button className="button button-dark" type="button" onClick={event => {
+          animateReceipt.current = event.detail > 0;
+          setRecorded(true);
+        }}>Record demo sale</button>
+        <p ref={receiptRef} className="landing-receipt" data-recorded={recorded} role="status">
           {recorded ? `Demo receipt · ${payment} · KES ${total}` : 'Choose a payment method and try a sale.'}
         </p>
       </div>
@@ -121,16 +144,34 @@ function CheckoutDemo() {
 }
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || window.location.hash) return;
+
+    const motion = gsap.matchMedia();
+    let played = false;
+    motion.add('(prefers-reduced-motion: no-preference)', () => {
+      if (played) return;
+      played = true;
+      gsap.timeline({ defaults: { ease: 'power3.out', clearProps: 'transform,opacity' } })
+        .from('[data-hero-copy]', { y: 12, opacity: 0.82, duration: 0.5, stagger: 0.065 }, 0)
+        .from('.landing-hero-photo img', { scale: 1.06, duration: 0.72 }, 0);
+    }, hero);
+    return () => motion.revert();
+  }, []);
+
   const [publicClient] = useState(createPublicQueryClient);
   const plans = useQuery({ queryKey: ['public-plans'], queryFn: getPublicPlans, staleTime: 60_000, refetchOnMount: 'always', refetchOnWindowFocus: 'always', refetchInterval: 60_000, refetchIntervalInBackground: false, retry: 1 }, publicClient);
   return <div className="landing">
     <a className="landing-skip" href="#main-content">Skip to main content</a>
     <SiteNav />
     <main id="main-content" tabIndex={-1}>
-      <section className="hero">
+      <section ref={heroRef} className="hero" data-enter>
         <div className="hero-copy">
-          <h1>From the first sale <em>to closing time.</em></h1>
-          <p className="hero-description">A point of sale for Kenyan shops. Ring up cash and M-Pesa sales, see what is left on the shelf and keep track of customer credit.</p>
+          <h1 data-hero-copy>From the first sale <em>to closing time.</em></h1>
+          <p className="hero-description" data-hero-copy>A point of sale for Kenyan shops. Ring up cash and M-Pesa sales, see what is left on the shelf and keep track of customer credit.</p>
           <div className="hero-buttons">
             <Link href="/register" className="button button-dark">Create an account <ArrowRight size={18} aria-hidden="true" /></Link>
             <a href="#checkout-heading" className="text-link">Try the checkout <ArrowDown size={16} aria-hidden="true" /></a>
