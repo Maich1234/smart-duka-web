@@ -1,18 +1,15 @@
-import { BarChart3, Package, Receipt, ShoppingCart } from 'lucide-react';
+import { BarChart3, Package, Receipt } from 'lucide-react';
 
-export function CounterPreview() {
+export function ReceiptVerificationPreview() {
   return (
     <figure className="workflow-preview">
-      <figcaption><ShoppingCart size={17} aria-hidden="true" /> Checkout example</figcaption>
+      <figcaption><Receipt size={17} aria-hidden="true" /> Receipt verification example</figcaption>
       <dl className="preview-lines">
-        <div><dt>Milk, 500 ml × 2</dt><dd>KES 130</dd></div>
-        <div><dt>Bread, 400 g × 1</dt><dd>KES 65</dd></div>
-        <div className="preview-total"><dt>Total</dt><dd>KES 195</dd></div>
+        <div><dt>Receipt</dt><dd>DQ-0042</dd></div>
+        <div><dt>Payment</dt><dd>M-Pesa</dd></div>
+        <div className="preview-total"><dt>Total</dt><dd>KES 240</dd></div>
       </dl>
-      <div className="preview-receipt">
-        <Receipt size={20} aria-hidden="true" />
-        <div><strong>Sale recorded</strong><span>Sample receipt · M-Pesa · KES 195</span></div>
-      </div>
+      <p className="preview-receipt"><strong>Receipt verified</strong></p>
     </figure>
   );
 }

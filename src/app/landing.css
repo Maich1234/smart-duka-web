@@ -195,3 +195,25 @@
   .landing .hero-buttons { gap: 8px; }
   .landing .hero-buttons > a { width: 100%; justify-content: center; }
 }
+
+/* Leave keyboard and fragment targets below the sticky public navigation. */
+.landing #main-content,
+.landing #checkout-heading { scroll-margin-top: 96px; }
+.landing .landing-skip {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 100;
+  padding: 12px 16px;
+  background: #163d34;
+  color: #fff;
+  font-weight: 700;
+}
+.landing .landing-skip:not(:focus) {
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

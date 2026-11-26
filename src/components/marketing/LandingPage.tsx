@@ -8,12 +8,12 @@ import { createPublicQueryClient } from '@/lib/publicQueryClient';
 import { getPublicPlans, type PublicPlan } from '@/services/publicMarketing';
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
-import { CounterPreview, StockPreview, SalesPreview } from '@/components/marketing/WorkflowPreviews';
+import { ReceiptVerificationPreview, StockPreview, SalesPreview } from '@/components/marketing/WorkflowPreviews';
 import { SUPPORT_PHONE } from '@/lib/site';
 import '@/app/landing.css';
 
 const workflows = [
-  { preview: CounterPreview, label: 'AT THE COUNTER', title: 'Record what the customer bought.', text: 'Search or scan a product, enter the quantity and choose how the customer paid. The sale updates stock and gives you a receipt to share.', points: ['Product search and barcode scanning', 'Record cash, M-Pesa, Airtel Money or bank transfers', 'Receipts with a verification QR code'], href: '/help/recording-sales', link: 'See the checkout steps' },
+  { preview: ReceiptVerificationPreview, label: 'AFTER THE SALE', title: 'Give customers a receipt they can verify.', text: 'Share a digital receipt or print it with a compatible printer. When a customer scans its QR code, they can check the sale details on a public page.', points: ['Shareable digital receipts', 'Public receipt verification'], href: '/help/receipts-and-ratings', link: 'See how receipt verification works' },
   { preview: StockPreview, label: 'WHEN YOU RESTOCK', title: 'Check quantities before you buy.', text: 'Look up the stock left for each product. Record purchases and suppliers so incoming stock is accounted for alongside your sales.', points: ['Product quantities and low-stock alerts', 'Purchases and supplier records', 'Different sizes, units and product types'], href: '/help/managing-stock', link: 'Read the stock guide' },
   { preview: SalesPreview, label: 'AT THE END OF THE DAY', title: 'Go back through the day’s sales.', text: 'Check what sold, which payment methods were used and who recorded each sale. Review customer balances without going through separate notebooks.', points: ['Sales history and reports', 'Staff accounts with permissions you control', 'Customer credit and repayments'], href: '/help/sales-reports', link: 'See the available reports' },
 ];
@@ -124,8 +124,9 @@ export default function LandingPage() {
   const [publicClient] = useState(createPublicQueryClient);
   const plans = useQuery({ queryKey: ['public-plans'], queryFn: getPublicPlans, staleTime: 60_000, refetchOnMount: 'always', refetchOnWindowFocus: 'always', refetchInterval: 60_000, refetchIntervalInBackground: false, retry: 1 }, publicClient);
   return <div className="landing">
+    <a className="landing-skip" href="#main-content">Skip to main content</a>
     <SiteNav />
-    <main>
+    <main id="main-content" tabIndex={-1}>
       <section className="hero">
         <div className="hero-copy">
           <h1>From the first sale <em>to closing time.</em></h1>
