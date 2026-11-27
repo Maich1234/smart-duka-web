@@ -108,12 +108,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
       <div
         className={clsx(
-          'min-h-screen flex flex-col transition-all duration-300',
+          'flex min-h-screen min-w-0 flex-col transition-[margin-left] duration-300 motion-reduce:transition-none',
           collapsed ? 'lg:ml-16' : 'lg:ml-64'
         )}
       >
         <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-auto">
+        <main className="min-w-0 flex-1 overflow-auto">
           <div className="mx-auto w-full max-w-[1600px] p-4 lg:p-6 xl:p-8">
             <QueryFailureNotice />
             {canAccessRoute(user, pathname) ? (

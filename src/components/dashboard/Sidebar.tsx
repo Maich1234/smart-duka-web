@@ -199,7 +199,7 @@ function SidebarContent({
           <span data-duqana-wordmark className="text-lg flex-1" style={{ color: '#0F172A' }}>DuQana</span>
         )}
         {showCloseButton && (
-          <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          <button type="button" aria-label="Close menu" onClick={onClose} className="flex size-11 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -289,9 +289,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       {/* Mobile drawer */}
       <aside
         className={clsx(
-          'fixed left-0 top-0 h-screen w-72 flex flex-col border-r border-gray-100 z-50 transition-transform duration-300 lg:hidden',
+          'fixed left-0 top-0 z-50 flex h-dvh w-72 max-w-[calc(100%_-_2.75rem)] flex-col border-r border-gray-100 transition-transform duration-300 motion-reduce:transition-none lg:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
+        inert={!mobileOpen}
         style={{ backgroundColor: 'white' }}
       >
         <SidebarContent

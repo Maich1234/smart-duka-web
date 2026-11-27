@@ -27,24 +27,24 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
   const inboxHref = user?.role === 'staff' ? '/staff/notifications' : '/owner/notifications';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 xl:px-8">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-gray-100 bg-white px-3 sm:px-4 lg:px-6 xl:px-8">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {/* Hamburger — mobile only */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+          className="flex size-11 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-100 lg:hidden"
           aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {title && <h1 className="text-lg font-bold" style={{ color: '#0F172A' }}>{title}</h1>}
+        {title && <h1 className="truncate text-base font-bold sm:text-lg" style={{ color: '#0F172A' }}>{title}</h1>}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
         <Link
           href={inboxHref}
-          className="relative w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+          className="relative flex size-11 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
           aria-label={unreadError ? 'Notifications, unread count unavailable' : unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         >
           <Bell className="w-5 h-5" />
@@ -58,13 +58,13 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
           )}
         </Link>
 
-        {unreadError && <button type="button" onClick={() => { retryUnread(); }} className="max-w-24 text-left text-xs text-slate-500 underline" aria-label="Unread notification count unavailable. Retry">Retry unread count</button>}
-        <div className="flex items-center gap-2 lg:gap-3">
+        {unreadError && <button type="button" onClick={() => { retryUnread(); }} className="min-h-11 max-w-20 shrink-0 text-left text-xs sm:max-w-24 text-slate-500 underline" aria-label="Unread notification count unavailable. Retry">Retry unread count</button>}
+        <div className="flex min-w-0 items-center gap-2 lg:gap-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style={{ backgroundColor: '#0F766E' }}>
             {user?.name?.charAt(0) ?? 'U'}
           </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-semibold leading-none" style={{ color: '#0F172A' }}>{user?.name}</p>
+          <div className="hidden min-w-0 sm:block">
+            <p className="truncate text-sm font-semibold leading-none" style={{ color: '#0F172A' }}>{user?.name}</p>
             <p className="text-xs text-gray-400 capitalize mt-0.5">{user?.role}</p>
           </div>
         </div>
