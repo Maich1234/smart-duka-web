@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -193,11 +194,9 @@ function SidebarContent({
     <>
       {/* Logo */}
       <div className={clsx('flex items-center h-16 border-b border-gray-100 px-4', collapsed ? 'justify-center' : 'gap-3')}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0F766E' }}>
-          <ShoppingBag className="w-5 h-5 text-white" />
-        </div>
+        <Image src="/icons/logo-mark.png" alt={collapsed ? 'DuQana' : ''} width={32} height={32} className="shrink-0" />
         {!collapsed && (
-          <span className="font-extrabold text-lg flex-1" style={{ color: '#0F172A' }}>DuQana</span>
+          <span data-duqana-wordmark className="text-lg flex-1" style={{ color: '#0F172A' }}>DuQana</span>
         )}
         {showCloseButton && (
           <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
